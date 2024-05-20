@@ -1061,15 +1061,13 @@ Following portion sizes from School Lunch regs: https://www.gov.scot/publication
 ```{r}
 #add age buckets back in 
 
-#create age buckets
+df.intake24_participant <- inner_join(df.intake24_participant, user_char, by = "UserID")
+
+
+#relocate columns for ease in management
 df.intake24_participant <- df.intake24_participant %>%
-  mutate(
-    age_cat = case_when(
-      age >= 2 & age < 5 ~ "2-4y",
-      age >= 5 & age < 11 ~ "5-10y", 
-      age >= 11 & age < 16 ~ "11-15y",
-      TRUE ~ NA)) %>%
-  relocate(age_cat, .after = age)
+  relocate(c("Sex","simd_quintile", "CalcAge","Age", "age_cat", "Ethnicity"), .after = age)
+
 
 #set factor levels and make NA a level
 df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
@@ -1078,7 +1076,6 @@ df.intake24_participant$age_cat <- fct_explicit_na(df.intake24_participant$age_c
 
 
 ```{r}
-#df.intake24_participant$age_cat <- as_factor(df.intake24_participant$age_cat, levels = c("2-4y", ""))
 
 df.intake24_participant %>% 
   select(age_cat, SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_Sugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV) %>%
@@ -1105,17 +1102,6 @@ check <- df.intake24_participant %>%
 ***SDGs for Oily fish and Red and red processed meat***
 We will evaluate whether a participant met the SDG for oily fish and red and red processed meat via the food frequency questions from the survey
 ```{r}
-#create age buckets
-df.survey$Age <- as.numeric(df.survey$Age)
-
-df.survey <- df.survey %>%
-  mutate(
-    age_cat = case_when(
-      CalcAge >= 2 & CalcAge < 5 ~ "2-4y",
-      CalcAge >= 5 & CalcAge < 11 ~ "5-10y", 
-      CalcAge >= 11 & CalcAge <= 16 ~ "11-15y",
-      TRUE ~ NA)) %>%
-  relocate(age_cat, .after = Age)
 
 #set factor levels and make NA a level
 df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
