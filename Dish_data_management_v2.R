@@ -4,7 +4,7 @@
 # Date created: May 17, 2024
 # Description: This code preps and manages data for the DISH survey and calculates adherence to the Scottish Dietary Goals and the frequency of individual vegetable consumption
 
-LINDSAY WAS HERE
+
 
 # Prepare R Environment ####
 
@@ -26,29 +26,27 @@ LINDSAY WAS HERE
   library(writexl)
   library(forcats)
   
-  # Set working directory
-  setwd('C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis')
 
   # Import the data
   
-  df.survey <- read.csv( "Data/Survey_clean_for_Analysis.csv") %>%
+  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/Survey_clean_for_Analysis.csv") %>%
     select(-X)
   
-  df.intake24_item <- read.csv("Data/intake24_clean_for_Analysis.csv") %>%
+  df.intake24_item <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_Analysis.csv") %>%
     select(-X)
   
-  df.recall <- read.csv("Data/Recall_Dataset_clean_for_Analysis.csv") %>%
+  df.recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/Recall_Dataset_clean_for_Analysis.csv") %>%
     select(-X)
   
-  user_char <- read.csv("Data/user_characteristics.csv") %>%
+  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics.csv") %>%
     select(-X)
 
   
 
-# Keep variables needed for analysis ####
+  # Keep variables needed for analysis ####
   df.intake24_item <- df.intake24_item %>%
-    select(SurveyID,UserID,SurveyDuration,date,,RecallNo,NumberOfRecalls,NumberOfItems,Sex,CalcAge,age_cat,simd_quintile,
-           FoodAmount,FoodAmountReason,MealIndex,MealID,MealName,MealTime,MealTime_hour,MealTime_minute,FoodSource,FoodIndex,SearchTerm,FoodID,
+    select(SurveyID,UserID,SurveyDuration,date,RecallNo,NumberOfRecalls,NumberOfItems,Sex,CalcAge,age_cat,simd_quintile,
+           FoodAmount,FoodAmountReason,MealIndex,MealID,NewMealName,NewMealTime,MealTime_hour,MealTime_minute,FoodSource,FoodIndex,SearchTerm,FoodID,
            Intake24FoodCode,Description_English,Description_Local,FoodGroupCode,FoodGroupEnglish,SubFoodGroupCode,ReadyMeal,
            TotalGrams,ReasonableAmount,MissingFoodID,MissingFoodDescription,MissingFoodPortionSize,MissingFoodLeftovers,
            Energykcal,Proteing,Fatg,Saturatedfattyacidsg,Transfattyacidsg,Carbohydrateg,Alcoholg,Totalsugarsg,NONMILKSUGARS,AOACg,Sodiummg,
@@ -61,12 +59,11 @@ LINDSAY WAS HERE
 # Convert to numeric from characters ####
   
   # List of variables to not convert
-    char_not_to_convert <- c("SurveyID", "UserID", "SurveyDuration", "FoodAmount", "FoodAmountReason", "MealIndex", "MealID", "MealName", 
-                            "MealTime", "FoodSource", "FoodIndex", "SearchTerm", "FoodID", "Intake24FoodCode", 
-                            "Description_English", "Description_Local", "FoodGroupEnglish", "ReadyMeal", "NumberOfRecalls", 
-                            "NumberOfItems", "date", "Sex", "CalcAge", "age_cat","ReasonableAmount", 
-                            "MissingFoodID", "MissingFoodDescription", "MissingFoodPortionSize",
-                            "MissingFoodLeftovers", "SubFoodGroupCode")
+    char_not_to_convert <- c("SurveyID", "UserID", "SurveyDuration", "date", "Sex", "CalcAge", "age_cat", "FoodAmount", "FoodAmountReason", "MealIndex", "MealID", "NewMealName", 
+                            "NewMealTime", "FoodSource", "FoodIndex", "SearchTerm", "FoodID", "Intake24FoodCode", 
+                            "Description_English", "Description_Local", "FoodGroupCode","FoodGroupEnglish","SubFoodGroupCode", "ReadyMeal",  
+                            "ReasonableAmount", "MissingFoodID", "MissingFoodDescription", "MissingFoodPortionSize",
+                            "MissingFoodLeftovers")
     
     df.intake24_item <- df.intake24_item %>%
       mutate(across(-all_of(char_not_to_convert), as.numeric))
@@ -75,145 +72,10 @@ LINDSAY WAS HERE
     df.intake24_item <- df.intake24_item %>%
       mutate_all(~ifelse(is.na(.), 0, .))
 
-  
-  
-# Create new nutrient variables ####
-   
-  # Create food energy (kcal) variable
-    df.intake24_item <- df.intake24_item %>%
-      mutate(FoodEnergy = Energykcal-(Alcoholg*7)) %>%
-    relocate(FoodEnergy, .after = Energykcal)
-    
-  # Create food grams variable
-    df.intake24_item <- df.intake24_item %>%
-      mutate(FoodGrams = TotalGrams - Alcoholg) %>%
-      relocate(FoodGrams, .after = TotalGrams)
-    
-  # Calculate intakes as percent of calories (kcal)
-    df.intake24_item <- df.intake24_item %>%
-      mutate(
-        Carbs_kcal = (Carbohydrateg*3.75),
-        TotalSugars_kcal = (NONMILKSUGARS*3.75), 
-        Fat_kcal = (Fatg*9),
-        SatFat_Kcal = (Saturatedfattyacidsg*9),
-        TransFat_Kcal = (Transfattyacidsg*9)) %>%
-      relocate(Carbs_kcal, .after = Carbohydrateg) %>%
-      relocate(TotalSugars_kcal, .after = NONMILKSUGARS) %>%
-      relocate(Fat_kcal, .after = Fatg) %>%
-      relocate(SatFat_Kcal, .after = Saturatedfattyacidsg) %>%
-      relocate(TransFat_Kcal, .after = Transfattyacidsg)
-    
-  # Calculate salt from sodium 
-    df.intake24_item <- df.intake24_item %>%
-      mutate(
-        Saltg = ((Sodiummg/1000)*2.498)
-      ) %>%
-      relocate(Saltg, .after = Sodiummg)
-    
-
-  
-# Calculate mean daily intakes of nutrients ####
-  
-  # Recall level
-  df.intake24_recall <- df.intake24_item %>% 
-      group_by(UserID, RecallNo) %>%
-      summarise(
-        CalcAge = first(CalcAge), 
-        NumberOfRecalls = first(NumberOfRecalls), 
-        Day_Energykcal = sum(Energykcal),
-        Day_FoodEnergy = sum(FoodEnergy),
-        Day_FoodGrams = sum(FoodGrams),
-        Day_Carbohydrate = sum(Carbohydrateg),
-        Day_Carbs_kcal=sum(Carbs_kcal),
-        Day_TotalSugars = sum(NONMILKSUGARS), 
-        Day_TotalSugars_kcal=sum(TotalSugars_kcal),
-        Day_TotalFatg = sum(Fatg),
-        Day_Fat_kcal=sum(Fat_kcal),
-        Day_SatFatg = sum(Saturatedfattyacidsg),
-        Day_SatFat_Kcal=sum(SatFat_Kcal),
-        Day_TransFatg = sum(Transfattyacidsg),
-        Day_TransFat_Kcal=sum(TransFat_Kcal),
-        Day_Protein = sum(Proteing),
-        Day_AOACFibre = sum(AOACg),
-        Day_VitaminA = sum(VitaminAug),
-        Day_Riboflavin = sum(Riboflavinmg),
-        Day_Folate = sum(Folateug),
-        Day_VitaminD = sum(VitaminDug),
-        Day_VitaminB12 = sum(VitaminB12ug),
-        Day_VitaminC = sum(VitaminCmg),
-        Day_Iron = sum(Ironmg),
-        Day_Calcium = sum(Calciummg),
-        Day_Sodium = sum(Sodiummg),
-        Day_Salt = sum(Saltg), #salt
-        Day_Iodine = sum(Iodineug),
-        Day_Magnesium = sum(Magnesiummg),
-        Day_Potassium = sum(Potassiummg),
-        Day_Selenium = sum(Seleniumug),
-        Day_Zinc = sum(Zincmg)) %>%
-      ungroup() 
-    
-  # Participant level
-  df.intake24_participant <- df.intake24_recall %>% 
-      group_by(UserID) %>%
-      summarise(
-        CalcAge = first(CalcAge),
-        NumberOfRecalls = first(NumberOfRecalls),
-        Avg_Energykcal = mean(Day_Energykcal),
-        Avg_FoodEnergy = mean(Day_FoodEnergy),
-        Avg_FoodGrams = mean(Day_FoodGrams),
-        Avg_Carbohydrate = mean(Day_Carbohydrate),
-        Avg_Carbs_kcal = mean(Day_Carbs_kcal),
-        Avg_TotalSugars = mean(Day_TotalSugars),
-        Avg_TotalSugars_kcal = mean(Day_TotalSugars_kcal),
-        Avg_TotalFatg = mean(Day_TotalFatg),
-        Avg_Fat_kcal = mean(Day_Fat_kcal),
-        Avg_SatFatg = mean(Day_SatFatg),
-        Avg_SatFat_Kcal = mean(Day_SatFat_Kcal),
-        Avg_TransFatg = mean(Day_TransFatg),
-        Avg_TransFat_Kcal = mean(Day_TransFat_Kcal),
-        Avg_Protein = mean(Day_Protein),
-        Avg_AOACFibre = mean(Day_AOACFibre),
-        Avg_VitaminA = mean(Day_VitaminA),
-        Avg_Riboflavin = mean(Day_Riboflavin),
-        Avg_Folate = mean(Day_Folate),
-        Avg_VitaminD = mean(Day_VitaminD),
-        Avg_VitaminB12 = mean(Day_VitaminB12),
-        Avg_VitaminC = mean(Day_VitaminC),
-        Avg_Iron = mean(Day_Iron),
-        Avg_Calcium = mean(Day_Calcium),
-        Avg_Sodium = mean(Day_Sodium),
-        Avg_Salt = mean(Day_Salt), #Salt
-        Avg_Iodine = mean(Day_Iodine),
-        Avg_Magnesium = mean(Day_Magnesium),
-        Avg_Potassium = mean(Day_Potassium),
-        Avg_Selenium = mean(Day_Selenium),
-        Avg_Zinc = mean(Day_Zinc)) %>%
-      ungroup() 
-    
-    # Check no duplicates
-     n_distinct(df.intake24_participant$UserID)
-  
-  # Mean daily intakes as % of food energy
-    df.intake24_participant <- df.intake24_participant %>%
-      group_by(UserID) %>%
-      mutate(
-        Carbs_PropFoodEnergy = (Avg_Carbs_kcal/Avg_FoodEnergy)*100,
-        TotalSugars_PropFoodEnergy = (Avg_TotalSugars_kcal/Avg_FoodEnergy)*100,
-        Fat_PropFoodEnergy = (Avg_Fat_kcal/Avg_FoodEnergy)*100,
-        SatFat_PropFoodEnergy = (Avg_SatFat_Kcal/Avg_FoodEnergy)*100,
-        TransFat_PropFoodEnergy = (Avg_TransFat_Kcal/Avg_FoodEnergy)*100) %>%
-      ungroup() %>%
-      relocate(Carbs_PropFoodEnergy, .after = Avg_Carbs_kcal) %>%
-      relocate(TotalSugars_PropFoodEnergy, .after = Avg_TotalSugars_kcal) %>%
-      relocate(Fat_PropFoodEnergy, .after = Avg_Fat_kcal) %>%
-      relocate(SatFat_PropFoodEnergy, .after = Avg_SatFat_Kcal) %>%
-      relocate(TransFat_PropFoodEnergy, .after = Avg_TransFat_Kcal)
-    
-
     
 # Create Main Food Groups ####
     df.intake24_item <- df.intake24_item %>%
-      mutate(MainFoodGroupCode= case_when(
+      mutate(MainFoodGroupCode = case_when(
         SubFoodGroupCode %in% c("1C", "1D", "1E", "1F", "1G", "1R") ~ 1,
         SubFoodGroupCode=="2R" ~ 2,
         SubFoodGroupCode=="3R" ~ 3,
@@ -341,12 +203,12 @@ LINDSAY WAS HERE
         TRUE ~ NA))
     
     
-
+    
 # Remove dairy-free items from milk product sub food groups ####
-
+    
     #Sub food group level
     # Other milk
-    df.intake24 <- df.intake24 %>%  
+    df.intake24_item <- df.intake24_item %>%  
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "13R" &
           (str_detect(Description_English, regex("Almond", ignore_case = TRUE)) |
@@ -358,42 +220,42 @@ LINDSAY WAS HERE
         TRUE ~ SubFoodGroupCode))
     
     # Cream
-    df.intake24 <- df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "13B" & 
           str_detect(Description_English, regex("Alpro", ignore_case = TRUE)) ~ "13B_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Other cheese
-    df.intake24 <- df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "14R" & 
           str_detect(Description_English, regex("Tofu", ignore_case = TRUE)) ~ "14R_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Yogurt
-    df.intake24 <- df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "15B" & 
           str_detect(Description_English, regex("Soya", ignore_case = TRUE)) ~ "15B_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Fromage frais and other dairy desserts 
-    df.intake24 <- df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "15C" & 
           str_detect(Description_English, regex("Soya", ignore_case = TRUE)) ~ "15C_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Ice cream
-    df.intake24 <- df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "53R" &
           str_detect(Description_English, regex("Dairy free", ignore_case = TRUE)) ~ "53R_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Main food group level
-    df.intake24<-df.intake24 %>% 
+    df.intake24_item <- df.intake24_item %>% 
       mutate(MainFoodGroupCode = case_when(
         SubFoodGroupCode == "13R_DF" ~ 63,
         SubFoodGroupCode == "13B_DF" ~ 63,
@@ -406,54 +268,214 @@ LINDSAY WAS HERE
     
     # Remove hot chocolate made with water
     
-      # Sub food group
-      df.intake24 <- df.intake24 %>% 
-        mutate(SubFoodGroupCode = case_when(
-          str_detect(Description_English, regex("Hot chocolate, made with water", ignore_case=TRUE)) ~ "50A",
-          TRUE ~ SubFoodGroupCode)) 
-      
-      # Main food group
-      df.intake24 <- df.intake24 %>% 
-        mutate(MainFoodGroupCode = case_when(
-          SubFoodGroupCode == "50A" ~ 50,
-          TRUE ~ MainFoodGroupCode))
+    # Sub food group
+    df.intake24_item <- df.intake24_item %>% 
+      mutate(SubFoodGroupCode = case_when(
+        str_detect(Description_English, regex("Hot chocolate, made with water", ignore_case=TRUE)) ~ "50A",
+        TRUE ~ SubFoodGroupCode)) 
     
-      
+    # Main food group
+    df.intake24_item <- df.intake24_item %>% 
+      mutate(MainFoodGroupCode = case_when(
+        SubFoodGroupCode == "50A" ~ 50,
+        TRUE ~ MainFoodGroupCode))
+    
+    
     # Move milky coffees into 'other milk'
- 
-      #Sub food group
-      df.intake24 <- df.intake24 %>% 
-        mutate(SubFoodGroupCode = case_when(
-          SubFoodGroupCode == "51A" &
-            (str_detect(Description_English, regex("Cappuccino", ignore_case = TRUE)) | 
-               str_detect(Description_English, regex("Latte", ignore_case = TRUE)) |
-               str_detect(Description_English, regex("Flat white", ignore_case = TRUE)) |
-               str_detect(Description_English, regex("Mocha", ignore_case = TRUE))) ~ "13R",
-          TRUE ~ SubFoodGroupCode))
+    
+    #Sub food group
+    df.intake24_item <- df.intake24_item %>% 
+      mutate(SubFoodGroupCode = case_when(
+        SubFoodGroupCode == "51A" &
+          (str_detect(Description_English, regex("Cappuccino", ignore_case = TRUE)) | 
+             str_detect(Description_English, regex("Latte", ignore_case = TRUE)) |
+             str_detect(Description_English, regex("Flat white", ignore_case = TRUE)) |
+             str_detect(Description_English, regex("Mocha", ignore_case = TRUE))) ~ "13R",
+        TRUE ~ SubFoodGroupCode))
     
     # Re-categorise dairy-free coffees out of 'other milk'
     
-      # Sub food group
-      df.intake24 <- df.intake24 %>% 
-        mutate(SubFoodGroupCode = case_when(
-          SubFoodGroupCode == "13R" &
-            str_detect(Description_English, regex("soya milk", ignore_case = TRUE)) ~ "13R_DF",
-          TRUE ~ SubFoodGroupCode))
-      
-      # Main food group
-      df.intake24 <- df.intake24 %>% 
-        mutate(MainFoodGroupCode = case_when(
-          SubFoodGroupCode == "13R" ~ 13,
-          TRUE ~ MainFoodGroupCode))
+    # Sub food group
+    df.intake24_item <- df.intake24_item %>% 
+      mutate(SubFoodGroupCode = case_when(
+        SubFoodGroupCode == "13R" &
+          str_detect(Description_English, regex("soya milk", ignore_case = TRUE)) ~ "13R_DF",
+        TRUE ~ SubFoodGroupCode))
+    
+    # Main food group
+    df.intake24_item <- df.intake24_item %>% 
+      mutate(MainFoodGroupCode = case_when(
+        SubFoodGroupCode == "13R" ~ 13,
+        TRUE ~ MainFoodGroupCode))
+    
+    
+  
+# Remove diet supplements
+    df.intake24_item <- df.intake24_item %>%
+      filter(MainFoodGroupCode != 54)
+    
+    
+    
+# Create new nutrient variables ####
+   
+  # Create food energy (kcal) variable
+    df.intake24_item <- df.intake24_item %>%
+      mutate(FoodEnergy = Energykcal - (Alcoholg*7)) %>%
+      relocate(FoodEnergy, .after = Energykcal)
+    
+    # Create food energy milk (kcal) variable - removes all kcals from fruit juice, tea/coffee/water, soft drinks, and diet soft drinks
+    df.intake24_item <- df.intake24_item %>%                 ##Lindsay check
+      mutate(FoodEnergyMilk = case_when(
+        MainFoodGroupCode %in% c(45, 51, 57, 58) ~  0,
+        TRUE ~ FoodEnergy)) %>%
+      relocate(FoodEnergyMilk, .after = FoodEnergy)
+    
+  # Create food grams variable
+    df.intake24_item <- df.intake24_item %>%
+      mutate(FoodGrams = TotalGrams - Alcoholg) %>%
+      relocate(FoodGrams, .after = TotalGrams)
+    
+  # Create food grams milk variable: If FoodEnergyMilk is zero, then FoodGramsMilk is set to zero, otherwise, it pulls in value from FoodGrams    
+    df.intake24_item <- df.intake24_item %>%                 ##Lindsay check
+      mutate(FoodGramsMilk = case_when(
+        FoodEnergyMilk == 0 ~ 0,
+        TRUE ~ FoodGrams
+      )) %>%
+      relocate(FoodGramsMilk, .after = FoodGrams)
+    
+  # Calculate intakes as percent of calories (kcal)
+    df.intake24_item <- df.intake24_item %>%
+      mutate(
+        Carbs_kcal = (Carbohydrateg*3.75),
+        TotalSugars_kcal = (NONMILKSUGARS*3.75), 
+        Fat_kcal = (Fatg*9),
+        SatFat_Kcal = (Saturatedfattyacidsg*9),
+        TransFat_Kcal = (Transfattyacidsg*9)) %>%
+        relocate(Carbs_kcal, .after = Carbohydrateg) %>%
+        relocate(TotalSugars_kcal, .after = NONMILKSUGARS) %>%
+        relocate(Fat_kcal, .after = Fatg) %>%
+        relocate(SatFat_Kcal, .after = Saturatedfattyacidsg) %>%
+        relocate(TransFat_Kcal, .after = Transfattyacidsg)
+    
+  # Calculate salt from sodium 
+    df.intake24_item <- df.intake24_item %>%
+      mutate(
+        Saltg = ((Sodiummg/1000)*2.498)
+      ) %>%
+      relocate(Saltg, .after = Sodiummg)
+    
 
-      
+  
+# Calculate mean daily intakes of nutrients ####
+  
+  # Recall level
+  df.intake24_recall <- df.intake24_item %>% 
+      group_by(UserID, RecallNo) %>%
+      summarise(
+        CalcAge = first(CalcAge), 
+        NumberOfRecalls = first(NumberOfRecalls), 
+        Day_Energykcal = sum(Energykcal),
+        Day_FoodEnergy = sum(FoodEnergy),
+        Day_FoodEnergyMilk = sum(FoodEnergyMilk),
+        Day_FoodGrams = sum(FoodGrams),
+        Day_FoodGramsMilk = sum(FoodGramsMilk),
+        Day_Carbohydrate = sum(Carbohydrateg),
+        Day_Carbs_kcal=sum(Carbs_kcal),
+        Day_TotalSugars = sum(NONMILKSUGARS), 
+        Day_TotalSugars_kcal=sum(TotalSugars_kcal),
+        Day_TotalFatg = sum(Fatg),
+        Day_Fat_kcal=sum(Fat_kcal),
+        Day_SatFatg = sum(Saturatedfattyacidsg),
+        Day_SatFat_Kcal=sum(SatFat_Kcal),
+        Day_TransFatg = sum(Transfattyacidsg),
+        Day_TransFat_Kcal=sum(TransFat_Kcal),
+        Day_Protein = sum(Proteing),
+        Day_AOACFibre = sum(AOACg),
+        Day_VitaminA = sum(VitaminAug),
+        Day_Riboflavin = sum(Riboflavinmg),
+        Day_Folate = sum(Folateug),
+        Day_VitaminD = sum(VitaminDug),
+        Day_VitaminB12 = sum(VitaminB12ug),
+        Day_VitaminC = sum(VitaminCmg),
+        Day_Iron = sum(Ironmg),
+        Day_Calcium = sum(Calciummg),
+        Day_Sodium = sum(Sodiummg),
+        Day_Salt = sum(Saltg), #salt
+        Day_Iodine = sum(Iodineug),
+        Day_Magnesium = sum(Magnesiummg),
+        Day_Potassium = sum(Potassiummg),
+        Day_Selenium = sum(Seleniumug),
+        Day_Zinc = sum(Zincmg)) %>%
+      ungroup() 
+    
+  # Participant level
+  df.intake24_participant <- df.intake24_recall %>% 
+      group_by(UserID) %>%
+      summarise(
+        CalcAge = first(CalcAge),
+        NumberOfRecalls = first(NumberOfRecalls),
+        Avg_Energykcal = mean(Day_Energykcal),
+        Avg_FoodEnergy = mean(Day_FoodEnergy),
+        Avg_FoodEnergyMilk = mean(Day_FoodEnergyMilk),
+        Avg_FoodGrams = mean(Day_FoodGrams),
+        Avg_FoodGramsMilk = mean(Day_FoodGramsMilk),
+        Avg_Carbohydrate = mean(Day_Carbohydrate),
+        Avg_Carbs_kcal = mean(Day_Carbs_kcal),
+        Avg_TotalSugars = mean(Day_TotalSugars),
+        Avg_TotalSugars_kcal = mean(Day_TotalSugars_kcal),
+        Avg_TotalFatg = mean(Day_TotalFatg),
+        Avg_Fat_kcal = mean(Day_Fat_kcal),
+        Avg_SatFatg = mean(Day_SatFatg),
+        Avg_SatFat_Kcal = mean(Day_SatFat_Kcal),
+        Avg_TransFatg = mean(Day_TransFatg),
+        Avg_TransFat_Kcal = mean(Day_TransFat_Kcal),
+        Avg_Protein = mean(Day_Protein),
+        Avg_AOACFibre = mean(Day_AOACFibre),
+        Avg_VitaminA = mean(Day_VitaminA),
+        Avg_Riboflavin = mean(Day_Riboflavin),
+        Avg_Folate = mean(Day_Folate),
+        Avg_VitaminD = mean(Day_VitaminD),
+        Avg_VitaminB12 = mean(Day_VitaminB12),
+        Avg_VitaminC = mean(Day_VitaminC),
+        Avg_Iron = mean(Day_Iron),
+        Avg_Calcium = mean(Day_Calcium),
+        Avg_Sodium = mean(Day_Sodium),
+        Avg_Salt = mean(Day_Salt), #Salt
+        Avg_Iodine = mean(Day_Iodine),
+        Avg_Magnesium = mean(Day_Magnesium),
+        Avg_Potassium = mean(Day_Potassium),
+        Avg_Selenium = mean(Day_Selenium),
+        Avg_Zinc = mean(Day_Zinc)) %>%
+      ungroup() 
+    
+    # Check no duplicates
+     n_distinct(df.intake24_participant$UserID)
+  
+  # Mean daily intakes as % of food energy
+    df.intake24_participant <- df.intake24_participant %>%
+      group_by(UserID) %>%
+      mutate(
+        Carbs_PropFoodEnergy = (Avg_Carbs_kcal/Avg_FoodEnergy)*100,
+        TotalSugars_PropFoodEnergy = (Avg_TotalSugars_kcal/Avg_FoodEnergy)*100,
+        Fat_PropFoodEnergy = (Avg_Fat_kcal/Avg_FoodEnergy)*100,
+        SatFat_PropFoodEnergy = (Avg_SatFat_Kcal/Avg_FoodEnergy)*100,
+        TransFat_PropFoodEnergy = (Avg_TransFat_Kcal/Avg_FoodEnergy)*100) %>%
+      ungroup() %>%
+      relocate(Carbs_PropFoodEnergy, .after = Avg_Carbs_kcal) %>%
+      relocate(TotalSugars_PropFoodEnergy, .after = Avg_TotalSugars_kcal) %>%
+      relocate(Fat_PropFoodEnergy, .after = Avg_Fat_kcal) %>%
+      relocate(SatFat_PropFoodEnergy, .after = Avg_SatFat_Kcal) %>%
+      relocate(TransFat_PropFoodEnergy, .after = Avg_TransFat_Kcal)
+    
+
+
   ## Calculate mean energy density ####
     df.intake24_participant <- df.intake24_participant %>%
       group_by(UserID) %>%
-      mutate(Avg_EnergyDensity = (Avg_FoodEnergy/Avg_FoodGrams)*100) %>%
+      mutate(Avg_EnergyDensity = (Avg_FoodEnergyMilk/Avg_FoodGramsMilk)*100) %>%
       ungroup ()
     
-    # needs updating to remove non-milk beverages @Ricki
+    # Lindsay check 
     
     
     
@@ -506,90 +528,90 @@ LINDSAY WAS HERE
                                         
 #create binary variable and categorise all red and red processed meat based on main food group codes
 df.intake24 <- df.intake24 %>%
-mutate(RedMeat = case_when(
-MainFoodGroupCode %in% c(23, 24, 25, 28, 22, 29, 30, 31, 32) ~ 1, 
- TRUE ~ 0
-))
+      mutate(RedMeat = case_when(
+        MainFoodGroupCode %in% c(23, 24, 25, 28, 22, 29, 30, 31, 32) ~ 1, 
+        TRUE ~ 0
+        ))
                                                
-                                               #check 'other meat' category to determine what needs to be re-coded
-                                               check <- df.intake24 %>%
-                                                 filter(MainFoodGroupCode == "32")
+#check 'other meat' category to determine what needs to be re-coded
+check <- df.intake24 %>%
+  filter(MainFoodGroupCode == "32")
                                                
-                                               #remove any meat that is not red meat from binary variable
-                                               df.intake24 <- df.intake24 %>%
-                                                 mutate(RedMeat = case_when(
-                                                   MainFoodGroupCode == "32" &
-                                                     (str_detect(Description_English, regex("chicken", ignore_case = TRUE))) ~ 0,
-                                                   TRUE ~ RedMeat
-                                                 ))
+#remove any meat that is not red meat from binary variable
+df.intake24 <- df.intake24 %>%
+  mutate(RedMeat = case_when(
+    MainFoodGroupCode == "32" &
+      (str_detect(Description_English, regex("chicken", ignore_case = TRUE))) ~ 0,
+    TRUE ~ RedMeat
+    ))
                                              
                                                
-                                               check <- df.intake24 %>%
-                                                 filter(MainFoodGroupCode == 35)
+check <- df.intake24 %>%
+  filter(MainFoodGroupCode == 35)
                                                
-                                               # Create reporting food groups 
-                                               df.intake24 <- df.intake24 %>% 
-                                                 mutate(ReportingFoodGroupCode = case_when (
-                                                   #Red meat
-                                                   MainFoodGroupCode %in% c(23, 24, 25, 28) & RedMeat == 1 ~ 1,
-                                                   # Red processed meat
-                                                   MainFoodGroupCode %in% c(22, 29, 30, 31, 32) & RedMeat == 1 ~ 2,
-                                                   # Oily fish
-                                                   MainFoodGroupCode == 35 ~ 3,
-                                                   # Fruit
-                                                   MainFoodGroupCode == 40 ~ 4,
-                                                   # Vegetables
-                                                   MainFoodGroupCode == 36 ~ 5,
-                                                   # Fruit juice - sometimes you need to specify the subfoodgroup instead of main food group - this captures only fruit juice and not smoothies
-                                                   SubFoodGroupCode == "45R" ~ 6,
-                                                   # Sugar-sweetened beverages
-                                                   MainFoodGroupCode == 57 ~ 7,
-                                                   # Sugar confectionery
-                                                   MainFoodGroupCode == 43 & !NutrientTableCode %in% c(lollies) ~ 8,
-                                                   # Chocolate confectionery
-                                                   MainFoodGroupCode == 44 ~ 9,
-                                                   # Sweet biscuits
-                                                   MainFoodGroupCode == 7 & !NutrientTableCode %in% c(savoury_biscuits_list) ~ 10,
-                                                   # Savoury biscuits
-                                                   MainFoodGroupCode == 7 & NutrientTableCode %in% c(savoury_biscuits_list) ~ 11,
-                                                   # Cakes, pastries and fruit pies
-                                                   MainFoodGroupCode == 8 ~ 12,
-                                                   # Crisps and savoury snacks
-                                                   MainFoodGroupCode == 42 ~ 13,
-                                                   #Pizzas and ready meals
-                                                   NutrientTableCode %in% c(pizza, ready_meal) ~ 14,
-                                                   #Ice creams
-                                                   MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies) ~ 15,
-                                                   TRUE ~ NA)) 
+# Create reporting food groups 
+df.intake24 <- df.intake24 %>% 
+ mutate(ReportingFoodGroupCode = case_when (
+#Red meat
+MainFoodGroupCode %in% c(23, 24, 25, 28) & RedMeat == 1 ~ 1,
+# Red processed meat
+MainFoodGroupCode %in% c(22, 29, 30, 31, 32) & RedMeat == 1 ~ 2,
+# Oily fish
+MainFoodGroupCode == 35 ~ 3,
+# Fruit
+MainFoodGroupCode == 40 ~ 4,
+# Vegetables
+MainFoodGroupCode == 36 ~ 5,
+# Fruit juice - sometimes you need to specify the subfoodgroup instead of main food group - this captures only fruit juice and not smoothies
+SubFoodGroupCode == "45R" ~ 6,
+# Sugar-sweetened beverages
+MainFoodGroupCode == 57 ~ 7,
+# Sugar confectionery
+MainFoodGroupCode == 43 & !NutrientTableCode %in% c(lollies) ~ 8,
+# Chocolate confectionery
+MainFoodGroupCode == 44 ~ 9,
+# Sweet biscuits
+MainFoodGroupCode == 7 & !NutrientTableCode %in% c(savoury_biscuits_list) ~ 10,
+# Savoury biscuits
+MainFoodGroupCode == 7 & NutrientTableCode %in% c(savoury_biscuits_list) ~ 11,
+# Cakes, pastries and fruit pies
+MainFoodGroupCode == 8 ~ 12,
+# Crisps and savoury snacks
+MainFoodGroupCode == 42 ~ 13,
+#Pizzas and ready meals
+NutrientTableCode %in% c(pizza, ready_meal) ~ 14,
+#Ice creams
+MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies) ~ 15,
+TRUE ~ NA)) 
                                                
-                                               # Add description variable
-                                               df.intake24 <- df.intake24 %>%
-                                                 mutate(ReportingFoodGroupDesc = case_when(
-                                                   ReportingFoodGroupCode == 1 ~ "Red meat",
-                                                   ReportingFoodGroupCode == 2 ~ "Red processed meat",
-                                                   ReportingFoodGroupCode == 3 ~ "Oily fish",
-                                                   ReportingFoodGroupCode == 4 ~ "Fruit",
-                                                   ReportingFoodGroupCode == 5 ~ "Vegetables",
-                                                   ReportingFoodGroupCode == 6 ~ "Fruit juice",
-                                                   ReportingFoodGroupCode == 7 ~ "Sugar-sweetened beverages",
-                                                   ReportingFoodGroupCode == 8 ~ "Sugar confectionery",
-                                                   ReportingFoodGroupCode == 9 ~ "Chocolate confectionery",
-                                                   ReportingFoodGroupCode == 10 ~ "Sweet biscuits",
-                                                   ReportingFoodGroupCode == 11 ~ "Savoury biscuits",
-                                                   ReportingFoodGroupCode == 12 ~ "Cakes, pastries and fruit pies",
-                                                   ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
-                                                   ReportingFoodGroupCode == 14 ~ "Pizzas and ready meals",
-                                                   ReportingFoodGroupCode == 15 ~ "Ice cream and lollies",
-                                                   TRUE ~ NA_character_))
+# Add description variable
+df.intake24 <- df.intake24 %>%
+  mutate(ReportingFoodGroupDesc = case_when(
+    ReportingFoodGroupCode == 1 ~ "Red meat",
+    ReportingFoodGroupCode == 2 ~ "Red processed meat",
+    ReportingFoodGroupCode == 3 ~ "Oily fish",
+    ReportingFoodGroupCode == 4 ~ "Fruit",
+    ReportingFoodGroupCode == 5 ~ "Vegetables",
+    ReportingFoodGroupCode == 6 ~ "Fruit juice",
+    ReportingFoodGroupCode == 7 ~ "Sugar-sweetened beverages",
+    ReportingFoodGroupCode == 8 ~ "Sugar confectionery",
+    ReportingFoodGroupCode == 9 ~ "Chocolate confectionery",
+    ReportingFoodGroupCode == 10 ~ "Sweet biscuits",
+    ReportingFoodGroupCode == 11 ~ "Savoury biscuits",
+    ReportingFoodGroupCode == 12 ~ "Cakes, pastries and fruit pies",
+    ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
+    ReportingFoodGroupCode == 14 ~ "Pizzas and ready meals",
+    ReportingFoodGroupCode == 15 ~ "Ice cream and lollies",
+       TRUE ~ NA_character_))
                                               
-                                                #Check food groups for foods of interest that may not be reported in the above
-                                                df.intake24 %>%
-                                                 count(MainFoodGroupDesc, MainFoodGroupCode, SubFoodGroupCode, ReportingFoodGroupDesc, ReportingFoodGroupCode) %>%
-                                                 View()
+#Check food groups for foods of interest that may not be reported in the above
+df.intake24 %>%
+  count(MainFoodGroupDesc, MainFoodGroupCode, SubFoodGroupCode, ReportingFoodGroupDesc, ReportingFoodGroupCode) %>%
+View()
                                                
                                                
-                                               check <- df.intake24 %>%
-                                                 filter(SubFoodGroupCode == "61R")
+check <- df.intake24 %>%
+  filter(SubFoodGroupCode == "61R")
                                             
                                                
                                                
@@ -1060,7 +1082,7 @@ df.survey %>%
 
 
 # Most commonly reported vegetables ####
-Vegetables <- df.intake24 %>%
+Vegetables <- df.intake24_item %>%
   filter(MainFoodGroupCode == c(37, 36))
 
 Veg_sub <- Vegetables %>%
