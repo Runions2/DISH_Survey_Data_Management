@@ -42,7 +42,6 @@
     select(-X)
 
   
-
   # Keep variables needed for analysis ####
   df.intake24_item <- df.intake24_item %>%
     select(SurveyID,UserID,SurveyDuration,date,RecallNo,NumberOfRecalls,NumberOfItems,Sex,CalcAge,age_cat,simd_quintile,
@@ -60,7 +59,7 @@
   
   # List of variables to not convert
     char_not_to_convert <- c("SurveyID", "UserID", "SurveyDuration", "date", "Sex", "CalcAge", "age_cat", "FoodAmount", "FoodAmountReason", "MealIndex", "MealID", "NewMealName", 
-                            "NewMealTime", "FoodSource", "FoodIndex", "SearchTerm", "FoodID", "Intake24FoodCode", 
+                            "NewMealTime", "FoodSource", "FoodIndex", "SearchTerm", "Intake24FoodCode", 
                             "Description_English", "Description_Local", "FoodGroupCode","FoodGroupEnglish","SubFoodGroupCode", "ReadyMeal",  
                             "ReasonableAmount", "MissingFoodID", "MissingFoodDescription", "MissingFoodPortionSize",
                             "MissingFoodLeftovers")
@@ -136,9 +135,10 @@
         SubFoodGroupCode %in% c("54A", "54B", "54C", "54D", "54E", "54F", "54G", "54H", "54I", "54J", "54K", "54L", "54M", "54N", "54P") ~ 54,
         SubFoodGroupCode=="55R" ~ 55,
         SubFoodGroupCode=="62R" ~ 62,
-        TRUE ~ NA))
+        TRUE ~ NA)) %>%
+        relocate(MainFoodGroupCode, .after = FoodGroupEnglish)
     
-    # Create main food group description variables
+    # Create Main Food Group description variable
     df.intake24_item <- df.intake24_item %>%
       mutate(MainFoodGroupDesc = case_when(
         MainFoodGroupCode == 1 ~ "Pasta, rice and other miscellaneous cereals",
@@ -160,7 +160,7 @@
         MainFoodGroupCode == 17 ~ "Butter",
         MainFoodGroupCode == 18 ~ "Polyunsaturated margarine and oils",
         MainFoodGroupCode == 19 ~ "Low fat spread",
-        MainFoodGroupCode == 20 ~ "Margarine and other cooking fats and oils",
+        MainFoodGroupCode == 20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
         MainFoodGroupCode == 21 ~ "Reduced fat spread",
         MainFoodGroupCode == 22 ~ "Bacon and ham",
         MainFoodGroupCode == 23 ~ "Beef, veal and dishes",
@@ -199,8 +199,10 @@
         MainFoodGroupCode == 57 ~ "Soft drinks, not diet",
         MainFoodGroupCode == 58 ~ "Soft drinks, diet",
         MainFoodGroupCode == 59 ~ "Brown, granary and wheatgerm bread",
+        MainFoodGroupCode == 60 ~ "1% Milk",
         MainFoodGroupCode == 62 ~ "Sandwiches",
-        TRUE ~ NA))
+        TRUE ~ NA)) %>%
+      relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
     
     
     
@@ -211,12 +213,15 @@
     df.intake24_item <- df.intake24_item %>%  
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "13R" &
-          (str_detect(Description_English, regex("Almond", ignore_case = TRUE)) |
+            (str_detect(Description_English, regex("Almond", ignore_case = TRUE)) |
              str_detect(Description_English, regex("Alpro", ignore_case = TRUE)) |
              str_detect(Description_English, regex("soya", ignore_case = TRUE)) |
              str_detect(Description_English, regex("Hemp", ignore_case = TRUE)) |
              str_detect(Description_English, regex("Oat", ignore_case = TRUE)) |
-             str_detect(Description_English, regex("Rice", ignore_case = TRUE))) ~ "13R_DF",
+             str_detect(Description_English, regex("Rice", ignore_case = TRUE)) |
+             str_detect(Description_English, regex("Coconut", ignore_case = TRUE)) |
+             str_detect(Description_English, regex("Dairy free", ignore_case = TRUE)) |
+             str_detect(Description_English, regex("Hazelnut", ignore_case = TRUE))) ~ "13R_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Cream
@@ -230,14 +235,17 @@
     df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "14R" & 
-          str_detect(Description_English, regex("Tofu", ignore_case = TRUE)) ~ "14R_DF",
+          (str_detect(Description_English, regex("Tofu", ignore_case = TRUE))|
+          str_detect(Description_English, regex("Coconut", ignore_case = TRUE))) ~ "14R_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Yogurt
     df.intake24_item <- df.intake24_item %>% 
       mutate(SubFoodGroupCode = case_when(
         SubFoodGroupCode == "15B" & 
-          str_detect(Description_English, regex("Soya", ignore_case = TRUE)) ~ "15B_DF",
+          (str_detect(Description_English, regex("Soya", ignore_case = TRUE)) | 
+           str_detect(Description_English, regex("Coconut", ignore_case = TRUE)) |
+           str_detect(Description_English, regex("oat", ignore_case = TRUE))  ) ~ "15B_DF",
         TRUE ~ SubFoodGroupCode))
     
     # Fromage frais and other dairy desserts 
@@ -264,6 +272,9 @@
         SubFoodGroupCode == "15C_DF" ~ 65,
         SubFoodGroupCode == "53R_DF" ~ 66,
         TRUE ~ MainFoodGroupCode))
+    
+    
+    # @Ricki please add descriptions to these as well
     
     
     # Remove hot chocolate made with water
@@ -308,11 +319,22 @@
         SubFoodGroupCode == "13R" ~ 13,
         TRUE ~ MainFoodGroupCode))
     
-    
+    #Manual code check: for dairy-free items
+    df.dairy_free <- df.intake24_item %>% 
+      filter(SubFoodGroupCode == "13R" | SubFoodGroupCode == "13B" | SubFoodGroupCode == "14R" | SubFoodGroupCode == "15B" | SubFoodGroupCode == "15C" | SubFoodGroupCode == "53R")  
+    df.dairy_free <- df.dairy_free %>% distinct(Description_English, .keep_all = TRUE)  
   
-# Remove diet supplements
-    df.intake24_item <- df.intake24_item %>%
+    
+    
+# Remove diet supplements ####
+  df.intake24_item <- df.intake24_item %>%
       filter(MainFoodGroupCode != 54)
+    
+    
+    
+# Remove breast milk ####
+  df.intake24_item <- df.intake24_item %>%
+      filter(Description_English != "Breast milk")  
     
     
     
@@ -323,8 +345,8 @@
       mutate(FoodEnergy = Energykcal - (Alcoholg*7)) %>%
       relocate(FoodEnergy, .after = Energykcal)
     
-    # Create food energy milk (kcal) variable - removes all kcals from fruit juice, tea/coffee/water, soft drinks, and diet soft drinks
-    df.intake24_item <- df.intake24_item %>%                 ##Lindsay check
+    # Create food energy milk (kcal) variable - removes all kcals from non-milk beverages
+    df.intake24_item <- df.intake24_item %>%                
       mutate(FoodEnergyMilk = case_when(
         MainFoodGroupCode %in% c(45, 51, 57, 58) ~  0,
         TRUE ~ FoodEnergy)) %>%
@@ -335,8 +357,8 @@
       mutate(FoodGrams = TotalGrams - Alcoholg) %>%
       relocate(FoodGrams, .after = TotalGrams)
     
-  # Create food grams milk variable: If FoodEnergyMilk is zero, then FoodGramsMilk is set to zero, otherwise, it pulls in value from FoodGrams    
-    df.intake24_item <- df.intake24_item %>%                 ##Lindsay check
+  # Create food grams milk variable
+    df.intake24_item <- df.intake24_item %>%                
       mutate(FoodGramsMilk = case_when(
         FoodEnergyMilk == 0 ~ 0,
         TRUE ~ FoodGrams
@@ -408,6 +430,26 @@
         Day_Zinc = sum(Zincmg)) %>%
       ungroup() 
     
+    ## Intakes as % of food energy ####
+    df.intake24_recall <- df.intake24_recall %>%
+      mutate(
+        Day_Carbs_PropFoodEnergy = (Day_Carbs_kcal/Day_FoodEnergy)*100,
+        Day_TotalSugars_PropFoodEnergy = (Day_TotalSugars_kcal/Day_FoodEnergy)*100,
+        Day_Fat_PropFoodEnergy = (Day_Fat_kcal/Day_FoodEnergy)*100,
+        Day_SatFat_PropFoodEnergy = (Day_SatFat_Kcal/Day_FoodEnergy)*100,
+        Day_TransFat_PropFoodEnergy = (Day_TransFat_Kcal/Day_FoodEnergy)*100) %>%
+      relocate(Day_Carbs_PropFoodEnergy, .after = Day_Carbs_kcal) %>%
+      relocate(Day_TotalSugars_PropFoodEnergy, .after = Day_TotalSugars_kcal) %>%
+      relocate(Day_Fat_PropFoodEnergy, .after = Day_Fat_kcal) %>%
+      relocate(Day_SatFat_PropFoodEnergy, .after = Day_SatFat_Kcal) %>%
+      relocate(Day_TransFat_PropFoodEnergy, .after = Day_TransFat_Kcal)
+    
+    ## Energy density ####
+    df.intake24_recall <- df.intake24_recall %>%
+      mutate(Day_EnergyDensity = (Day_FoodEnergyMilk/Day_FoodGramsMilk)*100) %>%
+      relocate(Day_EnergyDensity, .after = Day_FoodGramsMilk)
+    
+    
   # Participant level
   df.intake24_participant <- df.intake24_recall %>% 
       group_by(UserID) %>%
@@ -419,16 +461,22 @@
         Avg_FoodEnergyMilk = mean(Day_FoodEnergyMilk),
         Avg_FoodGrams = mean(Day_FoodGrams),
         Avg_FoodGramsMilk = mean(Day_FoodGramsMilk),
+        Avg_EnergyDensity = mean(Day_EnergyDensity),
         Avg_Carbohydrate = mean(Day_Carbohydrate),
         Avg_Carbs_kcal = mean(Day_Carbs_kcal),
+        Avg_Carbs_PropFoodEnergy = mean(Day_Carbs_PropFoodEnergy),
         Avg_TotalSugars = mean(Day_TotalSugars),
         Avg_TotalSugars_kcal = mean(Day_TotalSugars_kcal),
+        Avg_TotalSugars_PropFoodEnergy = mean(Day_TotalSugars_PropFoodEnergy),
         Avg_TotalFatg = mean(Day_TotalFatg),
         Avg_Fat_kcal = mean(Day_Fat_kcal),
+        Avg_Fat_PropFoodEnergy = mean(Day_Fat_PropFoodEnergy),
         Avg_SatFatg = mean(Day_SatFatg),
         Avg_SatFat_Kcal = mean(Day_SatFat_Kcal),
+        Avg_SatFat_PropFoodEnergy = mean(Day_SatFat_PropFoodEnergy),
         Avg_TransFatg = mean(Day_TransFatg),
         Avg_TransFat_Kcal = mean(Day_TransFat_Kcal),
+        Avg_TransFat_PropFoodEnergy = mean(Day_TransFat_PropFoodEnergy),
         Avg_Protein = mean(Day_Protein),
         Avg_AOACFibre = mean(Day_AOACFibre),
         Avg_VitaminA = mean(Day_VitaminA),
@@ -451,34 +499,8 @@
     # Check no duplicates
      n_distinct(df.intake24_participant$UserID)
   
-  # Mean daily intakes as % of food energy
-    df.intake24_participant <- df.intake24_participant %>%
-      group_by(UserID) %>%
-      mutate(
-        Carbs_PropFoodEnergy = (Avg_Carbs_kcal/Avg_FoodEnergy)*100,
-        TotalSugars_PropFoodEnergy = (Avg_TotalSugars_kcal/Avg_FoodEnergy)*100,
-        Fat_PropFoodEnergy = (Avg_Fat_kcal/Avg_FoodEnergy)*100,
-        SatFat_PropFoodEnergy = (Avg_SatFat_Kcal/Avg_FoodEnergy)*100,
-        TransFat_PropFoodEnergy = (Avg_TransFat_Kcal/Avg_FoodEnergy)*100) %>%
-      ungroup() %>%
-      relocate(Carbs_PropFoodEnergy, .after = Avg_Carbs_kcal) %>%
-      relocate(TotalSugars_PropFoodEnergy, .after = Avg_TotalSugars_kcal) %>%
-      relocate(Fat_PropFoodEnergy, .after = Avg_Fat_kcal) %>%
-      relocate(SatFat_PropFoodEnergy, .after = Avg_SatFat_Kcal) %>%
-      relocate(TransFat_PropFoodEnergy, .after = Avg_TransFat_Kcal)
-    
+     
 
-
-  ## Calculate mean energy density ####
-    df.intake24_participant <- df.intake24_participant %>%
-      group_by(UserID) %>%
-      mutate(Avg_EnergyDensity = (Avg_FoodEnergyMilk/Avg_FoodGramsMilk)*100) %>%
-      ungroup ()
-    
-    # Lindsay check 
-    
-    
-    
 # Re-code discretionary foods ####
       
     savoury_biscuits_list <- c("7649","251","252","3973","7650","8330","258","256","255","273","3267","266","267","3236","279","10062","11242","274","7652")
@@ -824,7 +846,7 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
 
 # Adherence to Scottish Dietary Goals ####
 
-# Energy density to be max 125kcal/100g
+## Energy density to be max 125kcal/100g ####
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_Energy = case_when(
@@ -832,233 +854,240 @@ df.intake24_participant <- df.intake24_participant %>%
       Avg_EnergyDensity > 125 ~ 0,
       TRUE ~ NA)) 
 
-# Total fat (max 35% of food energy)
+## Total fat (max 35% of food energy) ####
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_Fat = case_when(
-    Fat_PropFoodEnergy <= 35 ~ 1,
-    Fat_PropFoodEnergy > 35 ~ 0,
+      Avg_Fat_PropFoodEnergy <= 35 ~ 1,
+      Avg_Fat_PropFoodEnergy > 35 ~ 0,
     TRUE ~ NA)) 
 
-# Saturated fat (max 11% of food energy)
+## Saturated fat (max 11% of food energy) ####
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_SatFat = case_when(
-    SatFat_PropFoodEnergy <= 11 ~ 1,
-    SatFat_PropFoodEnergy > 11 ~ 0,
+      Avg_SatFat_PropFoodEnergy <= 11 ~ 1,
+      Avg_SatFat_PropFoodEnergy > 11 ~ 0,
     TRUE ~ NA)) 
 
-# Trans fat (<1% of food energy)
+## Trans fat (<1% of food energy) ####
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_TransFat = case_when(
-    TransFat_PropFoodEnergy < 1 ~ 1,
-    TransFat_PropFoodEnergy >= 1 ~ 0,
+      Avg_TransFat_PropFoodEnergy < 1 ~ 1,
+      Avg_TransFat_PropFoodEnergy >= 1 ~ 0,
     TRUE ~ NA)) 
 
-# Free sugars (max 5% of total energy)
+## Free sugars (max 5% of total energy) ####
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_Sugar = case_when(
-    TotalSugars_PropFoodEnergy <= 5 ~ 1,
-    TotalSugars_PropFoodEnergy > 5 ~ 0,
+      Avg_TotalSugars_PropFoodEnergy <= 5 ~ 1,
+      Avg_TotalSugars_PropFoodEnergy > 5 ~ 0,
     TRUE ~ NA)) 
 
-# Carbohydrates (~50% of total energy; created upper/lower limits of 45-55%)
+## Carbohydrates (~50% of total energy; created upper/lower limits of 45-55%) ####
 df.intake24_participant <- df.intake24_participant %>%
-  mutate(SDG_Carbs = case_when(
-    Carbs_PropFoodEnergy >= 45 & Carbs_PropFoodEnergy <= 55 ~ 1,
-    Carbs_PropFoodEnergy < 45 | Carbs_PropFoodEnergy > 55 ~ 0,
-    TRUE ~ NA)) %>%
-  ungroup()
-
-# Fibre (min 15g/d for 2-5y; min 20g/d for 5-11y; min 25g/d for 11-16y)
-df.intake24_participant <- df.intake24_participant %>%
-  mutate(SDG_Fibre = case_when(
-    age >= 2 & age < 6 & Avg_AOACFibre >= 15 ~ 1,
-    age >= 2 & age < 6 & Avg_AOACFibre < 15 ~ 0,
-    age >= 5 & age < 12 & Avg_AOACFibre >= 20 ~ 1,
-    age >= 5 & age < 12 & Avg_AOACFibre < 20 ~ 0,
-    age >= 11 & age < 17 & Avg_AOACFibre >= 25 ~ 1,
-    age >= 11 & age < 17 & Avg_AOACFibre < 25 ~ 0,
-    age >= 17 & Avg_AOACFibre >= 30 ~ 1,
-    age >= 17 & Avg_AOACFibre < 30 ~ 0,
+  mutate(
+    SDG_Carbs = case_when(
+      Avg_Carbs_PropFoodEnergy >= 45 & Avg_Carbs_PropFoodEnergy <= 55 ~ 1,
+      Avg_Carbs_PropFoodEnergy < 45 | Avg_Carbs_PropFoodEnergy > 55 ~ 0,
     TRUE ~ NA)) 
 
-# Salt (2g / day for 1-3 year olds; 3g / day for 4-6 year olds; 5g / day for 7-10 year olds; 6g / day for 11+ year olds)
-df.intake24_participant <- df.intake24_participant%>%
-  group_by(UserID) %>%
-  mutate(SDG_Salt = case_when(
-    age >= 1 & age < 4 & Avg_Salt >= 2 ~ 1,
-    age >= 1 & age < 4 & Avg_Salt < 2 ~ 0,
-    age >= 4 & age < 7 & Avg_Salt >= 3 ~ 1,
-    age >= 4 & age < 7 & Avg_Salt < 3 ~ 0,
-    age >= 7 & age < 11 & Avg_Salt >= 5 ~ 1,
-    age >= 7 & age < 11 & Avg_Salt < 5 ~ 0,
-    age >= 11 & Avg_Salt >= 6 ~ 1,
-    age >= 11 & Avg_Salt < 6 ~ 0,
-    TRUE ~ NA)) %>%
-  ungroup()
+## Fibre (min 15g/d for 2-5y; min 20g/d for 5-11y; min 25g/d for 11-16y) ####
+# @Ricki check where 5 year olds should be - in code below they are both in youngest and middle age groups?
+df.intake24_participant <- df.intake24_participant %>%
+  mutate(
+    SDG_Fibre = case_when(
+      CalcAge >= 2 & CalcAge < 6 & Avg_AOACFibre >= 15 ~ 1,
+      CalcAge >= 2 & CalcAge < 6 & Avg_AOACFibre < 15 ~ 0,
+      CalcAge >= 5 & CalcAge < 12 & Avg_AOACFibre >= 20 ~ 1,
+      CalcAge >= 5 & CalcAge < 12 & Avg_AOACFibre < 20 ~ 0,
+      CalcAge >= 11 & CalcAge < 17 & Avg_AOACFibre >= 25 ~ 1,
+      CalcAge >= 11 & CalcAge < 17 & Avg_AOACFibre < 25 ~ 0,
+      CalcAge >= 17 & Avg_AOACFibre >= 30 ~ 1,
+      CalcAge >= 17 & Avg_AOACFibre < 30 ~ 0,
+    TRUE ~ NA)) 
 
-# Fruits and vegetables (at least 5 portions/day (≥200 g/day))
+## Salt (2g/d for 1-3y; 3g/d for 4-6y; 5g/d for 7-10y; 6g/d for 11+y) ####
+df.intake24_participant <- df.intake24_participant %>%
+  mutate(
+    SDG_Salt = case_when(
+      CalcAge >= 1 & CalcAge < 4 & Avg_Salt >= 2 ~ 1,
+      CalcAge >= 1 & CalcAge < 4 & Avg_Salt < 2 ~ 0,
+      CalcAge >= 4 & CalcAge < 7 & Avg_Salt >= 3 ~ 1,
+      CalcAge >= 4 & CalcAge < 7 & Avg_Salt < 3 ~ 0,
+      CalcAge >= 7 & CalcAge < 11 & Avg_Salt >= 5 ~ 1,
+      CalcAge >= 7 & CalcAge < 11 & Avg_Salt < 5 ~ 0,
+      CalcAge >= 11 & Avg_Salt >= 6 ~ 1,
+      CalcAge >= 11 & Avg_Salt < 6 ~ 0,
+    TRUE ~ NA)) 
 
-  # Calculate daily intakes of beans 
-  SDG_Fruitveg <- df.intake24 %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_Beans = sum(Beansg)) %>%
-    ungroup()
+## Fruits and vegetables (at least 5 portions/day) ####
+  df.SDG_Fruitveg <- df.intake24_item %>%
+    select(UserID, RecallNo,Fruitg,FruitJuiceg,DriedFruitg,SmoothieFruitg,Tomatoesg,TomatoPureeg,Brassicaceaeg,YellowRedGreeng,Beansg,OtherVegg)
   
-  # Cap at 40g (can only count as max one portion)
-  SDG_Fruitveg <- SDG_Fruitveg %>%
+  # Calculate daily intakes of beans, fruit juice, dried fruit, and remaining fruit and veg 
+  df.SDG_Fruitveg <- df.SDG_Fruitveg %>%
     group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_Beans = ifelse(
-        FV_Beans > 40, 40, FV_Beans)) %>%
-    ungroup()
-  
-  # Calculate daily intakes of fruit juice 
-  SDG_Fruitveg <- SDG_Fruitveg %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_FruitJuice = sum(FruitJuiceg)) %>%
-    ungroup()
-  
-  # Cap at 150g (can only count as max one portion) - School regs don't allow any fruit juice - so we will report as 150 and zero
-  SDG_Fruitveg <- SDG_Fruitveg %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_FruitJuice = ifelse(
-        FV_FruitJuice > 150, 150, FV_FruitJuice)) %>%
-    ungroup()
-
-  # Calculate daily intakes of dried fruit (1 portion is 15g)
-  SDG_Fruitveg <- SDG_Fruitveg %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_Dried = sum(DriedFruitg)) %>%
-    ungroup()
-  
-  # Calculate daily intakes of remaining fruit and veg
-  SDG_Fruitveg <- SDG_Fruitveg %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_FreshFruit = sum(Fruitg, SmoothieFruitg),
+    summarise(
+      FV_Beans = sum(Beansg),
+      FV_FruitJuice = sum(FruitJuiceg),
+      FV_Smoothie = sum(SmoothieFruitg),
+      FV_Dried = sum(DriedFruitg),
+      FV_FreshFruit = sum(Fruitg),
       FV_Veg = sum(Tomatoesg, TomatoPureeg, Brassicaceaeg, YellowRedGreeng, OtherVegg)) %>%
     ungroup()
-
-  # Calculate daily intakes of total fruit and veg
-  SDG_Fruitveg <- SDG_Fruitveg %>%
-    distinct(UserID, RecallNo, .keep_all = TRUE) %>%
-    group_by(UserID, RecallNo) %>%
-    mutate(
-      FV_Total = sum(FV_Beans, FV_FruitJuice, FV_Dried, FV_FreshFruit, FV_Veg, na.rm = TRUE)
-    ) %>%
-    ungroup()
-
-  # Create a smaller day level dataset
-  SDG_Fruitveg_sub <- SDG_Fruitveg %>%
-    select(UserID, RecallNo, NumberOfRecalls, starts_with("FV_"))
   
-  # Calculate mean daily intakes (grams)
-  SDG_Fruitveg_sub <- SDG_Fruitveg_sub %>%
-    group_by(UserID) %>%
-    mutate(Avg_FV_Beans = sum(FV_Beans)/NumberOfRecalls,
-           Avg_FV_FruitJuice = sum(FV_FruitJuice)/NumberOfRecalls,
-           Avg_FV_Dried = sum(FV_Dried)/NumberOfRecalls,
-           Avg_FV_FreshFruit = sum(FV_FreshFruit)/NumberOfRecalls,
-           Avg_FV_Veg = sum(FV_Veg)/NumberOfRecalls,
-           Avg_FV_Total = sum(FV_Total)/NumberOfRecalls) %>%
-    ungroup()
+  df.SDG_Fruitveg <- df.SDG_Fruitveg %>%
+    mutate(FV_FruitSmoothie = FV_FruitJuice+FV_Smoothie)
   
-  # Calculate mean daily intakes (portions)
-  SDG_Fruitveg_sub <- SDG_Fruitveg_sub %>%
-    group_by(UserID) %>%
-    mutate(Avg_FV_Beans_Prtn = (Avg_FV_Beans/40),
-           Avg_FV_FruitJuice_Prtn = (Avg_FV_FruitJuice/150),
-           Avg_FV_Dried_Prtn = (Avg_FV_Dried/15),
-           Avg_FV_FreshFruit_Prtn = (Avg_FV_FreshFruit/40),
-           Avg_FV_Veg_Prtn = (Avg_FV_Veg/40)) %>%
-    ungroup()
+  # Calculate daily portions of fruit and veg
+    #Cap beans at 40g and fruit juice (including smoothies) at 150g 
+    #1 portion dried fruit = 15g
+    #1 portion of fresh fruit/veg = 40g
+    # @Ricki please confirm portions are this small regardless of age? e.g. secondary school and primary school?
   
-  SDG_Fruitveg_sub <- SDG_Fruitveg_sub %>%
-    mutate(
-      Avg_FV_TotalPrtn = rowSums(select(., ends_with("Prtn")), na.rm = TRUE)
-    ) %>%
+    df.SDG_Fruitveg <- df.SDG_Fruitveg %>%
+      mutate(
+          Day_Portions_Beans = case_when(
+            FV_Beans >40 ~ 1,
+            FV_Beans <= 40 ~ FV_Beans/40,
+            TRUE ~ NA),
+          
+          Day_Portions_FruitSmoothie = case_when(
+            FV_FruitSmoothie >150 ~ 1,
+            FV_FruitSmoothie <= 150 ~ FV_FruitSmoothie/150,
+            TRUE ~ NA),
+          
+          Day_Portions_Dried = FV_Dried/15,
+          
+          Day_Portions_FreshFruit = FV_FreshFruit/40,
+          
+          Day_Portions_Veg = FV_Veg/40,
+          
+          Day_Portions_Total=Day_Portions_Beans+Day_Portions_FruitSmoothie+Day_Portions_Dried+Day_Portions_FreshFruit+Day_Portions_Veg,
+          Day_Portions_Total_NoFruitSmoothie=Day_Portions_Beans+Day_Portions_Dried+Day_Portions_FreshFruit+Day_Portions_Veg) 
+   
+  # Merge with recall data frame
+    df.SDG_Fruitveg <- df.SDG_Fruitveg %>%
+      select(UserID, RecallNo,starts_with("Day"))
+    df.intake24_recall <- left_join(df.intake24_recall, df.SDG_Fruitveg, by = c("UserID"="UserID", "RecallNo" ="RecallNo"))
+  
+  # Calculate mean daily portions
+    df.intake24_participant <- df.intake24_recall %>% 
+      group_by(UserID) %>%
+      summarise(
+        CalcAge = first(CalcAge),
+        NumberOfRecalls = first(NumberOfRecalls),
+        Avg_Energykcal = first(Day_Energykcal),
+        Avg_FoodEnergy = first(Day_FoodEnergy),
+        Avg_FoodEnergyMilk = first(Day_FoodEnergyMilk),
+        Avg_FoodGrams = first(Day_FoodGrams),
+        Avg_FoodGramsMilk = first(Day_FoodGramsMilk),
+        Avg_EnergyDensity = first(Day_EnergyDensity),
+        Avg_Carbohydrate = first(Day_Carbohydrate),
+        Avg_Carbs_kcal = first(Day_Carbs_kcal),
+        Ave_Carbs_PropFoodEnergy = first(Day_Carbs_PropFoodEnergy),
+        Avg_TotalSugars = first(Day_TotalSugars),
+        Avg_TotalSugars_kcal = first(Day_TotalSugars_kcal),
+        Avg_TotalSugars_PropFoodEnergy = first(Day_TotalSugars_PropFoodEnergy),
+        Avg_TotalFatg = first(Day_TotalFatg),
+        Avg_Fat_kcal = first(Day_Fat_kcal),
+        Avg_Fat_PropFoodEnergy = first(Day_Fat_PropFoodEnergy),
+        Avg_SatFatg = first(Day_SatFatg),
+        Avg_SatFat_Kcal = first(Day_SatFat_Kcal),
+        Avg_SatFat_PropFoodEnergy = first(Day_SatFat_PropFoodEnergy),
+        Avg_TransFatg = first(Day_TransFatg),
+        Avg_TransFat_Kcal = first(Day_TransFat_Kcal),
+        Avg_TransFat_PropFoodEnergy = first(Day_TransFat_PropFoodEnergy),
+        Avg_Protein = first(Day_Protein),
+        Avg_AOACFibre = first(Day_AOACFibre),
+        Avg_VitaminA = first(Day_VitaminA),
+        Avg_Riboflavin = first(Day_Riboflavin),
+        Avg_Folate = first(Day_Folate),
+        Avg_VitaminD = first(Day_VitaminD),
+        Avg_VitaminB12 = first(Day_VitaminB12),
+        Avg_VitaminC = first(Day_VitaminC),
+        Avg_Iron = first(Day_Iron),
+        Avg_Calcium = first(Day_Calcium),
+        Avg_Sodium = first(Day_Sodium),
+        Avg_Salt = first(Day_Salt), #Salt
+        Avg_Iodine = first(Day_Iodine),
+        Avg_Magnesium = first(Day_Magnesium),
+        Avg_Potassium = first(Day_Potassium),
+        Avg_Selenium = first(Day_Selenium),
+        Avg_Zinc = first(Day_Zinc),
+        Avg_Portions_Beans = mean(Day_Portions_Beans),
+        Avg_Portions_FruitSmoothie = mean(Day_Portions_FruitSmoothie),
+        Avg_Portions_Dried = mean(Day_Portions_Dried),
+        Avg_Portions_FreshFruit = mean(Day_Portions_FreshFruit),
+        Avg_Portions_Veg = mean(Day_Portions_Veg),
+        Avg_Portions_Total = mean(Day_Portions_Total),
+        Avg_Portions_Total_NoFruitSmoothie = mean(Day_Portions_Total_NoFruitSmoothie)) %>%
     ungroup()
   
   # Create variable for meeting fruit and veg SDG 
-  SDG_Fruitveg_sub <- SDG_Fruitveg_sub %>%
-    group_by(UserID) %>%
-    mutate(SDG_FV = case_when(
-      Avg_FV_Total >= 200 ~ 1,
-      Avg_FV_Total < 200 ~ 0,
-      TRUE ~ NA)) %>%
-    ungroup()
+    df.intake24_participant <- df.intake24_participant %>%
+    mutate(
+      SDG_FV = case_when(
+        Avg_Portions_Total >= 5 ~ 1,
+        Avg_Portions_Total < 5 ~ 0,
+      TRUE ~ NA),
+      
+      SDG_FV_NoFruitSmoothie = case_when(
+        Avg_Portions_Total_NoFruitSmoothie >= 5 ~ 1,
+        Avg_Portions_Total_NoFruitSmoothie < 5 ~ 0,
+        TRUE ~ NA))
 
-  # Create participant level SDG dataset
-  SDG_Fruitveg_participant <- SDG_Fruitveg_sub %>%
-    distinct(UserID, .keep_all=TRUE) %>%
-    select(UserID, starts_with("Avg_"), SDG_FV)
-  
-  # Join with intake24_participant dataset
-  df.intake24_participant <- left_join(df.intake24_participant, SDG_Fruitveg_participant, by = c("UserID"))
-  
-  df.intake24_participant <- df.intake24_participant %>%
-    relocate(starts_with("Avg_FV"), .before = "SDG_Energy") %>%
-    mutate_at(vars(starts_with("Avg_")), ~round(., 1))
-  
-  rm(SDG_Fruitveg, SDG_Fruitveg_participant, NutrientIntakes)
-
-#add age buckets back in 
-df.intake24_participant <- inner_join(df.intake24_participant, user_char, by = "UserID")
-
-#relocate columns for ease in management
-df.intake24_participant <- df.intake24_participant %>%
-  relocate(c("Sex","simd_quintile", "CalcAge","Age", "age_cat", "Ethnicity"), .after = age)
-
-#set factor levels and make NA a level
-df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-df.intake24_participant$age_cat <- fct_explicit_na(df.intake24_participant$age_cat)
-
-df.intake24_participant %>% 
-  select(age_cat, SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_Sugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV) %>%
-  tbl_summary(missing = "no",
-              digits = list(all_categorical() ~ c(1,0)),
-              type = list(all_continuous() ~ "continuous2"),
-              statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
-              by = age_cat
-  ) %>%
-  add_overall() %>%
-  modify_header(label ~ "**SDG **") %>%
-  bold_labels() %>%  
-  as_flex_table()
-
-check <- df.intake24_participant %>%
-  filter(SDG_Energy == 1)
-
-# SDGs for Oily fish and Red and red processed meat
-
-#set factor levels and make NA a level
-df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-df.survey$age_cat <- fct_explicit_na(df.survey$age_cat)
-
-#Oily fish
+## Oily fish ####
 df.survey <- df.survey %>%
   mutate(SDG_oilyfish = case_when(
     AFreqOilyFish %in% c("Never", "Not sure", "Less than once a week") ~ 0,
     TRUE ~ 1
   ))
 
-#Red and red processed meat
+## Red and red processed meat ####
 df.survey <- df.survey %>%
   mutate(SDG_RRPM = case_when(
     AFreqRRPM %in% c("Never", "Not sure", "Less than once a week") ~ 0,
     TRUE ~ 1
   ))
 
-#set factor levels
+# @Ricki please calculate RRPM using the intake24 data as well here so we can compare
+# @Ricki please merge the above 2 with the participant level data so the SDGs are all in one place    
+    
+    
+    
+    
+    
+    
+# @Ricki should the following code be moved out of management R file into report file including that for most common vegetables? 
+#set factor levels and make NA a level
+    df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+    df.intake24_participant$age_cat <- fct_explicit_na(df.intake24_participant$age_cat)
+    
+    df.intake24_participant %>% 
+      select(age_cat, SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_Sugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV) %>%
+      tbl_summary(missing = "no",
+                  digits = list(all_categorical() ~ c(1,0)),
+                  type = list(all_continuous() ~ "continuous2"),
+                  statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                        "{min}, {max}")),
+                  by = age_cat
+      ) %>%
+      add_overall() %>%
+      modify_header(label ~ "**SDG **") %>%
+      bold_labels() %>%  
+      as_flex_table()
+    
+    check <- df.intake24_participant %>%
+      filter(SDG_Energy == 1)
+    
+    df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+    df.survey$age_cat <- fct_explicit_na(df.survey$age_cat)    
+    
+    
 df.survey$AFreqRRPM <- factor(df.survey$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
 df.survey$AFreqRRPM <- fct_explicit_na(df.survey$AFreqRRPM)
 
