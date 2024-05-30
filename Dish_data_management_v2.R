@@ -52,7 +52,7 @@
            VitaminAug,Riboflavinmg,Folateug,VitaminDug,VitaminB12ug,VitaminCmg,Ironmg,Calciummg,Iodineug,Magnesiummg,Potassiummg,Seleniumug,Zincmg,
            Fruitg,FruitJuiceg,DriedFruitg,SmoothieFruitg,Tomatoesg,TomatoPureeg,Brassicaceaeg,YellowRedGreeng,Beansg,Nutsg,OtherVegg,
            Beefg,Lambg,Porkg,ProcessedRedMeatg,OtherRedMeatg,Burgersg,Sausagesg,Offalg,Poultryg,ProcessedPoultryg,GameBirdsg,
-           WhiteFishg,OilyFishg,CannedTunag,Shellfishg) 
+           WhiteFishg,OilyFishg,CannedTunag,Shellfishg, NutrientTableCode) 
   
   
 # Convert to numeric from characters ####
@@ -138,73 +138,8 @@
         TRUE ~ NA)) %>%
         relocate(MainFoodGroupCode, .after = FoodGroupEnglish)
     
-    # Create Main Food Group description variable
-    df.intake24_item <- df.intake24_item %>%
-      mutate(MainFoodGroupDesc = case_when(
-        MainFoodGroupCode == 1 ~ "Pasta, rice and other miscellaneous cereals",
-        MainFoodGroupCode == 2 ~ "White bread",
-        MainFoodGroupCode == 3 ~ "Wholemeal bread",
-        MainFoodGroupCode == 4 ~ "Other breads",
-        MainFoodGroupCode == 5 ~ "High fibre breakfast cereals",
-        MainFoodGroupCode == 6 ~ "Other breakfast cereals",
-        MainFoodGroupCode == 7 ~ "Biscuits",
-        MainFoodGroupCode == 8 ~ "Buns, cakes, pastries and fruit pies",
-        MainFoodGroupCode == 9 ~ "Puddings",
-        MainFoodGroupCode == 10 ~ "Whole milk",
-        MainFoodGroupCode == 11 ~ "Semi-skimmed milk",
-        MainFoodGroupCode == 12 ~ "Skimmed milk",
-        MainFoodGroupCode == 13 ~ "Other milk and cream",
-        MainFoodGroupCode == 14 ~ "Cheese",
-        MainFoodGroupCode == 15 ~ "Yogurt, fromage frais and other dairy desserts",
-        MainFoodGroupCode == 16 ~ "Eggs and egg dishes",
-        MainFoodGroupCode == 17 ~ "Butter",
-        MainFoodGroupCode == 18 ~ "Polyunsaturated margarine and oils",
-        MainFoodGroupCode == 19 ~ "Low fat spread",
-        MainFoodGroupCode == 20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
-        MainFoodGroupCode == 21 ~ "Reduced fat spread",
-        MainFoodGroupCode == 22 ~ "Bacon and ham",
-        MainFoodGroupCode == 23 ~ "Beef, veal and dishes",
-        MainFoodGroupCode == 24 ~ "Lamb and dishes",
-        MainFoodGroupCode == 25 ~ "Pork and dishes",
-        MainFoodGroupCode == 26 ~ "Coated chicken and turkey manufactured",
-        MainFoodGroupCode == 27 ~ "Chicken and turkey dishes",
-        MainFoodGroupCode == 28 ~ "Liver, products and dishes",
-        MainFoodGroupCode == 29 ~ "Burgers and kebabs",
-        MainFoodGroupCode == 30 ~ "Sausages",
-        MainFoodGroupCode == 31 ~ "Meat pies and pastries",
-        MainFoodGroupCode == 32 ~ "Other meat and meat products",
-        MainFoodGroupCode == 33 ~ "White fish coated or fried",
-        MainFoodGroupCode == 34 ~ "Other white fish, shellfish and fish dishes",
-        MainFoodGroupCode == 35 ~ "Oily fish",
-        MainFoodGroupCode == 36 ~ "Salad and other raw vegetables",
-        MainFoodGroupCode == 37 ~ "Vegetables (not raw)",
-        MainFoodGroupCode == 38 ~ "Chips, fried and roast potatoes and potato products",
-        MainFoodGroupCode == 39 ~ "Other potatoes, potato salads and dishes",
-        MainFoodGroupCode == 40 ~ "Fruit",
-        MainFoodGroupCode == 41 ~ "Sugars, preserves and sweet spreads",
-        MainFoodGroupCode == 42 ~ "Crisps and savoury snacks",
-        MainFoodGroupCode == 43 ~ "Sugar confectionery",
-        MainFoodGroupCode == 44 ~ "Chocolate confectionery",
-        MainFoodGroupCode == 45 ~ "Fruit juice",
-        MainFoodGroupCode == 47 ~ "Spirits and liqueurs",
-        MainFoodGroupCode == 48 ~ "Wine",
-        MainFoodGroupCode == 49 ~ "Beer lager cider and perry",
-        MainFoodGroupCode == 50 ~ "Miscellaneous",
-        MainFoodGroupCode == 51 ~ "Tea, coffee and water",
-        MainFoodGroupCode == 52 ~ "Commercial toddlers foods and drinks",
-        MainFoodGroupCode == 53 ~ "Ice cream",
-        MainFoodGroupCode == 54 ~ "Dietary supplements",
-        MainFoodGroupCode == 55 ~ "Artificial sweeteners",
-        MainFoodGroupCode == 56 ~ "Nuts and seeds",
-        MainFoodGroupCode == 57 ~ "Soft drinks, not diet",
-        MainFoodGroupCode == 58 ~ "Soft drinks, diet",
-        MainFoodGroupCode == 59 ~ "Brown, granary and wheatgerm bread",
-        MainFoodGroupCode == 60 ~ "1% Milk",
-        MainFoodGroupCode == 62 ~ "Sandwiches",
-        TRUE ~ NA)) %>%
-      relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
-    
-    
+   
+    #Moved descriptions down after re-categorisations
     
 # Remove dairy-free items from milk product sub food groups ####
     
@@ -273,9 +208,7 @@
         SubFoodGroupCode == "53R_DF" ~ 66,
         TRUE ~ MainFoodGroupCode))
     
-    
-    # @Ricki please add descriptions to these as well
-    
+
     
     # Remove hot chocolate made with water
     
@@ -290,8 +223,8 @@
       mutate(MainFoodGroupCode = case_when(
         SubFoodGroupCode == "50A" ~ 50,
         TRUE ~ MainFoodGroupCode))
-    
-    
+
+
     # Move milky coffees into 'other milk'
     
     #Sub food group
@@ -325,6 +258,85 @@
     df.dairy_free <- df.dairy_free %>% distinct(Description_English, .keep_all = TRUE)  
   
     
+    # Create Main Food Group description variable
+    df.intake24_item <- df.intake24_item %>%
+      mutate(MainFoodGroupDesc = case_when(
+        MainFoodGroupCode == 1 ~ "Pasta, rice and other miscellaneous cereals",
+        MainFoodGroupCode == 2 ~ "White bread",
+        MainFoodGroupCode == 3 ~ "Wholemeal bread",
+        MainFoodGroupCode == 4 ~ "Other breads",
+        MainFoodGroupCode == 5 ~ "High fibre breakfast cereals",
+        MainFoodGroupCode == 6 ~ "Other breakfast cereals",
+        MainFoodGroupCode == 7 ~ "Biscuits",
+        MainFoodGroupCode == 8 ~ "Buns, cakes, pastries and fruit pies",
+        MainFoodGroupCode == 9 ~ "Puddings",
+        MainFoodGroupCode == 10 ~ "Whole milk",
+        MainFoodGroupCode == 11 ~ "Semi-skimmed milk",
+        MainFoodGroupCode == 12 ~ "Skimmed milk",
+        MainFoodGroupCode == 13 ~ "Other milk and cream",
+        MainFoodGroupCode == 14 ~ "Cheese",
+        MainFoodGroupCode == 15 ~ "Yogurt, fromage frais and other dairy desserts",
+        MainFoodGroupCode == 16 ~ "Eggs and egg dishes",
+        MainFoodGroupCode == 17 ~ "Butter",
+        MainFoodGroupCode == 18 ~ "Polyunsaturated margarine and oils",
+        MainFoodGroupCode == 19 ~ "Low fat spread",
+        MainFoodGroupCode == 20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        MainFoodGroupCode == 21 ~ "Reduced fat spread",
+        MainFoodGroupCode == 22 ~ "Bacon and ham",
+        MainFoodGroupCode == 23 ~ "Beef, veal and dishes",
+        MainFoodGroupCode == 24 ~ "Lamb and dishes",
+        MainFoodGroupCode == 25 ~ "Pork and dishes",
+        MainFoodGroupCode == 26 ~ "Coated chicken and turkey manufactured",
+        MainFoodGroupCode == 27 ~ "Chicken and turkey dishes",
+        MainFoodGroupCode == 28 ~ "Liver, products and dishes",
+        MainFoodGroupCode == 29 ~ "Burgers and kebabs",
+        MainFoodGroupCode == 30 ~ "Sausages",
+        MainFoodGroupCode == 31 ~ "Meat pies and pastries",
+        MainFoodGroupCode == 32 ~ "Other meat and meat products",
+        MainFoodGroupCode == 33 ~ "White fish coated or fried",
+        MainFoodGroupCode == 34 ~ "Other white fish, shellfish and fish dishes",
+        MainFoodGroupCode == 35 ~ "Oily fish",
+        MainFoodGroupCode == 36 ~ "Salad and other raw vegetables",
+        MainFoodGroupCode == 37 ~ "Vegetables (not raw)",
+        MainFoodGroupCode == 38 ~ "Chips, fried and roast potatoes and potato products",
+        MainFoodGroupCode == 39 ~ "Other potatoes, potato salads and dishes",
+        MainFoodGroupCode == 40 ~ "Fruit",
+        MainFoodGroupCode == 41 ~ "Sugars, preserves and sweet spreads",
+        MainFoodGroupCode == 42 ~ "Crisps and savoury snacks",
+        MainFoodGroupCode == 43 ~ "Sugar confectionery",
+        MainFoodGroupCode == 44 ~ "Chocolate confectionery",
+        MainFoodGroupCode == 45 ~ "Fruit juice",
+        MainFoodGroupCode == 47 ~ "Spirits and liqueurs",
+        MainFoodGroupCode == 48 ~ "Wine",
+        MainFoodGroupCode == 49 ~ "Beer lager cider and perry",
+        MainFoodGroupCode == 50 ~ "Miscellaneous",
+        MainFoodGroupCode == 51 ~ "Tea, coffee and water",
+        MainFoodGroupCode == 52 ~ "Commercial toddlers foods and drinks",
+        MainFoodGroupCode == 53 ~ "Ice cream",
+        MainFoodGroupCode == 54 ~ "Dietary supplements",
+        MainFoodGroupCode == 55 ~ "Artificial sweeteners",
+        MainFoodGroupCode == 56 ~ "Nuts and seeds",
+        MainFoodGroupCode == 57 ~ "Soft drinks, not diet",
+        MainFoodGroupCode == 58 ~ "Soft drinks, diet",
+        MainFoodGroupCode == 59 ~ "Brown, granary and wheatgerm bread",
+        MainFoodGroupCode == 60 ~ "1% Milk",
+        MainFoodGroupCode == 62 ~ "Sandwiches",
+        MainFoodGroupCode == 63 ~ "Other milk and cream DF",                          ####DF descriptions
+        MainFoodGroupCode == 64 ~ "Cheese DF",
+        MainFoodGroupCode == 65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        MainFoodGroupCode == 66 ~ "Ice cream DF",
+        TRUE ~ NA)) %>%
+      relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
+    
+    
+    # Check of updated descriptions
+    df.intake24_item %>%
+      filter(MainFoodGroupCode %in% c(63,64,65,66))%>%
+      View()
+    
+    df.intake24_item %>%
+      filter(MainFoodGroupCode == 50)%>%
+      View()
     
 # Remove diet supplements ####
   df.intake24_item <- df.intake24_item %>%
@@ -488,7 +500,7 @@
         Avg_Iron = mean(Day_Iron),
         Avg_Calcium = mean(Day_Calcium),
         Avg_Sodium = mean(Day_Sodium),
-        Avg_Salt = mean(Day_Salt), #Salt
+        Avg_Salt = mean(Day_Salt),
         Avg_Iodine = mean(Day_Iodine),
         Avg_Magnesium = mean(Day_Magnesium),
         Avg_Potassium = mean(Day_Potassium),
@@ -542,25 +554,25 @@
     
 #    Some points to highlight:
       
-#      1) Below estimates are from food groups (i.e. don't include disaggregated estimates). This is the only way we can look at nutritional contributions.
+# 1) Below estimates are from food groups (i.e. don't include disaggregated estimates). This is the only way we can look at nutritional contributions.
 
 # 2) Do FSS want to include pork within red meat definitions? The below code captures pork, but I know there's been some discussion on this back and forth.
                                                
 # Create binary variable for red meat
                                         
 #create binary variable and categorise all red and red processed meat based on main food group codes
-df.intake24 <- df.intake24 %>%
+df.intake24_item <- df.intake24_item %>%
       mutate(RedMeat = case_when(
         MainFoodGroupCode %in% c(23, 24, 25, 28, 22, 29, 30, 31, 32) ~ 1, 
         TRUE ~ 0
         ))
                                                
 #check 'other meat' category to determine what needs to be re-coded
-check <- df.intake24 %>%
+check <- df.intake24_item %>%
   filter(MainFoodGroupCode == "32")
                                                
 #remove any meat that is not red meat from binary variable
-df.intake24 <- df.intake24 %>%
+df.intake24_item <- df.intake24_item %>%
   mutate(RedMeat = case_when(
     MainFoodGroupCode == "32" &
       (str_detect(Description_English, regex("chicken", ignore_case = TRUE))) ~ 0,
@@ -568,11 +580,11 @@ df.intake24 <- df.intake24 %>%
     ))
                                              
                                                
-check <- df.intake24 %>%
+check <- df.intake24_item %>%
   filter(MainFoodGroupCode == 35)
                                                
 # Create reporting food groups 
-df.intake24 <- df.intake24 %>% 
+df.intake24_item <- df.intake24_item %>% 
  mutate(ReportingFoodGroupCode = case_when (
 #Red meat
 MainFoodGroupCode %in% c(23, 24, 25, 28) & RedMeat == 1 ~ 1,
@@ -607,7 +619,7 @@ MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies) ~ 15,
 TRUE ~ NA)) 
                                                
 # Add description variable
-df.intake24 <- df.intake24 %>%
+df.intake24_item <- df.intake24_item %>%
   mutate(ReportingFoodGroupDesc = case_when(
     ReportingFoodGroupCode == 1 ~ "Red meat",
     ReportingFoodGroupCode == 2 ~ "Red processed meat",
@@ -624,25 +636,24 @@ df.intake24 <- df.intake24 %>%
     ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
     ReportingFoodGroupCode == 14 ~ "Pizzas and ready meals",
     ReportingFoodGroupCode == 15 ~ "Ice cream and lollies",
-       TRUE ~ NA_character_))
+       TRUE ~ "Other"))
                                               
 #Check food groups for foods of interest that may not be reported in the above
-df.intake24 %>%
+df.intake24_item %>%
   count(MainFoodGroupDesc, MainFoodGroupCode, SubFoodGroupCode, ReportingFoodGroupDesc, ReportingFoodGroupCode) %>%
 View()
                                                
                                                
-check <- df.intake24 %>%
+check <- df.intake24_item %>%
   filter(SubFoodGroupCode == "61R")
                                             
                                                
                                                
-                                               
-                                               
+
 #Food Groups: Calculate Mean Daily Intakes (g) of Reporting Food Groups ####
                                                  
 #1) Daily intakes (g)
-df.intake24_foodgroup_day <- df.intake24 %>%
+df.intake24_foodgroup_recall <- df.intake24_item %>%
   group_by(UserID, RecallNo) %>%
   summarise(
     NumberOfRecalls = first(NumberOfRecalls),
@@ -665,9 +676,8 @@ df.intake24_foodgroup_day <- df.intake24 %>%
     Day_icecream = sum(TotalGrams[ReportingFoodGroupCode == 15], na.rm = TRUE))%>%
   ungroup()
 
-# Join with day level intake24 dataset
-df.intake24_day_merge <- left_join(df.intake24_day, df.intake24_foodgroup_day, by=c("UserID", "RecallNo"))  %>%
-  rename(NumberOfRecalls="NumberOfRecalls.x")
+# Join with recall level intake24 dataset
+df.intake24_recall <- left_join(df.intake24_recall, df.intake24_foodgroup_recall, by=c("UserID", "RecallNo", "NumberOfRecalls"))
 
 # Mean daily intakes (g)
 df.intake24_foodgroup_participant <- df.intake24_foodgroup_day %>%
@@ -694,18 +704,15 @@ df.intake24_foodgroup_participant <- df.intake24_foodgroup_day %>%
   ungroup()
 
 # Join with participant level intake24 dataset
-df.intake24_participant <- left_join(df.intake24_participant, df.intake24_foodgroup_participant, by=c("UserID")) %>%
-  select(-NumberOfRecalls.y) %>%
-  rename(NumberOfRecalls="NumberOfRecalls.x") 
+df.intake24_participant <- left_join(df.intake24_participant, df.intake24_foodgroup_participant, by=c("UserID", "NumberOfRecalls"))
 
-rm(df.intake24_foodgroup_day, df.intake24_foodgroup_participant)
-
+rm(df.intake24_foodgroup_recall, df.intake24_foodgroup_participant)
 
 
 #Food groups - contributions to energy and free sugar intake ####
   
 # Calculate daily intakes of energy and free sugars from food groups
-df.intake24_day_fg <- df.intake24 %>%
+df.intake24_recall_fg <- df.intake24_item %>%
   group_by(UserID, RecallNo, ReportingFoodGroupCode) %>% 
   summarise(
     NumberOfRecalls = first(NumberOfRecalls),
@@ -716,7 +723,7 @@ df.intake24_day_fg <- df.intake24 %>%
 # Need to do this separately for different recall numbers
 
 # 1 recall
-df.onerecall <- df.intake24_day_merge %>%
+df.onerecall <- df.intake24_recall %>%
   filter(NumberOfRecalls == 1)
 
 foodgrid_onerecall <- expand.grid( #create a grid of each combination of the below:
@@ -725,7 +732,7 @@ foodgrid_onerecall <- expand.grid( #create a grid of each combination of the bel
   ReportingFoodGroupCode = factor(1:15)) #create a column of with 1-12 for reporting food groups
 
 # 2 recalls
-df.tworecalls <- df.intake24_day_merge %>%
+df.tworecalls <- df.intake24_recall %>%
   filter(NumberOfRecalls == 2)
 
 foodgrid_tworecalls <- expand.grid(
@@ -734,7 +741,7 @@ foodgrid_tworecalls <- expand.grid(
   ReportingFoodGroupCode = factor(1:15))
 
 # 3 recalls
-df.threerecalls <- df.intake24_day_merge %>%
+df.threerecalls <- df.intake24_recall %>%
   filter(NumberOfRecalls == 3)
 
 foodgrid_threerecalls <- expand.grid(
@@ -743,7 +750,7 @@ foodgrid_threerecalls <- expand.grid(
   ReportingFoodGroupCode = factor(1:15))
 
 #4 recalls 
-df.fourrecalls <- df.intake24_day_merge %>%
+df.fourrecalls <- df.intake24_recall %>%
   filter(NumberOfRecalls == 4)
 
 foodgrid_fourrecalls <- expand.grid(
@@ -757,12 +764,12 @@ foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_th
   mutate(ReportingFoodGroupCode = as.numeric(ReportingFoodGroupCode))
 
 # Join daily intakes with expanded grids
-df.intake24_day_fg <- left_join(foodgroup_grid, df.intake24_day_fg, 
+df.intake24_recall_fg <- left_join(foodgroup_grid, df.intake24_recall_fg, 
                                 by = c("UserID", "RecallNo", "ReportingFoodGroupCode")) %>%
   relocate(NumberOfRecalls, .after=UserID)
 
 # Change NA values to 0 
-df.intake24_day_fg <- df.intake24_day_fg %>%
+df.intake24_recall_fg <- df.intake24_recall_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
 
 # Remove datasets no longer needed
@@ -772,7 +779,7 @@ rm(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgroup_gri
 # Calculate mean daily intakes of energy and free sugars from food groups
 
 # Participant level dataset
-df.intake24_participant_fg <- df.intake24_day_fg %>%
+df.intake24_participant_fg <- df.intake24_recall_fg %>%
   group_by(UserID, ReportingFoodGroupCode) %>% 
   mutate(
     Avg_Energy_fg = ifelse(NumberOfRecalls != 0,  sum(Day_Energy_fg)/NumberOfRecalls, NA),
@@ -894,19 +901,20 @@ df.intake24_participant <- df.intake24_participant %>%
       Avg_Carbs_PropFoodEnergy < 45 | Avg_Carbs_PropFoodEnergy > 55 ~ 0,
     TRUE ~ NA)) 
 
-## Fibre (min 15g/d for 2-5y; min 20g/d for 5-11y; min 25g/d for 11-16y) ####
-# @Ricki check where 5 year olds should be - in code below they are both in youngest and middle age groups?
+## Fibre (min 15g/d for 2-4y; min 20g/d for 5-10y; min 25g/d for 11-15y) ####
+# Double checked age groupings and SACN guidelines are 'children aged 2 to 5 years should approximate 15g/day, for children aged 5 to 11 years 20g/day' 
+# so adjusted age ranges appropriately
 df.intake24_participant <- df.intake24_participant %>%
   mutate(
     SDG_Fibre = case_when(
-      CalcAge >= 2 & CalcAge < 6 & Avg_AOACFibre >= 15 ~ 1,
-      CalcAge >= 2 & CalcAge < 6 & Avg_AOACFibre < 15 ~ 0,
-      CalcAge >= 5 & CalcAge < 12 & Avg_AOACFibre >= 20 ~ 1,
-      CalcAge >= 5 & CalcAge < 12 & Avg_AOACFibre < 20 ~ 0,
-      CalcAge >= 11 & CalcAge < 17 & Avg_AOACFibre >= 25 ~ 1,
-      CalcAge >= 11 & CalcAge < 17 & Avg_AOACFibre < 25 ~ 0,
-      CalcAge >= 17 & Avg_AOACFibre >= 30 ~ 1,
-      CalcAge >= 17 & Avg_AOACFibre < 30 ~ 0,
+      CalcAge >= 2 & CalcAge < 5 & Avg_AOACFibre >= 15 ~ 1,
+      CalcAge >= 2 & CalcAge < 5 & Avg_AOACFibre < 15 ~ 0,
+      CalcAge >= 5 & CalcAge < 11 & Avg_AOACFibre >= 20 ~ 1,
+      CalcAge >= 5 & CalcAge < 11 & Avg_AOACFibre < 20 ~ 0,
+      CalcAge >= 11 & CalcAge < 16 & Avg_AOACFibre >= 25 ~ 1,
+      CalcAge >= 11 & CalcAge < 16 & Avg_AOACFibre < 25 ~ 0,
+      CalcAge >= 16 & Avg_AOACFibre >= 30 ~ 1,
+      CalcAge >= 16 & Avg_AOACFibre < 30 ~ 0,
     TRUE ~ NA)) 
 
 ## Salt (2g/d for 1-3y; 3g/d for 4-6y; 5g/d for 7-10y; 6g/d for 11+y) ####
@@ -946,7 +954,7 @@ df.intake24_participant <- df.intake24_participant %>%
     #Cap beans at 40g and fruit juice (including smoothies) at 150g 
     #1 portion dried fruit = 15g
     #1 portion of fresh fruit/veg = 40g
-    # @Ricki please confirm portions are this small regardless of age? e.g. secondary school and primary school?
+    # @Ricki please confirm portions are this small regardless of age? e.g. secondary school and primary school? - they should be split by age groups, 11-15 are the same portion size as adults
   
     df.SDG_Fruitveg <- df.SDG_Fruitveg %>%
       mutate(
@@ -974,59 +982,87 @@ df.intake24_participant <- df.intake24_participant %>%
       select(UserID, RecallNo,starts_with("Day"))
     df.intake24_recall <- left_join(df.intake24_recall, df.SDG_Fruitveg, by = c("UserID"="UserID", "RecallNo" ="RecallNo"))
   
+    #I'm not sure I'm understanding this code. If you take the recall dataset and group by UserID, you will have all the recalls a participant completed. For example, if a participant has 3 recalls, you will have a group with 3 rows, one for each recall, the Day_ variables will show the summed value of Energy/Carbs etc in that recall. 
+    #In this code, you are only keeping the first value of each of those and renaming it to Avg_xxx but it wouldn't be an average, it would just be the total intake from Recall 1 as that will be the first row for each grouped UserID. 
+    #This also overwrites the df.intake24_participant dataframe, which already has the Avg_ variables calculated. Are you wanting to calculate the average portions from the recall dataset and then merge them into the participant level? 
+    
   # Calculate mean daily portions
-    df.intake24_participant <- df.intake24_recall %>% 
-      group_by(UserID) %>%
-      summarise(
-        CalcAge = first(CalcAge),
-        NumberOfRecalls = first(NumberOfRecalls),
-        Avg_Energykcal = first(Day_Energykcal),
-        Avg_FoodEnergy = first(Day_FoodEnergy),
-        Avg_FoodEnergyMilk = first(Day_FoodEnergyMilk),
-        Avg_FoodGrams = first(Day_FoodGrams),
-        Avg_FoodGramsMilk = first(Day_FoodGramsMilk),
-        Avg_EnergyDensity = first(Day_EnergyDensity),
-        Avg_Carbohydrate = first(Day_Carbohydrate),
-        Avg_Carbs_kcal = first(Day_Carbs_kcal),
-        Ave_Carbs_PropFoodEnergy = first(Day_Carbs_PropFoodEnergy),
-        Avg_TotalSugars = first(Day_TotalSugars),
-        Avg_TotalSugars_kcal = first(Day_TotalSugars_kcal),
-        Avg_TotalSugars_PropFoodEnergy = first(Day_TotalSugars_PropFoodEnergy),
-        Avg_TotalFatg = first(Day_TotalFatg),
-        Avg_Fat_kcal = first(Day_Fat_kcal),
-        Avg_Fat_PropFoodEnergy = first(Day_Fat_PropFoodEnergy),
-        Avg_SatFatg = first(Day_SatFatg),
-        Avg_SatFat_Kcal = first(Day_SatFat_Kcal),
-        Avg_SatFat_PropFoodEnergy = first(Day_SatFat_PropFoodEnergy),
-        Avg_TransFatg = first(Day_TransFatg),
-        Avg_TransFat_Kcal = first(Day_TransFat_Kcal),
-        Avg_TransFat_PropFoodEnergy = first(Day_TransFat_PropFoodEnergy),
-        Avg_Protein = first(Day_Protein),
-        Avg_AOACFibre = first(Day_AOACFibre),
-        Avg_VitaminA = first(Day_VitaminA),
-        Avg_Riboflavin = first(Day_Riboflavin),
-        Avg_Folate = first(Day_Folate),
-        Avg_VitaminD = first(Day_VitaminD),
-        Avg_VitaminB12 = first(Day_VitaminB12),
-        Avg_VitaminC = first(Day_VitaminC),
-        Avg_Iron = first(Day_Iron),
-        Avg_Calcium = first(Day_Calcium),
-        Avg_Sodium = first(Day_Sodium),
-        Avg_Salt = first(Day_Salt), #Salt
-        Avg_Iodine = first(Day_Iodine),
-        Avg_Magnesium = first(Day_Magnesium),
-        Avg_Potassium = first(Day_Potassium),
-        Avg_Selenium = first(Day_Selenium),
-        Avg_Zinc = first(Day_Zinc),
-        Avg_Portions_Beans = mean(Day_Portions_Beans),
-        Avg_Portions_FruitSmoothie = mean(Day_Portions_FruitSmoothie),
-        Avg_Portions_Dried = mean(Day_Portions_Dried),
-        Avg_Portions_FreshFruit = mean(Day_Portions_FreshFruit),
-        Avg_Portions_Veg = mean(Day_Portions_Veg),
-        Avg_Portions_Total = mean(Day_Portions_Total),
-        Avg_Portions_Total_NoFruitSmoothie = mean(Day_Portions_Total_NoFruitSmoothie)) %>%
-    ungroup()
+    #   df.intake24_participant <- df.intake24_recall %>% 
+    # group_by(UserID) %>%
+    # summarise(
+    #   CalcAge = first(CalcAge),
+    #   NumberOfRecalls = first(NumberOfRecalls),
+    #   Avg_Energykcal = first(Day_Energykcal),
+    #   Avg_FoodEnergy = first(Day_FoodEnergy),
+    #   Avg_FoodEnergyMilk = first(Day_FoodEnergyMilk),
+    #   Avg_FoodGrams = first(Day_FoodGrams),
+    #   Avg_FoodGramsMilk = first(Day_FoodGramsMilk),
+    #   Avg_EnergyDensity = first(Day_EnergyDensity),
+    #   Avg_Carbohydrate = first(Day_Carbohydrate),
+    #   Avg_Carbs_kcal = first(Day_Carbs_kcal),
+    #   Ave_Carbs_PropFoodEnergy = first(Day_Carbs_PropFoodEnergy),
+    #   Avg_TotalSugars = first(Day_TotalSugars),
+    #   Avg_TotalSugars_kcal = first(Day_TotalSugars_kcal),
+    #   Avg_TotalSugars_PropFoodEnergy = first(Day_TotalSugars_PropFoodEnergy),
+    #   Avg_TotalFatg = first(Day_TotalFatg),
+    #   Avg_Fat_kcal = first(Day_Fat_kcal),
+    #   Avg_Fat_PropFoodEnergy = first(Day_Fat_PropFoodEnergy),
+    #   Avg_SatFatg = first(Day_SatFatg),
+    #   Avg_SatFat_Kcal = first(Day_SatFat_Kcal),
+    #   Avg_SatFat_PropFoodEnergy = first(Day_SatFat_PropFoodEnergy),
+    #   Avg_TransFatg = first(Day_TransFatg),
+    #   Avg_TransFat_Kcal = first(Day_TransFat_Kcal),
+    #   Avg_TransFat_PropFoodEnergy = first(Day_TransFat_PropFoodEnergy),
+    #   Avg_Protein = first(Day_Protein),
+    #   Avg_AOACFibre = first(Day_AOACFibre),
+    #   Avg_VitaminA = first(Day_VitaminA),
+    #   Avg_Riboflavin = first(Day_Riboflavin),
+    #   Avg_Folate = first(Day_Folate),
+    #   Avg_VitaminD = first(Day_VitaminD),
+    #   Avg_VitaminB12 = first(Day_VitaminB12),
+    #   Avg_VitaminC = first(Day_VitaminC),
+    #   Avg_Iron = first(Day_Iron),
+    #   Avg_Calcium = first(Day_Calcium),
+    #   Avg_Sodium = first(Day_Sodium),
+    #   Avg_Salt = first(Day_Salt),
+    #   Avg_Iodine = first(Day_Iodine),
+    #   Avg_Magnesium = first(Day_Magnesium),
+    #   Avg_Potassium = first(Day_Potassium),
+    #   Avg_Selenium = first(Day_Selenium),
+    #   Avg_Zinc = first(Day_Zinc),
+    #    Avg_Portions_Beans = mean(Day_Portions_Beans),
+    #    Avg_Portions_FruitSmoothie = mean(Day_Portions_FruitSmoothie),
+    #    Avg_Portions_Dried = mean(Day_Portions_Dried),
+    #    Avg_Portions_FreshFruit = mean(Day_Portions_FreshFruit),
+    #    Avg_Portions_Veg = mean(Day_Portions_Veg),
+    #    Avg_Portions_Total = mean(Day_Portions_Total),
+    #    Avg_Portions_Total_NoFruitSmoothie = mean(Day_Portions_Total_NoFruitSmoothie)) %>%
+    #ungroup()
   
+# Create avg portion variables and merge to participant dataset
+
+df.intake24_recall <- df.intake24_recall %>%
+  group_by(UserID)%>%
+  mutate(
+    Avg_Portions_Beans = mean(Day_Portions_Beans),
+    Avg_Portions_FruitSmoothie = mean(Day_Portions_FruitSmoothie),
+    Avg_Portions_Dried = mean(Day_Portions_Dried),
+    Avg_Portions_FreshFruit = mean(Day_Portions_FreshFruit),
+    Avg_Portions_Veg = mean(Day_Portions_Veg),
+    Avg_Portions_Total = mean(Day_Portions_Total),
+    Avg_Portions_Total_NoFruitSmoothie = mean(Day_Portions_Total_NoFruitSmoothie)) %>%
+  ungroup()
+
+# select variables to merge
+df.Avg_portions <- df.intake24_recall %>%
+  select(UserID, Avg_Portions_Beans,Avg_Portions_FruitSmoothie, Avg_Portions_Dried, Avg_Portions_FreshFruit, Avg_Portions_Veg, Avg_Portions_Total,Avg_Portions_Total_NoFruitSmoothie) %>%
+  distinct(UserID, .keep_all = TRUE) #keep only one row per UserID, retaining all other columns
+
+
+# merge to participant level 
+df.intake24_participant <- left_join(df.intake24_participant, df.Avg_portions, by = "UserID")
+
+
   # Create variable for meeting fruit and veg SDG 
     df.intake24_participant <- df.intake24_participant %>%
     mutate(
@@ -1057,86 +1093,18 @@ df.survey <- df.survey %>%
 # @Ricki please calculate RRPM using the intake24 data as well here so we can compare
 # @Ricki please merge the above 2 with the participant level data so the SDGs are all in one place    
     
+    df.SDG_FFQ <- df.survey %>%
+      select(UserID, SDG_RRPM, SDG_oilyfish)
+    
+    df.intake24_participant <- left_join(df.intake24_participant, df.SDG_FFQ, by = "UserID")
     
     
     
-    
-    
-# @Ricki should the following code be moved out of management R file into report file including that for most common vegetables? 
-#set factor levels and make NA a level
-    df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-    df.intake24_participant$age_cat <- fct_explicit_na(df.intake24_participant$age_cat)
-    
-    df.intake24_participant %>% 
-      select(age_cat, SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_Sugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV) %>%
-      tbl_summary(missing = "no",
-                  digits = list(all_categorical() ~ c(1,0)),
-                  type = list(all_continuous() ~ "continuous2"),
-                  statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                        "{min}, {max}")),
-                  by = age_cat
-      ) %>%
-      add_overall() %>%
-      modify_header(label ~ "**SDG **") %>%
-      bold_labels() %>%  
-      as_flex_table()
-    
-    check <- df.intake24_participant %>%
-      filter(SDG_Energy == 1)
-    
-    df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-    df.survey$age_cat <- fct_explicit_na(df.survey$age_cat)    
-    
-    
-df.survey$AFreqRRPM <- factor(df.survey$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
-df.survey$AFreqRRPM <- fct_explicit_na(df.survey$AFreqRRPM)
-
-df.survey$AFreqOilyFish <- factor(df.survey$AFreqOilyFish, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
-df.survey$AFreqOilyFish <- fct_explicit_na(df.survey$AFreqOilyFish)
-
-df.survey %>% 
-  select(age_cat, AFreqRRPM, AFreqOilyFish, SDG_RRPM, SDG_oilyfish) %>%
-  tbl_summary(missing = "no",
-              digits = list(all_categorical() ~ c(1,0)),
-              type = list(all_continuous() ~ "continuous2"),
-              statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
-              by = age_cat
-  ) %>%
-  add_overall() %>%
-  modify_header(label ~ "**SDG **") %>%
-  bold_labels() %>%  
-  as_flex_table()
-
-
-
-# Most commonly reported vegetables ####
-Vegetables <- df.intake24_item %>%
-  filter(MainFoodGroupCode == c(37, 36))
-
-Veg_sub <- Vegetables %>%
-  select(UserID, SearchTerm, Description_English, Description_Local, FoodGroupCode, FoodGroupEnglish, ReadyMeal, RecallNo, NumberOfRecalls, NumberOfItems, Sex, CalcAge, simd_quintile, age_cat, NewMealName, MainFoodGroupCode, MainFoodGroupDesc, ReportingFoodGroupCode, ReportingFoodGroupDesc)
-
-Veg_sub$age_cat <- factor(Veg_sub$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-
-
-
-Veg_sub %>%
-  filter(ReportingFoodGroupCode == 5) %>%
-  select(age_cat, Description_English) %>%
-  tbl_summary(missing = "no",
-              digits = list(all_categorical() ~ c(1,0)),
-              type = list(all_continuous() ~ "continuous2"),
-              statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
-              by = age_cat
-  ) %>%
-  add_overall() %>%
-  modify_header(label ~ "**Vegetables**") %>%
-  bold_labels() %>%  
-  as_flex_table() 
-
 
 # Files for analysis ####
-write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_FS_Energy_14_05_24.csv")
-write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_intake_foodgroups_SDG_14_05_24.csv")
+#write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_FS_Energy_14_05_24.csv")
+write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_30_05_24.csv")
+write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_30_05_24.csv")
+    
+    
+    
