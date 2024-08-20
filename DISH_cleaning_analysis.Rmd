@@ -1,0 +1,812 @@
+---
+title: "DISH Data Cleaning"
+output: html_notebook
+---
+
+This notebook cleans the data prior to data management and analysis. 
+
+#Prepare R Environment
+```{r message=FALSE, warning=FALSE, include=FALSE}
+#clear R environment
+rm(list = ls())
+
+#fixing error on rJava when reading in excel sheet - override memory limit, this may not work for every instance or machine - must be run before loading libraries
+#options(java.parameters = "- Xmx1024m")
+
+
+#load required packages
+library(dplyr)
+library(tidyr)
+library(rio)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(XLConnect)
+library(flextable)
+library(gtsummary)
+library(writexl)
+library(tibble)
+library(readxl)
+library(janitor)
+library(openxlsx)
+library(forcats)
+
+```
+
+#Read in data
+```{r message=FALSE, warning=FALSE}
+#import sheets from excel file using XLConnect package
+df.survey_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/Initial_survey_05.08.24.xlsx")
+df.intake24_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/intake24_05.08.24.xlsx")
+```
+
+##clean names
+```{r message=FALSE, warning=FALSE}
+#set all column names to lower case and replace spaces and special characters with underscores
+df.survey <- clean_names(df.survey_full)
+df.intake24 <- clean_names(df.intake24_full)
+
+names(df.survey)
+```
+
+
+
+***Prep Data Sets***
+
+##rename variables - survey
+```{r}
+#rename simd column to match previous data update files - needed for data update on 14.03.24
+df.survey <- df.survey %>%
+  rename(simd_quintile = simd)
+
+#select only the variables of interest
+df.survey <- df.survey %>%
+  select(household_id, simd_quintile, la_code, id_case, id_name, id_date, id_start, id_end_date, id_end, id_time, q1, q5, q6, q7, q7a, q8, q9,q10, q11, q12, q13, q14, q15, q16, q17, q18, q19, q20, q21, q24, q33,q34,q37, q38, q39, q40,q41, q42, q43, q43a, q43b, q43c, q43d, q43e, q43f, q44, q45, q46, q47, q48, q49, q49a, q49b, q49c, q49d, q50, q51)
+
+#rename variable columns
+df.survey <- df.survey %>%
+  rename(HouseholdID = household_id, # new name first then old name that we are changing
+         simd_quintile = simd_quintile,  
+         la_code = la_code,
+         SurveyID = id_case ,
+         UserID = id_name, 
+         StartDate = id_date, 
+         StartTime = id_start, 
+         FinishDate = id_end_date, 
+         FinishTime = id_end, 
+         SurveyDuration = id_time, 
+         NumberOfChildren = q1, 
+         DOB = q5, 
+         Sex = q6, 
+         Ethnicity = q7, 
+         EthnicityOther = q7a, 
+         Education = q8, 
+         FoodParcels = q9,
+         HhldAdults = q10, 
+         HhldChildren = q11, 
+         HHFOOD1 = q12, 
+         HHFOOD2 = q13, 
+         HHFOOD3 = q14, 
+         HHFOOD4 = q15, 
+         AFreqWhiteMeat = q16, 
+         AFreqRRPM = q17, 
+         AFreqWhiteFish = q18, 
+         AFreqOilyFish = q19, 
+         AFreqOtherFish = q20, 
+         AFreqToddlerMilk = q21, 
+         ChildCompletedFoodDiary = q24, 
+         FurtherSurveyContact = q33,
+         FurtherSurveyContact2 = q34,
+         YPFreqWhiteMeat = q37, 
+         YPFreqRRPM = q38, 
+         YPFreqWhiteFish = q39, 
+         YPFreqOilyFish = q40,
+         YPFreqOtherFish = q41, 
+         YPFreqOffSchlGrounds = q42, 
+         AgreeOSG1 = q43, 
+         AgreeOSG2 = q43a, 
+         AgreeOSG3 = q43b, 
+         AgreeOSG4 = q43c, 
+         AgreeOSG5 = q43d, 
+         AgreeOSG6 = q43e, 
+         AgreeOSG7 = q43f, 
+         AgreeOSG_Other = q44, 
+         Q45 = q45, 
+         EnergyDrinksFirstOrderAge = q46, 
+         FreqOSG = q47, 
+         FreqEnergyDrinks = q48, 
+         ImportanceED1 = q49, 
+         ImportanceED2 = q49a, 
+         ImportanceED3 = q49b, 
+         ImportanceED4 = q49c,
+         ImportanceED5 = q49d, 
+         ImportanceED_Other = q50, 
+         SurveyConsent = q51)
+
+
+#Remove NA values in name - likely not needed
+df.survey <- df.survey %>% 
+  filter(!is.na(UserID))
+
+
+names(df.intake24)
+```
+
+##rename variables - intake24
+```{r}
+#select only the variables of interest
+df.intake24 <- df.intake24 %>%
+  select(-proxy, -proxy_issues, -serving_image, -leftovers_image, -food_group_local, -brand, -meal_index, -meal_id, -food_index, -nutrient_table_name, -reasonable_amount) #identifying which ones to drop as majority should be kept
+
+
+
+#rename variable columns
+df.intake24 <- df.intake24 %>%
+  rename(SurveyID = survey_id , # new name first then old name that we are changing
+         UserID = user_id, 
+         Device = device_information_user_agent,
+         StartTime = start_time, 
+         FinishTime = submission_time, 
+         SurveyDuration = time_to_complete, 
+         FoodAmount = food_amount,
+         FoodAmountReason = reason_for_unusual_food_amount,
+         MealName = meal_name,
+         MealTime = meal_time,
+         FoodSource = food_source,
+         SearchTerm = search_term,
+         FoodID = food_id,
+         Intake24FoodCode= intake24_food_code,
+         Description_English = description_en,
+         Description_Local = description_local,
+         NutrientTableCode= nutrient_table_code,
+         FoodGroupCode = food_group_code,
+         FoodGroupEnglish= food_group_en,
+         ReadyMeal= ready_meal,
+         AsServedWeightFactor= as_served_weight_factor,
+         ServingSizeGrams = serving_size_g_ml,
+         LeftoversGrams = leftovers_g_ml,
+         TotalGrams = portion_size_g_ml,
+         MissingFoodID = missing_food_id, 
+         MissingFoodDescription = missing_food_description, 
+         MissingFoodPortionSize = missing_food_portion_size,  
+         MissingFoodLeftovers = missing_food_leftovers,
+         SubFoodGroupCode = sub_group_code,
+         Waterg = water,
+         TotalNitrogen = total_nitrogen,
+         NitrogenConversionFactor = nitrogen_conversion_factor,
+         Proteing = protein,
+         Fatg = fat,
+         Carbohydrateg = carbohydrate,
+         Energykcal = energy_kcal,
+         Energykj= energy_k_j,
+         Alcoholg = alcohol,
+         FIBRE = englyst_fibre,
+         Starchg = starch,
+         Totalsugarsg = total_sugars,
+         AOACg = aoac,
+         NONMILKSUGARS = non_milk_extrinsic_sugars,
+         INTRINSICMILKSUGARS = intrinsic_and_milk_sugars, 
+         Glucoseg = glucose,
+         Fructoseg = fructose,
+         Maltoseg = maltose,
+         Lactoseg = lactose,
+         Sucroseg = sucrose,
+         Othersugarsg = other_sugars_uk,
+         FSTABLESUGAR = fs_table_sugar,
+         FSOTHERSUGAR = fs_other_added_sugar,
+         FSHONEY= fs_honey,
+         FSFRUITJUICE = fs_fruit_juice,
+         FSDRIEDFRUIT = fs_dried_fruit,
+         FSFRUITPUREE = fs_fruit_puree,
+         FSSTEWEDFRUIT = fs_stewed_fruit,
+         FSVEGPUREE = fs_vegetable_puree,
+         Saturatedfattyacidsg = satd_fa,
+         CisMonounsaturatedfattyacidsg = cis_mon_fa,
+         Cisn3fattyacidsg = cis_n3_fa,
+         Cisn6fattyacidsg = cis_n6_fa,
+         Transfattyacidsg = trans_fa,
+         Cholesterolmg = cholesterol,
+         Retinolug = retinol,
+         Totalcaroteneug = total_carotene,
+         Alphacaroteneug = alpha_carotene,
+         Betacaroteneug = beta_carotene,
+         Betacryptoxanthinug = beta_cryptoxanthin,
+         VitaminAug = vitamin_a,
+         VitaminDug = vitamin_d,
+         Thiaminmg = thiamin,
+         Riboflavinmg = riboflavin,
+         NIACIN = niacin,
+         TRYPTOPHAN60 = tryptophan_60,
+         Niacinequivalentmg = niacin_equivalent,
+         VitaminCmg = vitamin_c,
+         VitaminEmg = vitamin_e,
+         VitaminB6mg = vitamin_b6,
+         VitaminB12ug = vitamin_b12,
+         Folateug = folate,
+         Pantothenicacidmg = pantothenic_acid,
+         Biotinug = biotin,
+         Sodiummg = sodium,
+         Potassiummg = potassium,
+         Calciummg = calcium,
+         Magnesiummg = magnesium,
+         Phosphorusmg= phosphorus,
+         Ironmg = iron,
+         haemironmg = haem_iron,
+         Nonhaemironmg = non_haem_iron,
+         Coppermg = copper,
+         Zincmg = zinc,
+         Chloridemg = chloride,
+         Iodineug = iodine,
+         Manganesemg = manganese,
+         Seleniumug = selenium,
+         TOTALFS = total_fs,
+         Fruitg = fruit,
+         DriedFruitg = dried_fruit,
+         FruitJuiceg = fruit_juice,
+         SmoothieFruitg = smoothie_fruit,
+         Tomatoesg = tomatoes,
+         TomatoPureeg = tomato_puree,
+         Brassicaceaeg = brassicaceae,
+         YellowRedGreeng = yellow_red_green,
+         Beansg = beans,
+         Nutsg = nuts,
+         OtherVegg = other_vegetables,
+         Beefg = beef,
+         Lambg = lamb,
+         Porkg = pork,
+         ProcessedRedMeatg = processed_red_meat,
+         OtherRedMeatg = other_red_meat,
+         Burgersg = burgers,
+         Sausagesg = sausages,
+         Offalg = offal,
+         Poultryg = poultry,
+         ProcessedPoultryg = processed_poultry,
+         GameBirdsg = game_birds,
+         WhiteFishg = white_fish,
+         OilyFishg = oily_fish,
+         CannedTunag = canned_tuna,
+         Shellfishg = shellfish,
+         CottageCheeseg= cottage_cheese,
+         CheddarCheeseg = cheddar_cheese,
+         OtherCheeseg = other_cheese
+  ) 
+         
+```
+
+
+#Clean Data
+##Check duplicates
+```{r}
+#check for duplicates
+n_distinct(df.survey$UserID)
+n_distinct(df.intake24$UserID)
+```
+
+##Calculate age and remove ineligible
+```{r}
+#calculate the age of the participant. This calculates the interval between two columns, the birthdate and the survey completion date and then divides by a function setting the years to 1
+df.survey$CalcAge <- interval(df.survey$DOB, df.survey$StartDate) / years(1)
+
+df.survey$Age <- trunc(df.survey$CalcAge)
+
+#relocate for ease in managing
+df.survey <- df.survey %>%
+  relocate(c(CalcAge, Age), .after = DOB)
+
+#check those removed for being outside the age range
+age_removed <- df.survey[which(df.survey$CalcAge<2 | df.survey$CalcAge>16),]
+
+#Keep only the participants that are between 2-15 years old
+df.survey <- df.survey[which(df.survey$CalcAge>2 & df.survey$CalcAge<16),]
+
+
+```
+
+##Create age buckets
+```{r}
+#create age buckets for reporting
+df.survey <- df.survey %>%
+  mutate(
+    age_cat = case_when(
+      CalcAge >= 2 & CalcAge < 5 ~ "2-4y",
+      CalcAge >= 5 & CalcAge < 11 ~ "5-10y", 
+      CalcAge >= 11 & CalcAge <= 16 ~ "11-15y",
+      TRUE ~ NA)) %>%
+  relocate(age_cat, .after = CalcAge)
+```
+
+
+##Check for NAs and recode
+Survey
+```{r}
+
+df.survey %>%
+  filter(is.na(df.survey$Sex))
+
+
+df.survey <- df.survey %>%
+  mutate(Sex = case_when(
+    UserID %in% c( 10008296, 20002338)  ~ "Prefer not to say", 
+    TRUE ~ Sex
+  ))
+
+
+```
+
+```{r include=FALSE}
+df.survey %>%
+  filter(is.na(df.survey$Ethnicity))
+
+df.survey <- df.survey %>%
+  mutate(Ethnicity = case_when(
+    UserID %in% c( 10008296, 20002338)  ~ "Prefer not to say", 
+    TRUE ~ Ethnicity
+  ))
+
+df.survey$Ethnicity <- factor(df.survey$Ethnicity, levels = c("White", "Asian or Asian British", "Mixed or multiple ethnic groups", "Black, Black British, Caribbean or African", "Other", "Prefer not to say"))
+
+
+```
+
+##Re-code Food Security responses
+Further food security questions were only asked if they responded 'Yes' to the first questions, we therefore presume they are not food-insecure for all remaining questions if they respond 'No' to the initial question.
+```{r}
+df.survey <- df.survey %>%
+  mutate(HHFOOD2 = case_when(
+    is.na(HHFOOD2) ~ "No",
+    TRUE ~ HHFOOD2
+  ))
+
+df.survey <- df.survey %>%
+  mutate(HHFOOD3 = case_when(
+    is.na(HHFOOD3) ~ "No",
+    TRUE ~ HHFOOD3
+  ))
+
+df.survey <- df.survey %>%
+  mutate(HHFOOD4 = case_when(
+    is.na(HHFOOD4) ~ "No",
+    TRUE ~ HHFOOD4
+  ))
+
+
+```
+
+
+
+
+##Create User Characteristic dataset 
+```{r}
+user_char <- df.survey %>%
+  select("UserID", "HouseholdID", "Sex", "simd_quintile", "CalcAge", "age_cat", "Age", "Ethnicity")
+
+
+```
+
+##Remove age-ineligible participants from intake24
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+
+#Join intake24 data and survey data
+df.intake24 <- left_join(df.intake24, user_char, by = c('UserID'))
+
+#Keep only the participants that are between 2-15 years old
+df.intake24 <- df.intake24[which(df.intake24$CalcAge>2 & df.intake24$CalcAge<16),]
+
+
+#relocate columns for ease in management
+df.intake24 <- df.intake24 %>%
+  relocate(c("HouseholdID", "Sex", "Ethnicity", "Age", "CalcAge", "age_cat", "simd_quintile"), .after = UserID)
+
+n_distinct(df.intake24$UserID)
+```
+
+Intake24 - issue here with ethnicity
+```{r eval=FALSE, include=FALSE}
+#Change NA values to 0 
+df.intake24 <- df.intake24 %>%
+  mutate_all(~ifelse(is.na(.), 0, .))
+```
+
+
+
+
+
+##Check extreme reporting
+1. Participants who report "Never" for all freq. questions, cross-check with intake24 data
+2. Participants who report 'every day' for all freq. questions - cross-check with intake24 data
+3. Participants who report 'strongly agree' for all reasons for buying food off school grounds at lunch
+4. Participants who report 'strongly disagree' for all reasons for buying food off school grounds at lunch
+5. Participants who report 'Not important' for all reasons for drinking energy drinks
+6. Participants who report 'Very important' for all reasons for drinking energy drinks
+```{r}
+#create subsets of the freq columns
+subset_cols_freq_1_2 <- c("AFreqWhiteMeat","AFreqRRPM", "AFreqWhiteFish", "AFreqOilyFish", "AFreqOtherFish", "AFreqToddlerMilk", "YPFreqWhiteMeat", "YPFreqRRPM","YPFreqWhiteFish","YPFreqOilyFish","YPFreqOtherFish", "YPFreqOffSchlGrounds", "FreqOSG", "FreqEnergyDrinks")
+
+subset_cols_freq_3_4 <- c("AgreeOSG1","AgreeOSG2","AgreeOSG3","AgreeOSG4", "AgreeOSG5","AgreeOSG6","AgreeOSG7")
+
+subset_cols_freq_5_6 <- c("ImportanceED1", "ImportanceED2","ImportanceED3","ImportanceED4","ImportanceED5")
+
+#create subsets for each extreme (updated from df.survey_2_NA to df.survey_2 because NA change will happen at data analysis stage instead)
+all_never <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_1_2), ~. == "Never")) #check across the subset columns where 'never' is an option and create a new df with participants who have responded 'never' in every column
+
+all_everyday <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_1_2), ~. == "Every day"))
+
+all_agree <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_3_4), ~. == "Strongly agree"))
+
+all_disagree <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_3_4), ~. == "Strongly disagree"))
+
+all_not_important <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_5_6), ~. == "Not important"))
+
+all_important <- df.survey %>%
+  filter(if_all(all_of(subset_cols_freq_5_6), ~. == "Very important"))
+
+#output table of ids for all of these
+#subset_Q12 %>%
+  #rename(UserID = User.ID)
+
+#table(subset_Q12$UserID)
+
+```
+
+
+```{r include=FALSE}
+#remove unneeded dataframes once checked
+rm(all_agree, all_disagree, all_everyday, all_important, all_never, all_not_important)
+```
+
+
+##Categorise 'Other' Text
+For 'other' reasons reported for buying food and drinks off school grounds and for drinking energy drinks, recategorise into existing categories or create new categories if reported by >5 participants
+
+- for other responses that fit into previous categories : re-code as survey avg
+```{r}
+#create subset df of 'Other' text to recategorise 
+subset_AgreeOSG_Other <- df.survey %>% 
+  filter(!is.na(AgreeOSG_Other)) #if there is any text in Q50, create a df with those participants 
+
+subset_ImportanceED_Other <- df.survey %>% 
+  filter(!is.na(ImportanceED_Other)) #if there is any text in Q50, create a df with those participants 
+
+
+#Example code to create a new column when more than 5 participants report a response 
+
+#df.survey_2 <- df.survey_2 %>%
+#   mutate(new_column = case_when(         #change name of new_column to response reason
+#    ID.name == 10000035  ~ "Response",    #change values in column
+#    ID.name == 	10000033 ~ "Response",
+#    TRUE ~ NA  # Keep NA for other rows
+#  ))
+ 
+ #move the new column next to Q50 
+
+#df.survey_2 <- df.survey_2 %>%
+#  relocate(new_column, .after = Q50)
+
+
+#Recategorise responses if they fit in another column
+
+#df.survey_2_NA <- df.survey_2_NA %>%
+ # mutate(Q49d = ifelse(Survey.ID == 10000035, "Somewhat important", Q49d))  #change the value in column Q49d for the row with this ID.name, otherwise, keep all other values in Q49d
+
+
+#tabulate other category for TMck
+subset_AgreeOSG_Other
+
+subset_ImportanceED_Other
+
+```
+
+```{r eval=FALSE, include=FALSE}
+
+#export for review
+write.xlsx(subset_AgreeOSG_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_OSG_200824.xlsx")
+write.xlsx(subset_ImportanceED_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_ED_200824.xlsx")
+
+
+#remove unneeded dataframes once checked
+rm(subset_AgreeOSG_Other, subset_ImportanceED_Other)
+```
+
+##Check continuous variables for normality
+Histogram of age
+```{r}
+ggplot(df.survey, aes(x = CalcAge))+
+  geom_histogram(binwidth = 1)
+
+```
+
+
+Shapiro-Wilk test (p<0.05 indicates variable is NOT normally distributed)
+```{r}
+shapiro.test(df.survey$CalcAge) 
+```
+
+
+#Create New Variables
+
+##'RecallNo' and 'NumberOfRecalls'
+```{r include=FALSE}
+#RecallNo
+
+#Separate date from date and time variable
+df.intake24$date<-lubridate::date(df.intake24$'FinishTime')
+  
+#Drop duplicate dates for each participant so we have one line per recall date per participant
+df.intake24_uniquetime <- df.intake24 %>%
+  distinct(UserID, date, .keep_all = TRUE)
+  
+#Index the row numbers to create RecallNo variable
+df.intake24_uniquetime <- df.intake24_uniquetime %>%
+  group_by(UserID) %>% 
+  arrange(UserID, date) %>%
+  mutate(RecallNo = row_number())%>%
+  ungroup()
+
+df.intake24_uniquetime$RecallNo <- as.numeric(df.intake24_uniquetime$RecallNo)
+
+
+#NumberOfRecalls
+    
+#Participant's max RecallNo is their number of recalls
+df.intake24_uniquetime <- df.intake24_uniquetime %>%
+  group_by(UserID) %>%
+  mutate(NumberOfRecalls = max(RecallNo, na.rm = TRUE)) %>%
+  ungroup()
+
+
+
+# Pull out newly created variables and join with intake24 dataset
+df.intake24_recallvariables <-  df.intake24_uniquetime  %>%
+  select(UserID, date, RecallNo, NumberOfRecalls)
+  
+df.intake24 <- left_join(df.intake24, df.intake24_recallvariables, by= c("UserID", "date"))
+
+
+
+
+
+#relocate variables for ease in management later
+df.intake24 <- df.intake24 %>%
+  relocate(RecallNo, NumberOfRecalls, date, .after = ReadyMeal)
+
+#remove dataframes that are no longer needed
+rm(df.intake24_uniquetime, df.intake24_recallvariables)
+
+
+```
+
+
+##'NumberOfItems' 
+indicates the number of items in each recall. 
+```{r include=FALSE}
+
+df.intake24 <- df.intake24 %>%
+  group_by(UserID, RecallNo) %>%
+  mutate(NumberOfItems = n()) %>%
+  ungroup()
+
+df.intake24 <- df.intake24 %>%
+  relocate(NumberOfItems, .after = NumberOfRecalls)
+
+```
+
+
+
+#Missing Food Re-Coding
+Food items entered using the ‘Report a missing food’ function will be manually coded and linked to appropriate nutritional information from the NDNS Nutrient Databank 
+```{r}
+#Create a subset to look at the Missing Food Items to manually code and link to nutritional information
+df.intake24_missing_food <- df.intake24 %>%
+  subset(df.intake24$MissingFoodID !="N/A")
+
+df.intake24_missing_food
+
+df.intake24_full %>%
+  filter(`Nutrient table name` != 'UK_NDB_1.2')
+
+```
+
+```{r eval=FALSE, include=FALSE}
+#export high and low energy intakes
+write.xlsx(df.intake24_missing_food, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Missing_Food_Codes_200824.xlsx")
+
+rm(df.intake24_missing_food)
+```
+
+
+
+#Clean Data
+##Recalls completed under 2 minutes
+Recalls completed in <2 minutes will be examined and removed if deemed to be incomplete
+```{r}
+#remove ' min' from the time to complete column and convert to numeric value
+df.intake24$SurveyDuration <- as.numeric(str_remove(df.intake24$SurveyDuration, " min"))
+
+#examine recalls completed in less than 2 minutes for completeness
+under_2 <- df.intake24 %>%
+  filter(SurveyDuration <= 2)
+
+under_2
+
+n_distinct(under_2$UserID)
+
+```
+
+
+## Recalls with fewer than 5 items
+Recalls with <5 foods or beverages reported will be examined and removed if deemed to be incomplete 
+```{r include=FALSE}
+#create a subset of all responses that have 5 or fewer responses to check 
+food_count <- df.intake24 %>%
+  filter(NumberOfItems <= 5)
+
+n_distinct(food_count$UserID)
+
+# Remove a response if deemed incomplete
+
+#        df.intake24_removed <- df.intake24 %>%
+#          filter(UserID != "fss7")
+#
+# check removed codes
+#       df.intake24_Under5Foods_removed <- df.intake24 %>%
+#          filter(UserID = "fss7")
+
+```
+
+##Check on search term inconsistencies
+Any inconsistencies between the search term and the food code selected (for example, searched for chicken curry but selected beef curry), will be examined and amended where appropriate 
+```{r}
+
+#create a subset of all items where SearchTerm is not found in the chosen food - this will take a lot of manual inspection to determine if any need re-coding
+food_code_search <- df.intake24 %>%
+  filter(!str_detect(Description_English, fixed(SearchTerm))) #using fixed() to treat it as a literal string and avoid issues with special characters
+
+
+```
+
+
+```{r eval=FALSE, include=FALSE}
+#remove unneeded dataframes once checked
+rm(under_2, food_count, food_code_search )
+```
+
+
+#Create New Variables
+##Days of the Week
+Day of the Week: create new variable for day of the week
+```{r echo=FALSE}
+#create new variable for day of the week
+#df.intake24$date <- as.Date(df.intake24$FinishTime, format = "%Y-%m-%d") - not needed correctly formatted above
+
+df.intake24 <- df.intake24 %>%
+  relocate(date, .after = FinishTime)
+
+df.intake24$DayofWeek <- weekdays(df.intake24$date) 
+
+df.intake24 <- df.intake24 %>%
+  relocate(DayofWeek, .after = date)
+
+#set factor levels so order is easy to read
+df.intake24$DayofWeek <- fct_explicit_na(factor(df.intake24$DayofWeek, levels = c("Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday")))
+```
+
+##Meal Names
+We are interested in Breakfast, Lunch, Dinner, and Snack meal categories. Participants can choose their own meal name or pick from a drop down. For any meal names not already in one of our described categories, we re-categorise the meal name based on the time of the meal. We investigate the time of meals that already report one of our categories in order to determine the time splits for our meal categories. 
+
+Based on this investigation, meal times for our sample are as follows:
+Breakfast: 5 - 9:59
+Snack: 10 - 11:59
+Lunch: 12 - 13:30
+Snack: 13:31 - 16:59
+Dinner: 17 - 19:59
+Snack: 20 - 4:59
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#update meal time variable from excel format to date and time
+df.intake24$MealTime <- as.POSIXct(df.intake24$MealTime, origin = "1970-01-01", tz = "UTC")
+
+df.intake24$MealTime_hour <- hour(df.intake24$'MealTime')
+df.intake24$MealTime_minute <- minute(df.intake24$'MealTime')
+
+df.intake24 <- df.intake24 %>%
+  mutate(NewMealTime = paste0(MealTime_hour,":", MealTime_minute))
+
+df.intake24 <- df.intake24 %>%
+  relocate(NewMealTime, .after = MealTime)
+
+df.intake24$MealTime_hour <- as.numeric(df.intake24$MealTime_hour)
+df.intake24$MealTime_minute <- as.numeric(df.intake24$MealTime_minute)
+
+
+#re-categorise meals into meal categories. If mealname is not one of Breakfast, Lunch, Dinner, or Snack, rename based on meal time. 
+df.intake24 <- df.intake24 %>%
+  mutate(NewMealName = case_when(
+    grepl("snack", MealName, ignore.case = TRUE) ~ 'Snack', #first categorise any inputs with 'snack' in name to snack
+    grepl("evening meal", MealName, ignore.case = TRUE) ~ 'Dinner', 
+    grepl("dietary supplements", MealName, ignore.case = TRUE) ~ 'Other',
+    MealName %in% c('Breakfast', 'Lunch', 'Dinner', 'Snack') ~ MealName, #keep these categories the same
+    between(MealTime_hour, 5,9)  ~ "Breakfast", #re-assign meals to categories based on time
+    (MealTime_hour == 12 | (MealTime_hour == 13 & MealTime_minute <= 30)) ~ "Lunch", 
+    between(MealTime_hour, 17,19)  ~ "Dinner",
+    between(MealTime_hour, 10,11) ~ "Snack",
+    ((MealTime_hour == 13 & MealTime_minute > 30) | between(MealTime_hour, 14,16)) ~ "Snack",
+    (MealTime_hour >= 20 & MealTime_hour <=23) | (MealTime_hour >= 0 & MealTime_hour <= 4) ~ "Snack",
+    TRUE ~ MealName)) 
+
+
+df.intake24 <- df.intake24 %>%
+  relocate(NewMealName, .after = MealName)
+
+```
+
+Check NewMealName
+```{r include=FALSE}
+df.intake24 %>%
+  filter(!NewMealName %in% c("Dinner", "Snack", "Other", "Lunch", "Breakfast"))
+```
+
+
+#Clean Data
+##Breast Milk Check
+```{r}
+
+breast_milk_intake <- df.intake24 %>%
+  subset(Description_English == "Breast milk")
+
+n_distinct(breast_milk_intake$UserID) #5 users entering breast milk 
+
+breast_milk_intake 
+
+check <- df.intake24 %>%
+  subset(UserID == "10008812")
+
+```
+
+
+##Device survey completed on
+```{r include=FALSE}
+#add device back to recall dataset
+recall_device <- df.intake24 %>%
+  select(UserID, Device, RecallNo)
+
+recall_device <- recall_device %>%
+  distinct(UserID, Device, RecallNo, .keep_all = TRUE)
+
+recall_device$RecallNo <- as.factor(recall_device$RecallNo)
+
+```
+
+
+```{r include=FALSE}
+#create new variable grouping Devices into phone, ipad, or computer
+df.recall_device <- recall_device %>%
+  mutate(Device_group = ifelse(grepl("Android|iPhone", Device), "phone", ifelse(grepl("iPad", Device), "ipad", "computer"))
+  )
+ 
+
+df.recall_device %>%
+  group_by(RecallNo, Device_group) %>%
+  summarise(
+    Count = n()
+  )
+
+df.recall_device <- df.recall_device %>%
+  relocate(Device_group, .after = Device)
+```
+
+
+
+#Write Files
+```{r eval=FALSE, include=FALSE}
+
+write.csv(df.intake24, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_management_200824.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv")
+write.csv(user_char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_200824.csv")
+
+```
+
