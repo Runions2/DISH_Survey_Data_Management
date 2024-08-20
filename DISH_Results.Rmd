@@ -1,0 +1,503 @@
+---
+title: "DISH_Prelim_Results"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+
+# Prepare R Environment 
+```{r include=FALSE}
+
+  # Clear R environment
+  rm(list = ls())
+  
+  # Load required packages
+  library(dplyr)
+  library(tidyr)
+  library(rio)
+  library(ggplot2)
+  library(ggthemes)
+  library(grafify)
+  library(lubridate)
+  library(stringr)
+  library(XLConnect)
+  library(flextable)
+  library(gtsummary)
+  library(writexl)
+  library(forcats)
+  library(purrr)
+```
+
+#Import the data
+```{r include=FALSE}
+  
+  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_foodgroups_SDG_RNI_LRNI_20_08_24.csv") %>%
+    select(-X)
+  
+ # df.intake24_participant_fg <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/recall_foodgroups_SDG_RNI_15_07_24.csv") %>%
+    #select(-X)
+  
+  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_20_08_24.csv") %>%
+    select(-X)
+
+  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_20_08_24.csv") %>%
+  select(-X)
+
+  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv") %>%
+    select(-X)
+  
+  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics.csv") %>%
+    select(-X)
+```
+
+
+
+
+
+
+
+```{r include=FALSE}
+meat <- df.intake24_participant %>%
+  select(UserID, Avg_redmeat, Avg_processedmeat, Avg_redprocessedmeat)
+
+meat_ffq <- df.survey %>%
+  select(UserID, AFreqRRPM, YPFreqRRPM)
+
+
+meat_g_ffq <- left_join(meat, meat_ffq, by = "UserID")
+
+meat_g_ffq <- left_join(meat_g_ffq, user_char, by = "UserID")
+
+
+```
+
+We are only comparing Avg_redprocessedmeat to FFQ because the FFQ question asks about red and red processed meat together, so it is the only comparable disag variable. 
+```{r include=FALSE}
+meat_g_ffq$AFreqRRPM <- factor(meat_g_ffq$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure"))
+
+meat_g_ffq$AFreqRRPM <- fct_explicit_na(meat_g_ffq$AFreqRRPM)   
+
+meat_g_ffq %>% 
+  select(Avg_redprocessedmeat, AFreqRRPM) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{median}",
+                                                   "{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = AFreqRRPM
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "****") %>%
+  bold_labels() %>%  
+  as_flex_table()
+```
+
+The zero here is due to rounding in the table, there is one respondent who ate 0.31 grams once a week
+```{r include=FALSE}
+meat_g_ffq %>% 
+  filter(Avg_redprocessedmeat != 0) %>%
+  select(Avg_redprocessedmeat, AFreqRRPM) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{median}",
+                                                   "{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = AFreqRRPM
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "****") %>%
+  bold_labels() %>%  
+  as_flex_table()
+```
+
+```{r eval=FALSE, include=FALSE}
+check <- meat_g_ffq %>%
+  filter(Avg_redprocessedmeat != 0) %>%
+  filter(AFreqRRPM == "Once a week")
+
+
+```
+
+```{r eval=FALSE, include=FALSE}
+
+check <- meat_g_ffq %>%
+  filter(AFreqRRPM == "(Missing)")
+
+```
+
+
+#RNI and LRNI Tables***
+Results are presented for 
+1. Average Daily Intakes overall
+2. Average Daily Intakes by Sex
+3. SDG Results
+3. Adherence to RNIs overall and by age group
+4. Adherence to RNIs by age and sex
+5. Adherence to LRNIs by age and sex
+
+
+Set factors and remove na
+```{r include=FALSE}
+df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+df.intake24_participant %>%
+  filter(is.na(df.intake24_participant$age_cat))
+```
+
+Set factors
+```{r include=FALSE}
+# set variables as factors for gtsummary
+
+# RNI factors
+df.intake24_participant$Sex <- factor(df.intake24_participant$Sex)
+df.intake24_participant$VitaminB12RNI <- as.factor(df.intake24_participant$VitaminB12RNI)
+df.intake24_participant$ZincRNI <- as.factor(df.intake24_participant$ZincRNI)
+df.intake24_participant$SeleniumRNI <- as.factor(df.intake24_participant$SeleniumRNI)
+df.intake24_participant$IronRNI <- as.factor(df.intake24_participant$IronRNI)
+df.intake24_participant$ProteinRNI <- as.factor(df.intake24_participant$ProteinRNI)
+df.intake24_participant$CalciumRNI <- as.factor(df.intake24_participant$CalciumRNI)
+df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat)
+
+# LRNI factors
+df.intake24_participant$VitaminB12LRNI <- as.factor(df.intake24_participant$VitaminB12LRNI)
+df.intake24_participant$ZincLRNI <- factor(df.intake24_participant$ZincLRNI)
+df.intake24_participant$SeleniumLRNI <- as.factor(df.intake24_participant$SeleniumLRNI)
+df.intake24_participant$IronLRNI <- factor(df.intake24_participant$IronLRNI)
+df.intake24_participant$CalciumLRNI <- factor(df.intake24_participant$CalciumLRNI)
+
+```
+
+Create full-demo subset
+```{r include=FALSE}
+# create a subset that removes any participant without full demographic information (age/sex variables)
+df.intake24_full_demo <- df.intake24_participant %>% 
+  filter(Sex != "Prefer not to say")
+
+# set factor level
+df.intake24_full_demo$Sex <- factor(df.intake24_full_demo$Sex, levels = c("Female", "Male"))
+```
+
+##***Daily Intakes***
+##Overall
+```{r echo=FALSE}
+df.intake24_participant %>% 
+  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>% # select variables for table
+  tbl_summary(missing = "no", # set to 'always' or 'ifany' to show unknowns in table
+              digits = list(all_categorical() ~ c(1,0)), # set categorical variables to one decimal place
+              type = list(all_continuous() ~ "continuous2"), 
+              statistic = list(all_continuous() ~ c("{mean} ({sd})", "{median} ({p25}, {p75})")),
+              label = c(        # rename variables for table               
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_ci() %>% #add confidence interval
+  modify_header(label ~ "**Mean Daily Intakes**") %>% #change header 
+  bold_labels() %>%
+  as_flex_table()
+```
+
+
+```{r}
+# set up stats
+stats <- c("N" = "{length}", 
+           "Mean (SD)" = "{mean} ({sd})", 
+           "Median (IQR)" = "{median} ({p25}, {p75})")
+
+
+df.intakes <- df.intake24_participant %>% 
+  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) # select variables for table
+
+#useimap from purr package to combine summary tables and reformat with stats in header row
+intakes_reformat <- imap( 
+    stats,
+    ~ df.intakes %>%
+  tbl_summary(missing = "no", # set to 'always' or 'ifany' to show unknowns in table
+              statistic = ~.x,
+              label = c(        # rename variables for table               
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )) %>%
+
+    modify_header(all_stat_cols() ~ stringr::str_glue("**{.y}**"))
+  ) %>%
+  # Merge the individual summary tables into one table
+  tbl_merge(tab_spanner = FALSE) %>%
+  modify_header(label ~ "**Mean Daily Intakes**") %>% #change header 
+  bold_labels() %>%
+  as_flex_table()
+  
+intakes_reformat
+
+```
+
+```{r eval=FALSE, include=FALSE}
+##ME TRYING TO FIGURE OUT OTHER FORMATS
+
+df.intakes %>%
+  tbl_summary(),
+
+ # set to 'always' or 'ifany' to show unknowns in table
+             digits = list(all_categorical() ~ c(1,0)), # set categorical variables to one decimal place
+              type = list(all_continuous() ~ "continuous2"), 
+              statistic = list(all_continuous() ~ c("{mean} ({sd})")),
+              label = c(        # rename variables for table               
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+```
+
+##Daily Intakes by Age
+*13 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(age_cat, Avg_EnergyDensity, Avg_Portions_FruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{median} ({p25}, {p75})")),
+              by = age_cat, 
+              label = c(
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_FruitSmoothie ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_p() %>%
+  add_significance_stars() %>%
+  modify_header(label ~ "**Daily Intakes**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+```
+
+##Daily Intakes by Sex
+*13 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(Sex, Avg_EnergyDensity, Avg_Portions_FruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{median} ({p25}, {p75})")),
+              by = Sex, 
+              label = c(
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_FruitSmoothie ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_p() %>%
+  add_significance_stars() %>%
+  modify_header(label ~ "**Daily Intakes**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+```
+
+
+##SDG Results
+###Intake24 
+```{r echo=FALSE}
+#set factor levels and make NA a level
+    df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+    df.intake24_participant$age_cat <- fct_explicit_na(df.intake24_participant$age_cat)
+    
+    df.intake24_participant %>% 
+      select(age_cat, SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_Sugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoFruitSmoothie, SDG_RRPM, SDG_oilyfish) %>% 
+      tbl_summary(missing = "no",
+                  digits = list(all_categorical() ~ c(1,0)),
+                  type = list(all_continuous() ~ "continuous2"),
+                  statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                        "{min}, {max}")),
+                  by = age_cat,
+                  label = c(SDG_Energy ~ "Energy density",
+                            SDG_Fat ~ "Total fat",
+                            SDG_SatFat ~ "Saturated fat",
+                            SDG_TransFat ~ "Trans fat",
+                            SDG_Sugar ~ "Total sugar",
+                            SDG_Carbs ~ "Carbohydrates",
+                            SDG_Fibre ~ "Fibre",
+                            SDG_Salt ~ "Salt",
+                            SDG_FV ~ "Fruit and vegetables - portion/day",
+                            SDG_FV_NoFruitSmoothie ~ "Fruit and vegetables - no fruit smoothie - portion/day",
+                            SDG_RRPM ~ "Red and red processed meat",
+                            SDG_oilyfish ~ "Oily fish"
+                    
+                  )
+      ) %>%
+      add_overall() %>%
+      modify_header(label ~ "**SDG **") %>%
+      bold_labels() %>%  
+      as_flex_table()
+```
+
+###Oily Fish FFQ
+```{r echo=FALSE}
+df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+    df.survey$age_cat <- fct_explicit_na(df.survey$age_cat)    
+    
+    
+df.survey$AFreqRRPM <- factor(df.survey$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
+df.survey$AFreqRRPM <- fct_explicit_na(df.survey$AFreqRRPM)
+
+df.survey$AFreqOilyFish <- factor(df.survey$AFreqOilyFish, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
+df.survey$AFreqOilyFish <- fct_explicit_na(df.survey$AFreqOilyFish)
+
+df.survey %>% 
+  select(age_cat, AFreqOilyFish) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = age_cat,
+              label = AFreqOilyFish ~ "Oily Fish"
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**SDG **") %>%
+  bold_labels() %>%  
+  as_flex_table()
+```
+
+##RNIs and LRNIs
+
+###RNI overall and by age
+*13 participants removed that refused demographic information. Not included in report as we are only reported by age/sex.
+```{r include=FALSE}
+df.intake24_full_demo %>% 
+  select(age_cat, ProteinRNI, CalciumRNI, IronRNI, SeleniumRNI, ZincRNI, VitaminB12RNI) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = age_cat
+  ) %>%
+  add_p()%>%
+  add_significance_stars() %>%
+  add_overall() %>%
+  modify_header(label ~ "**RNI**") %>%
+  bold_labels() %>%  
+  as_flex_table()
+
+
+```
+
+
+###RNI by age and sex
+*13 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(Sex, age_cat, ProteinRNI, CalciumRNI, IronRNI, SeleniumRNI, ZincRNI, VitaminB12RNI) %>%
+  tbl_strata(strata = Sex,
+             .tbl_fun = ~.x %>%
+               tbl_summary(missing = "no",
+               by = age_cat,
+               label = c(ProteinRNI ~ "Protein",
+                         CalciumRNI ~ "Calcium",
+                         IronRNI ~ "Iron",
+                         SeleniumRNI ~ "Selenium",
+                         ZincRNI ~ "Zinc",
+                         VitaminB12RNI ~ "Vitamin B12"
+                         ))
+  ) %>%
+  modify_header(label ~ "**RNI**") %>%
+  bold_labels() %>%  
+  as_flex_table()
+
+```
+
+###LRNI by age and sex
+*13 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(Sex, age_cat, CalciumLRNI, IronLRNI, SeleniumLRNI, ZincLRNI, VitaminB12LRNI) %>%
+  tbl_strata(strata = Sex,
+             .tbl_fun = ~.x %>%
+               tbl_summary(missing = "no",
+               by = age_cat,
+               label = c(
+                         CalciumLRNI ~ "Calcium",
+                         IronLRNI ~ "Iron",
+                         SeleniumLRNI ~ "Selenium",
+                         ZincLRNI ~ "Zinc",
+                         VitaminB12LRNI ~ "Vitamin B12"
+                         ))
+  ) %>%
+  modify_header(label ~ "**LRNI**") %>%
+  bold_labels() %>%  
+  as_flex_table()
+```
+
+#Most Commonly Reported Vegetables
+```{r include=FALSE}
+Vegetables <- df.intake24_item %>%
+  filter(MainFoodGroupCode %in% c(37, 36))
+
+Veg_sub <- Vegetables %>%
+  select(UserID, SearchTerm, Description_English, Description_Local, FoodGroupCode, FoodGroupEnglish, ReadyMeal, RecallNo, NumberOfRecalls, NumberOfItems, Sex, CalcAge, simd_quintile, age_cat, NewMealName, MainFoodGroupCode, MainFoodGroupDesc, ReportingFoodGroupCode, ReportingFoodGroupDesc)
+
+Veg_sub$age_cat <- factor(Veg_sub$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+```
+
+
+```{r echo=FALSE}
+Veg_sub %>%
+  filter(ReportingFoodGroupCode == 5) %>%
+  select(age_cat, Description_English) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = age_cat,
+              label = Description_English ~ ""
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Vegetables**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+
+```
+
