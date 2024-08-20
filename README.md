@@ -38,7 +38,7 @@ The following are calculated within this script:
 
 ## DISH Results: This script creates report tables for Mean daily intakes, SDGs, and RNI/LNRI adherence
 
-### Data Files
+# Data Files
 ## Data Cleaning
 Initial_survey_05.08.24.xlsx
   - Participant Survey
@@ -48,7 +48,7 @@ intake24_05.08.24.xlsx
     
 
 
-### Output
+# Output
 ## Data Cleaning Output
 
 survey_clean_for_management_200824.csv
