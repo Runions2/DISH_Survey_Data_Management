@@ -68,5 +68,6 @@ intake24_item_20_08_24.csv
 - Intake24 dataset at the food item level with reporting food groups 
 
 ## SDG and RNI/LRNI Output
-
+intake24_participant_foodgroups_SDG_RNI_LRNI_20_08_24.csv
+- Participant level dataset with binary variables for SDGs, and RNI/LRNI adherence
 
