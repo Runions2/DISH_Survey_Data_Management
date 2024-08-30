@@ -33,7 +33,6 @@ library(flextable)
 library(gtsummary)
 library(writexl)
 library(forcats)
-library(purrr)
 library(gt)
 
 
@@ -42,34 +41,20 @@ library(gt)
 #Import the data
 ```{r include=FALSE}
 
-df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_20_08_24.csv") %>%
+df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_28_08_24.csv") %>%
   select(-X)
 
-df.intake24_item <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_20_08_24.csv") %>%
+df.intake24_item <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_28_08_24.csv") %>%
   select(-X)
 
-df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_20_08_24.csv") %>%
+
+df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_28_08_24.csv") %>%
   select(-X)
 
-df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv") %>%
+df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_280824.csv") %>%
     select(-X)
 
-user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics.csv") %>%
-  select(-X)
 
-```
-
-
-#***Sample Weights***
-```{r eval=FALSE, include=FALSE}
-#dummy weight variable until we get survey weights from BiOSS
-df.intake24$Intake24_wt <- 1
-
-#dummy code for recoding sample weight to zero if under 2 recalls completed
-# df.intake24 <- df.intake24 %>% 
-#  mutate(Intake24_wt_v2 = case_when(NumberOfRecalls == 1 ~ Intake24_wt,
-#                                         NumberOfRecalls == 0 ~ 0,
-#                                         is.na(NumberOfRecalls) ~ 0))
 ```
 
 
@@ -472,8 +457,8 @@ df.intake24_participant <- df.intake24_participant %>%
                                    TRUE ~ NA))
 ```
 
-
+#Write Files
 ```{r eval=FALSE, include=FALSE}
-write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_foodgroups_SDG_RNI_LRNI_20_08_24.csv")
+write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_foodgroups_SDG_RNI_LRNI_28_08_24.csv")
 ```
 
