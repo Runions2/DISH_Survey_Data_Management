@@ -15,63 +15,51 @@ Data were collected using a survey and 24-hour dietary recalls (herein 'intake24
 # R scripts
 ## DISH_cleaning
 
-This R script processes the survey and intake24 data: 
-- Rename variables 
-- Remove ineligible participants
-- Checks for NAs and incompletes
-- Checks for extreme reporting
-- Recode missing food codes
+This R script processes the raw survey and intake24 data: 
+- Renames variables 
+- Removes ineligibles and incompletes
 - Categorises 'other' responses
-- Creates new variables for meal times and meal categories 
-- A user characteristic dataset is created including (UserID, HouseholdID, Age, Sex, Ethnicity, SIMD)
+- Creates new variables: age groups (2-4y, 5-10y, 11-15y), recall number, number of recalls, number of items per recall, day of the week recall completed, meal types, main food groups, reporting food groups, device intake24 completed on
+- Re-codes missing food codes
+- Removes diet supplements and breast milk
+- Removes dairy-free items from dairy food groups
+- Converts intake24 nutrient variables to numeric and replaces NAs with 0s
+- Creates new nutrient variables: food energy, food and milk energy, food weight, food and milk weight, percent of calories, salt
 
 
-## Data Management Script
+## DISH_intake24
 
-This script creates a recall-level dataset, calculates the daily intakes and mean daily intakes of nutrients. Food groups are created based on NDNS food groups and additional reporting food groups are created based on FSS guidelines and discretionary foods are re-categorised based on FSS discretionary food reporting. 
-
-The following are calculated within this script:
-- Daily intakes of nutrients
-- Mean daily intakes of nutrients
-- Categorisation of food groups
-- Categorisation of reporting food groups
-- Re-categorisation of milk-containing items and discretionary foods
+This R script calculates the mean daily intakes of nutrients and mean participant intakes of nutrients. It also cleans or drops energy intakes <400 or >4,000 kcal.
 
 
-## SDG and RNI/LRNI Adherence Script: This script creates binary variables for adherence to Scottish Dietary Goals and Adherence to RNI and LRNIs. 
+## SDG and RNI/LRNI Adherence Script
 
-- Binary variables for SDG adherence
-- Binary variables for RNI and LRNI adherence
-- Tables of SDG adherence by age group and SIMD
-- Frequency of Vegetables consumed in DISH survey
+This R script creates binary variables for adherence to Scottish Dietary Goals and Adherence to RNI and LRNIs. It also calculates the frequency of vegetables consumed.
 
 
 ## DISH Results: This script creates report tables for Mean daily intakes, SDGs, and RNI/LNRI adherence
 
 # Data Files
-## Data Cleaning
-Initial_survey_05.08.24.xlsx
-  - Participant Survey
+## Raw
+
+survey_26.08.24.xlsx
+  - Raw survey data
     
-intake24_05.08.24.xlsx 
-  - Intake24 Diet Data
+intake24_26.08.24.xlsx 
+  - Raw Intake24 24-hour dietary recall data
     
+
+## Clean
+
+survey_clean_280824.csv
+- Cleaned survey data
+
+intake24_clean_280824.csv
+- Cleaned Intake24 24-hour dietary recall data
+
 
 
 # Output
-## Data Cleaning Output
-
-survey_clean_for_management_200824.csv
-- Participant Survey
-
-intake24_clean_for_management_200824.csv
-- Intake 24 diet data
-
-user_characteristics.csv 
-  - Participant Characteristics from Survey
-
-
-## Data Management Output
 intake24_FS_Energy_20_08_24.csv 
    - Recall level of average daily energy and free sugars and proportion of energy and free sugars by reporting food group
 
