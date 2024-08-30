@@ -5,7 +5,7 @@ date: "May 17, 2024"
 output: word_document
 ---
 
-This notebook preps and manages data for the DISH survey and calculates adherence to the Scottish Dietary Goals and the frequency of individual vegetable consumption. 
+This notebook preps and manages data for the DISH survey. 
 
 #***Import and Prep Data***
 ##Prepare R Environment
@@ -37,13 +37,13 @@ library(openxlsx)
 ##Import the data
 ```{r include=FALSE}
 
-df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv") %>%
+df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_280824.csv") %>%
     select(-X)
   
-  df.intake24_item <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_management_200824.csv") %>%
+  df.intake24_item <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_management_280824.csv") %>%
     select(-X)
   
-  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_200824.csv") %>%
+  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_280824.csv") %>%
     select(-X)
 ```
 
@@ -51,13 +51,6 @@ df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_cl
   # Keep variables needed for analysis ####
 df.intake24_item <- df.intake24_item %>%
   select(SurveyID,UserID,HouseholdID, Sex, Ethnicity, Age, CalcAge, age_cat, simd_quintile, SurveyDuration,date,RecallNo,NumberOfRecalls,NumberOfItems,FoodAmount,FoodAmountReason,NewMealName,NewMealTime,MealTime_hour,MealTime_minute,FoodSource,SearchTerm,FoodID,Intake24FoodCode,Description_English,Description_Local,FoodGroupCode,FoodGroupEnglish,SubFoodGroupCode,ReadyMeal,TotalGrams,MissingFoodID,MissingFoodDescription,MissingFoodPortionSize,MissingFoodLeftovers,Energykcal,Proteing,Fatg,Saturatedfattyacidsg,Transfattyacidsg,Carbohydrateg,Alcoholg,Totalsugarsg,TOTALFS,AOACg,Sodiummg,VitaminAug,Riboflavinmg,Folateug,VitaminDug,VitaminB12ug,VitaminCmg,Ironmg,Calciummg,Iodineug,Magnesiummg,Potassiummg,Seleniumug,Zincmg,Fruitg,FruitJuiceg,DriedFruitg,SmoothieFruitg,Tomatoesg,TomatoPureeg,Brassicaceaeg,YellowRedGreeng,Beansg,Nutsg,OtherVegg,Beefg,Lambg,Porkg,ProcessedRedMeatg,OtherRedMeatg,Burgersg,Sausagesg,Offalg,Poultryg,ProcessedPoultryg,GameBirdsg,WhiteFishg,OilyFishg,CannedTunag,Shellfishg, NutrientTableCode) 
-```
-
-Not needed - removed in data cleaning
-```{r eval=FALSE, include=FALSE}
-#Keep only the participants that are between 2-15 years old
-df.intake24_item <- df.intake24_item[which(df.intake24_item$CalcAge>2 & df.intake24_item$CalcAge<16),]
-
 ```
 
 
@@ -514,20 +507,31 @@ high_kcal_items <- inner_join(df.intake24_item, high_kcal, by = c("UserID","Hous
 low_kcal_items <- inner_join(df.intake24_item, low_kcal, by = c("UserID","HouseholdID", "RecallNo", "Sex","Ethnicity","Age", "CalcAge","age_cat","simd_quintile", "NumberOfRecalls"))
 
 
-check <-df.intake24_item %>%
-  filter(UserID == 10008296) #should be removed from file sample due to incomplete data
+```
+```{r include=FALSE}
+#look at all low kcal recalls to help with determining decisions
 
-check
+low_ids <- low_kcal %>%
+  select(UserID)
 
+Low_intake_all_recalls <- inner_join(df.intake24_item, low_ids, by = "UserID", relationship = "many-to-many")
+Low_intake_all_recalls_1 <- left_join(Low_intake_all_recalls, df.intake24_recall, by = c("UserID","HouseholdID", "RecallNo", "Sex","Ethnicity","Age", "CalcAge","age_cat","simd_quintile", "NumberOfRecalls"))
+
+n_distinct(low_ids$UserID)
+n_distinct(Low_intake_all_recalls_1$UserID)
 ```
 
 ```{r eval=FALSE, include=FALSE}
 #export high and low energy intakes
-write.xlsx(high_kcal_items, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_high_kcal_all_200824.xlsx")
-write.xlsx(low_kcal_items, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_low_kcal_all_200824.xlsx")
+write.xlsx(high_kcal_items, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_high_kcal_all_280824.xlsx")
+write.xlsx(low_kcal_items, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_low_kcal_all_280824.xlsx")
 
+write.xlsx(Low_intake_all_recalls_1, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_low_kcal_ids_all_recalls_280824.xlsx")
 
-rm(low_kcal,low_kcal_items,high_kcal, high_kcal_items)
+rm(low_kcal,low_kcal_items,high_kcal, high_kcal_items, low_ids,Low_intake_all_recalls_1)
+
+check <- df.intake24_item %>%
+  filter(UserID == "10006095")
 ```
 
 #Participant Level Dataset
@@ -950,75 +954,14 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
 
 
 
-Question on vegetables in DISH
-```{r eval=FALSE, include=FALSE}
-df.intake24_item$age_cat <- factor(df.intake24_item$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
-
-
-df.intake24_item %>%
-  #filter(MainFoodGroupCode %in% c(36,37,40,45)) %>% # select variables for table
-  select(age_cat, MainFoodGroupDesc) %>%
-  tbl_summary(statistic = all_categorical() ~ c("{p}% ({n})"),
-              by = age_cat) %>%   #set summary statistics in table and format them
-   add_overall() %>%
-  bold_labels() %>% #format labels
-  as_flex_table() 
-```
-
-
-```{r eval=FALSE, include=FALSE}
-df.intake24_item %>%
-  filter(MainFoodGroupCode %in% c(36,37,40,45)) %>% # select variables for table
-  select(age_cat, MainFoodGroupDesc) %>%
-  tbl_summary(statistic = all_categorical() ~ c("{p}% ({n})"),
-              by = age_cat) %>%   #set summary statistics in table and format them
-   add_overall() %>%
-  bold_labels() %>% #format labels
-  as_flex_table() 
-```
-
-```{r eval=FALSE, include=FALSE}
-df.intake24_item %>%
-  filter(MainFoodGroupCode %in% c(36,40)) %>% # select variables for table
-  select(age_cat, MainFoodGroupDesc) %>%
-  tbl_summary(statistic = all_categorical() ~ c("{p}% ({n})"),
-              by = age_cat) %>%  #set summary statistics in table and format them
-  add_overall() %>%
-  bold_labels() %>% #format labels
-  as_flex_table() 
-```
-
-Disag fruit and veg proportions
-```{r eval=FALSE, include=FALSE}
-df.Fruitveg <- df.intake24_item %>%
-    select(UserID, CalcAge, age_cat, RecallNo,Fruitg,FruitJuiceg,DriedFruitg,SmoothieFruitg,Tomatoesg,TomatoPureeg,Brassicaceaeg,YellowRedGreeng,Beansg,OtherVegg, MainFoodGroupDesc)
-
-
-total_fruit <- sum(df.Fruitveg$Fruitg, df.Fruitveg$DriedFruitg)
-total_fruit_juice <- sum(df.Fruitveg$Fruitg, df.Fruitveg$DriedFruitg, df.Fruitveg$FruitJuiceg, df.Fruitveg$SmoothieFruitg)
-
-total_veg <- sum(df.Fruitveg$Tomatoesg,df.Fruitveg$TomatoPureeg,df.Fruitveg$Brassicaceaeg,df.Fruitveg$YellowRedGreeng,df.Fruitveg$Beansg,df.Fruitveg$OtherVegg)
-
-
-total_fruit/sum(total_fruit, total_veg)
-total_veg/sum(total_fruit, total_veg)
-
-total_fruit_juice/sum(total_fruit_juice, total_veg)
-total_veg/sum(total_fruit_juice, total_veg)
-
-```
-
-
-
-
 
 #Write files for analysis
 ```{r eval=FALSE, include=FALSE}
-write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_FS_Energy_20_08_24.csv")
-write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_20_08_24.csv")
-write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_20_08_24.csv")
+write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_FS_Energy_28_08_24.csv")
+write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_28_08_24.csv")
+write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_28_08_24.csv")
 
-write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_20_08_24.csv")
+write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_28_08_24.csv")
 
 
 
