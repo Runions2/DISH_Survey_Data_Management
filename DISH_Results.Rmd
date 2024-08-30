@@ -27,116 +27,82 @@ output:
   library(writexl)
   library(forcats)
   library(purrr)
+  library(survey)
 ```
 
 #Import the data
 ```{r include=FALSE}
   
-  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_foodgroups_SDG_RNI_LRNI_20_08_24.csv") %>%
+  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_foodgroups_SDG_RNI_LRNI_28_08_24.csv") %>%
     select(-X)
   
- # df.intake24_participant_fg <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/recall_foodgroups_SDG_RNI_15_07_24.csv") %>%
-    #select(-X)
   
-  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_20_08_24.csv") %>%
+  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_28_08_24.csv") %>%
     select(-X)
 
-  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_20_08_24.csv") %>%
+  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_28_08_24.csv") %>%
   select(-X)
 
-  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv") %>%
+  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_280824.csv") %>%
     select(-X)
   
-  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics.csv") %>%
+  user_char <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_280824.csv") %>%
     select(-X)
+  
+  weights <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/sample_survey_weights_140824.csv") %>%
+    select(-X)
+  
 ```
 
 
-
-
-
-
-
-```{r include=FALSE}
-meat <- df.intake24_participant %>%
-  select(UserID, Avg_redmeat, Avg_processedmeat, Avg_redprocessedmeat)
-
-meat_ffq <- df.survey %>%
-  select(UserID, AFreqRRPM, YPFreqRRPM)
-
-
-meat_g_ffq <- left_join(meat, meat_ffq, by = "UserID")
-
-meat_g_ffq <- left_join(meat_g_ffq, user_char, by = "UserID")
-
-
-```
-
-We are only comparing Avg_redprocessedmeat to FFQ because the FFQ question asks about red and red processed meat together, so it is the only comparable disag variable. 
-```{r include=FALSE}
-meat_g_ffq$AFreqRRPM <- factor(meat_g_ffq$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure"))
-
-meat_g_ffq$AFreqRRPM <- fct_explicit_na(meat_g_ffq$AFreqRRPM)   
-
-meat_g_ffq %>% 
-  select(Avg_redprocessedmeat, AFreqRRPM) %>%
-  tbl_summary(missing = "no",
-              digits = list(all_categorical() ~ c(1,0)),
-              type = list(all_continuous() ~ "continuous2"),
-              statistic = list(all_continuous() ~ c("{median}",
-                                                   "{mean} ({sd})",
-                                                    "{min}, {max}")),
-              by = AFreqRRPM
-  ) %>%
-  add_overall() %>%
-  modify_header(label ~ "****") %>%
-  bold_labels() %>%  
-  as_flex_table()
-```
-
-The zero here is due to rounding in the table, there is one respondent who ate 0.31 grams once a week
-```{r include=FALSE}
-meat_g_ffq %>% 
-  filter(Avg_redprocessedmeat != 0) %>%
-  select(Avg_redprocessedmeat, AFreqRRPM) %>%
-  tbl_summary(missing = "no",
-              digits = list(all_categorical() ~ c(1,0)),
-              type = list(all_continuous() ~ "continuous2"),
-              statistic = list(all_continuous() ~ c("{median}",
-                                                   "{mean} ({sd})",
-                                                    "{min}, {max}")),
-              by = AFreqRRPM
-  ) %>%
-  add_overall() %>%
-  modify_header(label ~ "****") %>%
-  bold_labels() %>%  
-  as_flex_table()
-```
-
-```{r eval=FALSE, include=FALSE}
-check <- meat_g_ffq %>%
-  filter(Avg_redprocessedmeat != 0) %>%
-  filter(AFreqRRPM == "Once a week")
-
-
-```
-
+#Sample weights
 ```{r eval=FALSE, include=FALSE}
 
-check <- meat_g_ffq %>%
-  filter(AFreqRRPM == "(Missing)")
+weights_pop <- weights %>%
+  filter(!is.na(sampweight))
+
+df.survey <- left_join(df.survey, weights_pop, by = c("UserID", "HouseholdID", "simd_quintile", "CalcAge", "Age","Sex", "NumberOfChildren"))
+
+# convert data frame to survey object
+svy.survey <- svydesign(id = ~UserID, weights = ~sampweight, data = df.survey)
+
+check <- df.survey %>%
+filter(is.na(df.survey$sampweight))
 
 ```
 
 
-#RNI and LRNI Tables***
+
+#Sample Characteristics
+```{r echo=FALSE}
+
+df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+df.survey %>%
+  select(Sex, Age, age_cat, Ethnicity,simd_quintile, Education, HhldAdults, HhldChildren, FoodParcels ) %>%
+  tbl_summary(statistic = all_categorical() ~ c("{p}% ({n})"),
+              label = c(simd_quintile ~ "SIMD",
+                        age_cat ~ "Age range",
+                        Education ~ "Stage of education",
+                        HhldAdults ~ "Number of adults in household",
+                        HhldChildren ~ "Number of children in household",
+                        FoodParcels ~ "Receipt of food parcels or vouchers in school holidays"),
+              by = Sex) %>%
+  bold_labels() %>% 
+  add_overall()%>%
+  as_flex_table()
+
+
+```
+
+#Result Tables
 Results are presented for 
 1. Average Daily Intakes overall
 2. Average Daily Intakes by Sex
 3. SDG Results
-3. Adherence to RNIs overall and by age group
-4. Adherence to RNIs by age and sex
-5. Adherence to LRNIs by age and sex
+4. Adherence to RNIs overall and by age group
+5. Adherence to RNIs by age and sex
+6. Adherence to LRNIs by age and sex
 
 
 Set factors and remove na
@@ -208,7 +174,8 @@ df.intake24_participant %>%
 ```
 
 
-```{r}
+Reformat overall results 
+```{r echo=FALSE}
 # set up stats
 stats <- c("N" = "{length}", 
            "Mean (SD)" = "{mean} ({sd})", 
@@ -216,7 +183,7 @@ stats <- c("N" = "{length}",
 
 
 df.intakes <- df.intake24_participant %>% 
-  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) # select variables for table
+  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) # select variables for table
 
 #useimap from purr package to combine summary tables and reformat with stats in header row
 intakes_reformat <- imap( 
@@ -227,6 +194,7 @@ intakes_reformat <- imap(
               label = c(        # rename variables for table               
                 Avg_EnergyDensity ~ "Energy density",
                 Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
                 Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
@@ -248,35 +216,12 @@ intakes_reformat
 
 ```
 
-```{r eval=FALSE, include=FALSE}
-##ME TRYING TO FIGURE OUT OTHER FORMATS
-
-df.intakes %>%
-  tbl_summary(),
-
- # set to 'always' or 'ifany' to show unknowns in table
-             digits = list(all_categorical() ~ c(1,0)), # set categorical variables to one decimal place
-              type = list(all_continuous() ~ "continuous2"), 
-              statistic = list(all_continuous() ~ c("{mean} ({sd})")),
-              label = c(        # rename variables for table               
-                Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
-                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
-                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
-                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
-                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
-                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
-                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
-                Avg_AOACFibre ~ "Fibre - g/day"
-                )
-```
-
 ##Daily Intakes by Age
-*13 participants removed that refused demographic information
+*11 participants removed that refused demographic information
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
-  select(age_cat, Avg_EnergyDensity, Avg_Portions_FruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  select(age_cat, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
   tbl_summary(missing = "no",
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
@@ -285,7 +230,8 @@ df.intake24_full_demo %>%
               by = age_cat, 
               label = c(
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_FruitSmoothie ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
                 Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
@@ -303,11 +249,11 @@ df.intake24_full_demo %>%
 ```
 
 ##Daily Intakes by Sex
-*13 participants removed that refused demographic information
+*11 participants removed that refused demographic information
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
-  select(Sex, Avg_EnergyDensity, Avg_Portions_FruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  select(Sex, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
   tbl_summary(missing = "no",
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
@@ -316,7 +262,8 @@ df.intake24_full_demo %>%
               by = Sex, 
               label = c(
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_FruitSmoothie ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
                 Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
@@ -401,8 +348,9 @@ df.survey %>%
 ##RNIs and LRNIs
 
 ###RNI overall and by age
-*13 participants removed that refused demographic information. Not included in report as we are only reported by age/sex.
+*11 participants removed that refused demographic information. Not included in report as we are only reported by age/sex.
 ```{r include=FALSE}
+#overall results, but not needed as we are reporting only with age/sex
 df.intake24_full_demo %>% 
   select(age_cat, ProteinRNI, CalciumRNI, IronRNI, SeleniumRNI, ZincRNI, VitaminB12RNI) %>%
   tbl_summary(missing = "no",
@@ -424,7 +372,7 @@ df.intake24_full_demo %>%
 
 
 ###RNI by age and sex
-*13 participants removed that refused demographic information
+*11 participants removed that refused demographic information
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
@@ -448,7 +396,7 @@ df.intake24_full_demo %>%
 ```
 
 ###LRNI by age and sex
-*13 participants removed that refused demographic information
+*11 participants removed that refused demographic information
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
@@ -500,4 +448,8 @@ Veg_sub %>%
   as_flex_table() 
 
 ```
+
+
+
+
 
