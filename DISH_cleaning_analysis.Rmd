@@ -36,8 +36,8 @@ library(forcats)
 #Read in data
 ```{r message=FALSE, warning=FALSE}
 #import sheets from excel file using XLConnect package
-df.survey_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/Initial_survey_05.08.24.xlsx")
-df.intake24_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/intake24_05.08.24.xlsx")
+df.survey_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/Initial_survey_26.08.24.xlsx")
+df.intake24_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/intake24_26.08.24.xlsx")
 ```
 
 ##clean names
@@ -123,10 +123,6 @@ df.survey <- df.survey %>%
          ImportanceED_Other = q50, 
          SurveyConsent = q51)
 
-
-#Remove NA values in name - likely not needed
-df.survey <- df.survey %>% 
-  filter(!is.na(UserID))
 
 
 names(df.intake24)
@@ -299,8 +295,19 @@ age_removed <- df.survey[which(df.survey$CalcAge<2 | df.survey$CalcAge>16),]
 #Keep only the participants that are between 2-15 years old
 df.survey <- df.survey[which(df.survey$CalcAge>2 & df.survey$CalcAge<16),]
 
+#remove age-ineligible recalls
+df.intake24 <- df.intake24 %>%
+  filter(!UserID %in% c(10007139, 10006439, 10004147))
 
+#remove participant with incomplete data
+df.intake24 <- df.intake24 %>%
+  filter(!UserID %in% c(10008296))
+
+df.survey <- df.survey %>%
+  filter(!UserID %in% c(10008296))
 ```
+
+
 
 ##Create age buckets
 ```{r}
@@ -317,6 +324,7 @@ df.survey <- df.survey %>%
 
 
 ##Check for NAs and recode
+
 Survey
 ```{r}
 
@@ -324,12 +332,14 @@ df.survey %>%
   filter(is.na(df.survey$Sex))
 
 
-df.survey <- df.survey %>%
-  mutate(Sex = case_when(
-    UserID %in% c( 10008296, 20002338)  ~ "Prefer not to say", 
-    TRUE ~ Sex
-  ))
+df.survey %>%
+  filter(is.na(df.survey$NumberOfChildren))
 
+df.survey <- df.survey %>%
+  mutate(NumberOfChildren = case_when(
+    UserID %in% c(10006741)  ~ 8, 
+    TRUE ~ NumberOfChildren
+  ))
 
 ```
 
@@ -337,15 +347,24 @@ df.survey <- df.survey %>%
 df.survey %>%
   filter(is.na(df.survey$Ethnicity))
 
-df.survey <- df.survey %>%
-  mutate(Ethnicity = case_when(
-    UserID %in% c( 10008296, 20002338)  ~ "Prefer not to say", 
-    TRUE ~ Ethnicity
-  ))
 
 df.survey$Ethnicity <- factor(df.survey$Ethnicity, levels = c("White", "Asian or Asian British", "Mixed or multiple ethnic groups", "Black, Black British, Caribbean or African", "Other", "Prefer not to say"))
 
+```
 
+##Remove surveys with no recalls
+```{r}
+#remove surveys that have no recalls
+participant_ids <- df.intake24 %>%
+  select(UserID) %>%
+  distinct()
+
+# keep only ids in survey that are in participant ids
+df.survey <- df.survey %>%
+  semi_join(participant_ids, by = "UserID")
+
+
+rm(participant_ids)
 ```
 
 ##Re-code Food Security responses
@@ -383,15 +402,11 @@ user_char <- df.survey %>%
 
 ```
 
-##Remove age-ineligible participants from intake24
+##Merge demo info with intake24
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 
 #Join intake24 data and survey data
 df.intake24 <- left_join(df.intake24, user_char, by = c('UserID'))
-
-#Keep only the participants that are between 2-15 years old
-df.intake24 <- df.intake24[which(df.intake24$CalcAge>2 & df.intake24$CalcAge<16),]
-
 
 #relocate columns for ease in management
 df.intake24 <- df.intake24 %>%
@@ -400,11 +415,12 @@ df.intake24 <- df.intake24 %>%
 n_distinct(df.intake24$UserID)
 ```
 
-Intake24 - issue here with ethnicity
+Intake24
 ```{r eval=FALSE, include=FALSE}
 #Change NA values to 0 
 df.intake24 <- df.intake24 %>%
-  mutate_all(~ifelse(is.na(.), 0, .))
+  mutate_at(vars(setdiff(names(df.intake24), "Ethnicity")), ~ifelse(is.na(.), 0, .)) #grab column names, exclude Ethnicity and mutate at all other columns
+
 ```
 
 
@@ -504,8 +520,8 @@ subset_ImportanceED_Other
 ```{r eval=FALSE, include=FALSE}
 
 #export for review
-write.xlsx(subset_AgreeOSG_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_OSG_200824.xlsx")
-write.xlsx(subset_ImportanceED_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_ED_200824.xlsx")
+write.xlsx(subset_AgreeOSG_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_OSG_280824.xlsx")
+write.xlsx(subset_ImportanceED_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_ED_280824.xlsx")
 
 
 #remove unneeded dataframes once checked
@@ -613,7 +629,7 @@ df.intake24_full %>%
 
 ```{r eval=FALSE, include=FALSE}
 #export high and low energy intakes
-write.xlsx(df.intake24_missing_food, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Missing_Food_Codes_200824.xlsx")
+write.xlsx(df.intake24_missing_food, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Missing_Food_Codes_280824.xlsx")
 
 rm(df.intake24_missing_food)
 ```
@@ -646,15 +662,6 @@ food_count <- df.intake24 %>%
   filter(NumberOfItems <= 5)
 
 n_distinct(food_count$UserID)
-
-# Remove a response if deemed incomplete
-
-#        df.intake24_removed <- df.intake24 %>%
-#          filter(UserID != "fss7")
-#
-# check removed codes
-#       df.intake24_Under5Foods_removed <- df.intake24 %>%
-#          filter(UserID = "fss7")
 
 ```
 
@@ -804,9 +811,9 @@ df.recall_device <- df.recall_device %>%
 #Write Files
 ```{r eval=FALSE, include=FALSE}
 
-write.csv(df.intake24, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_management_200824.csv")
-write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_200824.csv")
-write.csv(user_char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_200824.csv")
+write.csv(df.intake24, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_for_management_280824.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_280824.csv")
+write.csv(user_char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/user_characteristics_280824.csv")
 
 ```
 
