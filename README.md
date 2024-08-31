@@ -10,7 +10,7 @@ The main outcomes were:
 4. Consumption of food beyond the school gates
 5. Consumption of energy drinks
 
-Data were collected using a survey and 24-hour dietary recalls (herein 'intake24').
+Data were collected using a survey and up to four 24-hour dietary recalls (herein 'intake24').
 
 # R scripts
 ## DISH_cleaning
@@ -29,15 +29,30 @@ This R script processes the raw survey and intake24 data:
 
 ## DISH_intake24
 
-This R script calculates the mean daily intakes of nutrients and mean participant intakes of nutrients. It also cleans or drops energy intakes <400 or >4,000 kcal.
+This R script calculates:
+- total daily intakes of nutrients
+- total daily intakes of food groups
+- mean participant intakes of nutrients (across 1-4 recalls)
+- mean participant intakes of food groups (across 1-4 recalls)
+- adherence to the Scottish Dietary Goals
+- meeting the RNIs
+- meeting the LRNIs
+
+It also cleans or drops energy intakes <400 kcal or >4,000 kcal.
 
 
-## SDG and RNI/LRNI Adherence Script
+## DISH_results
 
-This R script creates binary variables for adherence to Scottish Dietary Goals and Adherence to RNI and LRNIs. It also calculates the frequency of vegetables consumed.
+This script creates report tables for:
+- participant characteristics
+- Scottish Dietary Goals
+- nutrient intakes
+- meeting the RNIs
+- meeting the LRNIs
+- food group intakes
+- consumption of food beyond the school gates
+- consumption of energy drinks 
 
-
-## DISH Results: This script creates report tables for Mean daily intakes, SDGs, and RNI/LNRI adherence
 
 # Data Files
 ## Raw
@@ -56,23 +71,3 @@ survey_clean_280824.csv
 
 intake24_clean_280824.csv
 - Cleaned Intake24 24-hour dietary recall data
-
-
-
-# Output
-intake24_FS_Energy_20_08_24.csv 
-   - Recall level of average daily energy and free sugars and proportion of energy and free sugars by reporting food group
-
-intake24_participant_20_08_24.csv
- - Participant level dataset with mean daily intakes of nutrients and mean daily intakes of discretionary food groups
-
-intake24_recall_20_08_24.csv
-- Recall level dataset with daily intakes of nutrients and daily intakes of discretionary food groups
-
-intake24_item_20_08_24.csv
-- Intake24 dataset at the food item level with reporting food groups 
-
-## SDG and RNI/LRNI Output
-intake24_participant_foodgroups_SDG_RNI_LRNI_20_08_24.csv
-- Participant level dataset with binary variables for SDGs, and RNI/LRNI adherence
-
