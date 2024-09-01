@@ -1,0 +1,924 @@
+---
+title: "DISH Results Tables"
+output:
+  word_document: default
+  html_notebook: default
+---
+
+This notebook outputs weighted estimates into tables.
+
+# Prepare R Environment 
+```{r include=FALSE}
+
+  # Clear R environment
+  rm(list = ls())
+  
+  # Load required packages
+  library(dplyr)
+  library(tidyr)
+  library(rio)
+  library(ggplot2)
+  library(ggthemes)
+  library(grafify)
+  library(lubridate)
+  library(stringr)
+  library(readxl)
+  #library(XLConnect)
+  library(flextable)
+  library(gtsummary)
+  library(writexl)
+  library(forcats)
+  library(purrr)
+  library(survey)
+```
+
+# Import the data
+```{r include=FALSE}
+  #df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_280824.csv") 
+  #df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_280824.csv") 
+  #df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_280824.csv")
+  #df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_280824.csv") 
+  #df.weights_full <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/survey_weights_140824.csv") 
+  
+  df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
+  df.intake24_participant <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv") 
+  df.intake24_recall <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv") 
+  df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv") 
+  df.weights_full <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_weights_140824.csv") 
+```
+
+# Sample weights
+```{r include=FALSE}
+
+df.weights <- df.weights_full %>%
+  filter(!is.na(sampweight)) %>%
+  mutate(sampleweight = sampweight) %>%
+  select(UserID, sampleweight)
+
+df.survey <- left_join(df.survey, df.weights, by = "UserID")
+df.survey <- df.survey %>%
+  relocate(sampleweight, .after=UserID)
+
+df.intake24_participant <- left_join(df.intake24_participant, df.weights, by = "UserID")
+df.intake24_participant <- df.intake24_participant %>%
+  relocate(sampleweight, .after=UserID)
+
+rm(df.weights, df.weights_full)
+
+# **TO UPDATE** replace NA weights with 1
+df.survey <- df.survey %>%
+  mutate(sampleweight = case_when(
+            is.na(sampleweight) ~ 1,
+            TRUE ~ sampleweight))
+
+df.intake24_participant <- df.intake24_participant %>%
+  mutate(sampleweight = case_when(
+            is.na(sampleweight) ~ 1,
+            TRUE ~ sampleweight))
+
+# replace 'Prefer not to say" sex to NA
+df.intake24_participant <- df.intake24_participant %>%
+  mutate(Sex = case_when(Sex == "Prefer not to say" ~ NA,
+                         TRUE ~ Sex))
+
+# set survey weights and psu
+svy.df.survey <- svydesign(id = ~psu, weights = ~sampleweight, data = df.survey)
+svy.df.intake24_participant <- svydesign(id = ~psu, weights = ~sampleweight, data = df.intake24_participant)
+```
+
+# Sample characteristics
+```{r message=FALSE, warning=FALSE}
+svyciprop(~I(Sex=="Female"), svy, method="mean")
+svyciprop(~I(Sex=="Male"), svy, method="mean")
+
+table.demo <- tbl_svysummary(
+  svy.df.survey,
+  by = Sex,
+  label = c(simd_quintile ~ "SIMD",
+            age_cat ~ "Age group",
+            Education ~ "Stage of education",
+            adults_cat ~ "Number of adults in household",
+            children_cat ~ "Number of children in household",
+            FoodParcels ~ "Receipt of food parcels or vouchers in school holidays"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75})", all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  include = c(Age, age_cat, Ethnicity, simd_quintile, Education, adults_cat, children_cat, FoodParcels)) %>%
+  bold_labels() %>% 
+  add_overall()%>%
+  as_flex_table()
+
+save_as_docx(table.demo, 
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_Demographics_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+```
+
+# Scottish Dietary Goals (mean)
+## Overall
+```{r echo=FALSE}
+df.intake24_participant %>% 
+  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>% # select variables for table
+  tbl_summary(missing = "no", # set to 'always' or 'ifany' to show unknowns in table
+              digits = list(all_categorical() ~ c(1,0)), # set categorical variables to one decimal place
+              type = list(all_continuous() ~ "continuous2"), 
+              statistic = list(all_continuous() ~ c("{mean} ({sd})", "{median} ({p25}, {p75})")),
+              label = c(        # rename variables for table               
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_ci() %>% #add confidence interval
+  modify_header(label ~ "**Mean Daily Intakes**") %>% #change header 
+  bold_labels() %>%
+  as_flex_table()
+```
+
+Reformat overall results 
+```{r echo=FALSE}
+# set up stats
+stats <- c("N" = "{length}", 
+           "Mean (SD)" = "{mean} ({sd})", 
+           "Median (IQR)" = "{median} ({p25}, {p75})")
+
+
+df.intakes <- df.intake24_participant %>% 
+  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) # select variables for table
+
+#useimap from purr package to combine summary tables and reformat with stats in header row
+intakes_reformat <- imap( 
+    stats,
+    ~ df.intakes %>%
+  tbl_summary(missing = "no", # set to 'always' or 'ifany' to show unknowns in table
+              statistic = ~.x,
+              label = c(        # rename variables for table               
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )) %>%
+
+    modify_header(all_stat_cols() ~ stringr::str_glue("**{.y}**"))
+  ) %>%
+  # Merge the individual summary tables into one table
+  tbl_merge(tab_spanner = FALSE) %>%
+  modify_header(label ~ "**Mean Daily Intakes**") %>% #change header 
+  bold_labels() %>%
+  as_flex_table()
+  
+intakes_reformat
+
+```
+
+## by Age
+*11 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(age_cat, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{median} ({p25}, {p75})")),
+              by = age_cat, 
+              label = c(
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_p() %>%
+  add_significance_stars() %>%
+  modify_header(label ~ "**Daily Intakes**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+```
+
+## by Sex
+*11 participants removed that refused demographic information
+```{r echo=FALSE}
+
+df.intake24_full_demo %>% 
+  select(Sex, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{median} ({p25}, {p75})")),
+              by = Sex, 
+              label = c(
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibre ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_p() %>%
+  add_significance_stars() %>%
+  modify_header(label ~ "**Daily Intakes**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+
+table.sdgs.age <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({SD})
+                                       {min} - {max}", all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+```
+
+## **TO UPDATE** by SIMD
+
+
+## Oily Fish FFQ
+```{r echo=FALSE}
+df.survey$age_cat <- factor(df.survey$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+    df.survey$age_cat <- fct_explicit_na(df.survey$age_cat)    
+    
+    
+df.survey$AFreqRRPM <- factor(df.survey$AFreqRRPM, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
+df.survey$AFreqRRPM <- fct_explicit_na(df.survey$AFreqRRPM)
+
+df.survey$AFreqOilyFish <- factor(df.survey$AFreqOilyFish, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure" ))
+df.survey$AFreqOilyFish <- fct_explicit_na(df.survey$AFreqOilyFish)
+
+df.survey %>% 
+  select(age_cat, AFreqOilyFish) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = age_cat,
+              label = AFreqOilyFish ~ "Oily Fish"
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**SDG **") %>%
+  bold_labels() %>%  
+  as_flex_table()
+```
+
+
+# Scottish Dietary Goals (%)
+## Overall 
+```{r echo=FALSE, warning=FALSE}
+# Set categories
+df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+# Table
+table.sdgs <- tbl_svysummary(
+  svy.df.intake24_participant,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+# Figure
+## Read in the data frame
+figure.df.sdgs <- data.frame(
+                        SDG=as.factor(c("Energy density","Fat","Saturated fat",
+                                          "Trans fat","Free sugars","Carbohydrates",
+                                          "Fibre","Salt","V&F",
+                                          "RRPM","Oily fish")),
+                        Value=c(15,	62.2,	20.5,	98.8,	13.5,	60.6,	18.6,	60.3,	40.3,	64.8,	16.2)) 
+## Plot 
+figure.sdgs <- ggplot(figure.df.sdgs, aes(x=reorder(SDG,desc(Value)), y=Value)) +  
+       geom_bar(position=position_dodge(), stat="identity", fill="#440154FF") +
+       labs(x="",
+            y="Overall Percentage Adhering to Goal") +
+       theme_minimal() +
+       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5))
+
+ggsave(figure.sdgs, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_overall.jpeg",width = 6.5, height = 5)
+```
+
+## by Age 
+```{r echo=FALSE, warning=FALSE}
+# Set categories
+df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+# Table
+table.sdgs.age <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+# Figure
+## Read in the data frame
+table.forfigure.sdgs.age <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  statistic = list(all_categorical() ~ "{p}"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+save_as_docx("SDG by Age Table for Figure"=table.forfigure.sdgs.age,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Age_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+fig.df.sdg.age <- data.frame(Age=as.factor(c("2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y",
+                                            "5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y",
+                                            "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y", "11-15y")),
+                        SDG=as.factor(c("Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish")),
+                        Value=c(26.9, 67.4,	17.8,	98.9,	19.2,	59.9,	33.3,	24.5,	63.5,	74.9,	16.8,
+                               16.0, 61.2,	21.6,	98.7,	13.8,	59.9,	18.6,	59.8,	55.3,	65.0,	16.9,
+                               7.5,	 60.7,	20.6,	98.8,	10.2,	61.8,	10.9,	79.8,	10.6,	59.1,	15.2)) 
+## Plot 
+fig.sdg.age <- ggplot(fig.df.sdg.age, aes(x=reorder(SDG,desc(Value)), y=Value, fill=factor(Age, levels = c("2-4y","5-10y","11-15y")))) +  
+       geom_bar(position=position_dodge(width=0.6), stat="identity", width=0.6) +
+       labs(x="",
+            y="Overall Percentage Adhering to Goal",
+            fill="Age Group") +
+       theme_minimal() +
+       theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+       scale_fill_manual(values=c("#440154FF", "#1F968BFF","#FDE725FF")) 
+
+ggsave(fig.sdg.age, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_byAge.jpeg",width = 7.5, height = 5)
+```
+
+## by Sex 
+```{r echo=FALSE, warning=FALSE}
+# Table
+table.sdgs.sex <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = Sex,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+# Figure
+## Read in the data frame
+table.forfigure.sdgs.sex <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = Sex,
+  statistic = list(all_categorical() ~ "{p}"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+save_as_docx("SDG by Sex Table for Figure"=table.forfigure.sdgs.sex,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Sex_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+fig.df.sdg.sex <- data.frame(Sex=as.factor(c("Female","Female","Female","Female","Female","Female","Female","Female","Female","Female","Female",
+                                             "Male","Male","Male","Male","Male","Male","Male","Male","Male","Male","Male")),
+                        SDG=as.factor(c("Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish")),
+                        Value=c(14.5,	61.1,	20.1,	98.4,	12.4,	60,	14.1,	65.5,	36.2,	67.3,	16.4,
+                               15.3,	63.2,	20.8,	99.1,	14.6,	61,	22.9,	55.2,	44.5,	62.5,	15.9)) 
+## Plot 
+fig.sdg.sex <- ggplot(fig.df.sdg.sex, aes(x=reorder(SDG,desc(Value)), y=Value, fill=factor(Sex, levels = c("Female","Male")))) +  
+       geom_bar(position=position_dodge(width=0.6), stat="identity", width=0.6) +
+       labs(x="",
+            y="Overall Percentage Adhering to Goal",
+            fill="Sex") +
+       theme_minimal() +
+       theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+       scale_fill_manual(values=c("#440154FF", "#1F968BFF")) 
+
+ggsave(fig.sdg.sex, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySex.jpeg",width = 7.5, height = 5)
+```
+
+## by SIMD 
+```{r echo=FALSE, warning=FALSE}
+# Table
+table.sdgs.simd <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = simd_quintile,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+# Figure
+## Read in the data frame
+table.forfigure.sdgs.simd <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = simd_quintile,
+  statistic = list(all_categorical() ~ "{p}"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+save_as_docx("SDG by SIMD Table for Figure"=table.forfigure.sdgs.simd,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_SIMD_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+fig.df.sdg.simd <- data.frame(SIMD=as.factor(c("1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)",
+                                             "2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd",
+                                             "3rd","3rd","3rd","3rd","3rd","3rd","3rd","3rd","3rd","3rd","3rd",
+                                             "4th","4th","4th","4th","4th","4th","4th","4th","4th","4th","4th",
+                                             "5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)","5th (Least Deprived)")),
+                        SDG=as.factor(c("Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish",
+                                        "Energy density","Fat","Saturated fat","Trans fat","Free sugars","Carbohydrates","Fibre","Salt","V&F","RRPM","Oily fish")),
+                        Value=c(12.6,	62.8,	24.7,	99.3,	15.2,	55.8,	13.5,	54.6,	30.2,	61.9,	13.1,
+                               15.1,	64.0,	24.8,	98.4,	14.1,	58.3,	15.1,	62.9,	38.7,	63.8,	10.0,
+                               15.2,	63.7,	19.7,	98.8,	10.5,	61.7,	18.3,	60.2,	41.2,	66.3,	18.6,
+                               16.1,	56.0,	14.3,	98.0,	11.5,	60.3,	18.6,	63.2,	44.1,	64.4,	20.3,
+                               16.1,	65.0,	18.7,	99.4,	15.9,	67.3,	27.6,	61.2,	47.9,	67.7,	19.4)) 
+## Plot 
+fig.sdg.simd <- ggplot(fig.df.sdg.simd, aes(x=reorder(SDG,desc(Value)), y=Value, fill=factor(SIMD, levels = c("1st (Most Deprived)","2nd","3rd","4th","5th (Least Deprived)")))) +  
+       geom_bar(position=position_dodge(width=0.6), stat="identity", width=0.6) +
+       labs(x="",
+            y="Overall Percentage Adhering to Goal",
+            fill="SIMD") +
+       theme_minimal() +
+       theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
+       scale_fill_viridis_d(option = "viridis", direction = -1)
+
+ggsave(fig.sdg.simd, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySIMD.jpeg",width = 7.5, height = 5)
+```
+
+## Output tables for appendix 
+```{r echo=FALSE, warning=FALSE}
+
+save_as_docx("Overall"=table.sdgs, "by Age"=table.sdgs.age, "by Sex"=table.sdgs.sex, "by SIMD"=table.sdgs.simd,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_SDGs_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
+
+## Explore Vegetables and Fruit Goal
+```{r include=FALSE, warning=FALSE}
+# Mean portions
+table.sdgs.vegfruit <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(Avg_FV_Portions_Beans ~ "Beans (portions/day)",
+            Avg_FV_Portions_JuiceSmoothie ~ "Fruit Juice / Smoothie (portions/day)",
+            Avg_FV_Portions_DriedFruit ~ "Dried fruit (portions/day)",
+            Avg_FV_Portions_FreshFruit ~ "Fresh fruit (portions/day)",
+            Avg_FV_Portions_Veg ~ "Vegetables (portions/day)",
+            Avg_FV_Portions_Total ~ "Total vegetables & fruit (portions/day)"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75})
+                                       {mean} ({mean.std.error})
+                                       {min} - {max}"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_FV_Portions_Beans, Avg_FV_Portions_JuiceSmoothie, Avg_FV_Portions_DriedFruit, Avg_FV_Portions_FreshFruit, Avg_FV_Portions_Veg, Avg_FV_Portions_Total)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+# Most Commonly Reported Vegetables
+Vegetables <- df.intake24_item %>%
+  filter(MainFoodGroupCode %in% c(37, 36))
+
+Veg_sub <- Vegetables %>%
+  select(UserID, SearchTerm, Description_English, Description_Local, FoodGroupCode, FoodGroupEnglish, ReadyMeal, RecallNo, NumberOfRecalls, NumberOfItems, Sex, CalcAge, simd_quintile, age_cat, NewMealName, MainFoodGroupCode, MainFoodGroupDesc, ReportingFoodGroupCode, ReportingFoodGroupDesc)
+
+Veg_sub$age_cat <- factor(Veg_sub$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+Veg_sub %>%
+  filter(ReportingFoodGroupCode == 5) %>%
+  select(age_cat, Description_English) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{min}, {max}")),
+              by = age_cat,
+              label = Description_English ~ ""
+  ) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Vegetables**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+
+save_as_docx("Mean portions"=table.sdgs.vegfruit,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_F&V_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
+
+# RNIs and LRNIs
+## by Age 
+```{r include=FALSE, warning=FALSE}
+
+table.rnis.age <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
+            RNI_VitaminA ~ "Vitamin A, % above RNI",
+            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_prct_VitaminA ~ "Vitamin A, % RNI",
+            Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
+            RNI_Riboflavin ~ "Riboflavin, % above RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
+            Avg_Folateug ~ "Folate (µg/day)",
+            RNI_Folate ~ "Folate, % above RNI",
+            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_prct_Folate ~ "Folate, % RNI",
+            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            Avg_Ironmg ~ "Iron (mg/day)",
+            RNI_Iron ~ "Iron, % above RNI",
+            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_prct_Iron ~ "Iron, % RNI",
+            Avg_Calciummg ~ "Calcium (mg/day)",
+            RNI_Calcium ~ "Calcium, % above RNI",
+            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_prct_Calcium ~ "Calcium, % RNI",
+            Avg_Magnesiummg ~ "Magnesium (mg/day)",
+            RNI_Magnesium ~ "Magnesium, % above RNI",
+            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_prct_Magnesium ~ "Magnesium, % RNI",
+            Avg_Potassiummg ~ "Potassium (mg/day)",
+            RNI_Potassium ~ "Potassium, % above RNI",
+            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_prct_Potassium ~ "Potassium, % RNI",
+            Avg_Iodineug ~ "Iodine (µg/day)",
+            RNI_Iodine ~ "Iodine, % above RNI",
+            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_prct_Iodine ~ "Iodine, % RNI",
+            Avg_Seleniumug ~ "Selenium (µg/day)",
+            RNI_Selenium ~ "Selenium, % above RNI",
+            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_prct_Selenium ~ "Selenium, % RNI",
+            Avg_Zincmg ~ "Zinc (mg/day)",
+            RNI_Zinc ~ "Zinc, % above RNI",
+            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_prct_Zinc ~ "Zinc, % RNI"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({mean.std.error})
+                                       {min} - {max}", 
+                   all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0),
+                all_categorical() ~ c(1,0)),
+  include = c(Avg_VitaminAug, RNI_VitaminA, LRNI_VitaminA, RNI_prct_VitaminA, Avg_Riboflavinmg, RNI_Riboflavin, LRNI_Riboflavin, RNI_prct_Riboflavin,
+              Avg_Folateug, RNI_Folate, LRNI_Folate, RNI_prct_Folate, Avg_VitaminDug, RNI_VitaminD, RNI_prct_VitaminD,
+              Avg_Ironmg, RNI_Iron, LRNI_Iron, RNI_prct_Iron, Avg_Calciummg, RNI_Calcium, LRNI_Calcium, RNI_prct_Calcium,
+              Avg_Magnesiummg, RNI_Magnesium, LRNI_Magnesium, RNI_prct_Magnesium, Avg_Potassiummg, RNI_Potassium, LRNI_Potassium, RNI_prct_Potassium,
+              Avg_Iodineug, RNI_Iodine, LRNI_Iodine, RNI_prct_Iodine, Avg_Seleniumug, RNI_Selenium, LRNI_Selenium, RNI_prct_Selenium,
+              Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+```
+
+## by Sex
+```{r echo=FALSE, warning=FALSE}
+table.rnis.sex <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = Sex,
+  label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
+            RNI_VitaminA ~ "Vitamin A, % above RNI",
+            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_prct_VitaminA ~ "Vitamin A, % RNI",
+            Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
+            RNI_Riboflavin ~ "Riboflavin, % above RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
+            Avg_Folateug ~ "Folate (µg/day)",
+            RNI_Folate ~ "Folate, % above RNI",
+            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_prct_Folate ~ "Folate, % RNI",
+            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            Avg_Ironmg ~ "Iron (mg/day)",
+            RNI_Iron ~ "Iron, % above RNI",
+            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_prct_Iron ~ "Iron, % RNI",
+            Avg_Calciummg ~ "Calcium (mg/day)",
+            RNI_Calcium ~ "Calcium, % above RNI",
+            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_prct_Calcium ~ "Calcium, % RNI",
+            Avg_Magnesiummg ~ "Magnesium (mg/day)",
+            RNI_Magnesium ~ "Magnesium, % above RNI",
+            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_prct_Magnesium ~ "Magnesium, % RNI",
+            Avg_Potassiummg ~ "Potassium (mg/day)",
+            RNI_Potassium ~ "Potassium, % above RNI",
+            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_prct_Potassium ~ "Potassium, % RNI",
+            Avg_Iodineug ~ "Iodine (µg/day)",
+            RNI_Iodine ~ "Iodine, % above RNI",
+            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_prct_Iodine ~ "Iodine, % RNI",
+            Avg_Seleniumug ~ "Selenium (µg/day)",
+            RNI_Selenium ~ "Selenium, % above RNI",
+            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_prct_Selenium ~ "Selenium, % RNI",
+            Avg_Zincmg ~ "Zinc (mg/day)",
+            RNI_Zinc ~ "Zinc, % above RNI",
+            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_prct_Zinc ~ "Zinc, % RNI"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({mean.std.error})
+                                       {min} - {max}", 
+                   all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0),
+                all_categorical() ~ c(1,0)),
+  include = c(Avg_VitaminAug, RNI_VitaminA, LRNI_VitaminA, RNI_prct_VitaminA, Avg_Riboflavinmg, RNI_Riboflavin, LRNI_Riboflavin, RNI_prct_Riboflavin,
+              Avg_Folateug, RNI_Folate, LRNI_Folate, RNI_prct_Folate, Avg_VitaminDug, RNI_VitaminD, RNI_prct_VitaminD,
+              Avg_Ironmg, RNI_Iron, LRNI_Iron, RNI_prct_Iron, Avg_Calciummg, RNI_Calcium, LRNI_Calcium, RNI_prct_Calcium,
+              Avg_Magnesiummg, RNI_Magnesium, LRNI_Magnesium, RNI_prct_Magnesium, Avg_Potassiummg, RNI_Potassium, LRNI_Potassium, RNI_prct_Potassium,
+              Avg_Iodineug, RNI_Iodine, LRNI_Iodine, RNI_prct_Iodine, Avg_Seleniumug, RNI_Selenium, LRNI_Selenium, RNI_prct_Selenium,
+              Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+```
+
+## by Age and Sex
+```{r echo=FALSE, warning=FALSE}
+
+table.rnis.agesex <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat,
+  label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
+            RNI_VitaminA ~ "Vitamin A, % above RNI",
+            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_prct_VitaminA ~ "Vitamin A, % RNI",
+            Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
+            RNI_Riboflavin ~ "Riboflavin, % above RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
+            Avg_Folateug ~ "Folate (µg/day)",
+            RNI_Folate ~ "Folate, % above RNI",
+            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_prct_Folate ~ "Folate, % RNI",
+            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            Avg_Ironmg ~ "Iron (mg/day)",
+            RNI_Iron ~ "Iron, % above RNI",
+            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_prct_Iron ~ "Iron, % RNI",
+            Avg_Calciummg ~ "Calcium (mg/day)",
+            RNI_Calcium ~ "Calcium, % above RNI",
+            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_prct_Calcium ~ "Calcium, % RNI",
+            Avg_Magnesiummg ~ "Magnesium (mg/day)",
+            RNI_Magnesium ~ "Magnesium, % above RNI",
+            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_prct_Magnesium ~ "Magnesium, % RNI",
+            Avg_Potassiummg ~ "Potassium (mg/day)",
+            RNI_Potassium ~ "Potassium, % above RNI",
+            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_prct_Potassium ~ "Potassium, % RNI",
+            Avg_Iodineug ~ "Iodine (µg/day)",
+            RNI_Iodine ~ "Iodine, % above RNI",
+            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_prct_Iodine ~ "Iodine, % RNI",
+            Avg_Seleniumug ~ "Selenium (µg/day)",
+            RNI_Selenium ~ "Selenium, % above RNI",
+            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_prct_Selenium ~ "Selenium, % RNI",
+            Avg_Zincmg ~ "Zinc (mg/day)",
+            RNI_Zinc ~ "Zinc, % above RNI",
+            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_prct_Zinc ~ "Zinc, % RNI"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({mean.std.error})
+                                       {min} - {max}", 
+                   all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0),
+                all_categorical() ~ c(1,0)),
+  include = c(Avg_VitaminAug, RNI_VitaminA, LRNI_VitaminA, RNI_prct_VitaminA, Avg_Riboflavinmg, RNI_Riboflavin, LRNI_Riboflavin, RNI_prct_Riboflavin,
+              Avg_Folateug, RNI_Folate, LRNI_Folate, RNI_prct_Folate, Avg_VitaminDug, RNI_VitaminD, RNI_prct_VitaminD,
+              Avg_Ironmg, RNI_Iron, LRNI_Iron, RNI_prct_Iron, Avg_Calciummg, RNI_Calcium, LRNI_Calcium, RNI_prct_Calcium,
+              Avg_Magnesiummg, RNI_Magnesium, LRNI_Magnesium, RNI_prct_Magnesium, Avg_Potassiummg, RNI_Potassium, LRNI_Potassium, RNI_prct_Potassium,
+              Avg_Iodineug, RNI_Iodine, LRNI_Iodine, RNI_prct_Iodine, Avg_Seleniumug, RNI_Selenium, LRNI_Selenium, RNI_prct_Selenium,
+              Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+```
+
+## by SIMD
+```{r echo=FALSE, warning=FALSE}
+
+table.rnis.simd <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = simd_quintile,
+  label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
+            RNI_VitaminA ~ "Vitamin A, % above RNI",
+            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_prct_VitaminA ~ "Vitamin A, % RNI",
+            Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
+            RNI_Riboflavin ~ "Riboflavin, % above RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
+            Avg_Folateug ~ "Folate (µg/day)",
+            RNI_Folate ~ "Folate, % above RNI",
+            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_prct_Folate ~ "Folate, % RNI",
+            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            Avg_Ironmg ~ "Iron (mg/day)",
+            RNI_Iron ~ "Iron, % above RNI",
+            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_prct_Iron ~ "Iron, % RNI",
+            Avg_Calciummg ~ "Calcium (mg/day)",
+            RNI_Calcium ~ "Calcium, % above RNI",
+            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_prct_Calcium ~ "Calcium, % RNI",
+            Avg_Magnesiummg ~ "Magnesium (mg/day)",
+            RNI_Magnesium ~ "Magnesium, % above RNI",
+            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_prct_Magnesium ~ "Magnesium, % RNI",
+            Avg_Potassiummg ~ "Potassium (mg/day)",
+            RNI_Potassium ~ "Potassium, % above RNI",
+            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_prct_Potassium ~ "Potassium, % RNI",
+            Avg_Iodineug ~ "Iodine (µg/day)",
+            RNI_Iodine ~ "Iodine, % above RNI",
+            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_prct_Iodine ~ "Iodine, % RNI",
+            Avg_Seleniumug ~ "Selenium (µg/day)",
+            RNI_Selenium ~ "Selenium, % above RNI",
+            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_prct_Selenium ~ "Selenium, % RNI",
+            Avg_Zincmg ~ "Zinc (mg/day)",
+            RNI_Zinc ~ "Zinc, % above RNI",
+            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_prct_Zinc ~ "Zinc, % RNI"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({mean.std.error})
+                                       {min} - {max}", 
+                   all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0),
+                all_categorical() ~ c(1,0)),
+  include = c(Avg_VitaminAug, RNI_VitaminA, LRNI_VitaminA, RNI_prct_VitaminA, Avg_Riboflavinmg, RNI_Riboflavin, LRNI_Riboflavin, RNI_prct_Riboflavin,
+              Avg_Folateug, RNI_Folate, LRNI_Folate, RNI_prct_Folate, Avg_VitaminDug, RNI_VitaminD, RNI_prct_VitaminD,
+              Avg_Ironmg, RNI_Iron, LRNI_Iron, RNI_prct_Iron, Avg_Calciummg, RNI_Calcium, LRNI_Calcium, RNI_prct_Calcium,
+              Avg_Magnesiummg, RNI_Magnesium, LRNI_Magnesium, RNI_prct_Magnesium, Avg_Potassiummg, RNI_Potassium, LRNI_Potassium, RNI_prct_Potassium,
+              Avg_Iodineug, RNI_Iodine, LRNI_Iodine, RNI_prct_Iodine, Avg_Seleniumug, RNI_Selenium, LRNI_Selenium, RNI_prct_Selenium,
+              Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+```
+
+## Output tables for appendix 
+```{r echo=FALSE, warning=FALSE}
+
+save_as_docx("by Age"=table.rnis.age, "by Sex"=table.rnis.sex, "by Age and Sex"=table.rnis.agesex, "by SIMD"=table.rnis.simd,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_RNIs&LRNIs_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
+
+## Advisory group slides
+```{r echo=FALSE, warning=FALSE}
+
+table.rnis.slide1 <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat,
+  label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
+            Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
+            Avg_Folateug ~ "Folate (µg/day)",
+            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            Avg_Ironmg ~ "Iron (mg/day)",
+            Avg_Calciummg ~ "Calcium (mg/day)",
+            Avg_Magnesiummg ~ "Magnesium (mg/day)",
+            Avg_Potassiummg ~ "Potassium (mg/day)",
+            Avg_Iodineug ~ "Iodine (µg/day)",
+            Avg_Seleniumug ~ "Selenium (µg/day)",
+            Avg_Zincmg ~ "Zinc (mg/day)"),
+  statistic = list(all_continuous() ~ "{mean}"),
+  missing = "ifany",
+  include = c(Avg_VitaminAug, Avg_Riboflavinmg, Avg_Folateug, Avg_VitaminDug, Avg_Ironmg, Avg_Calciummg, 
+              Avg_Magnesiummg, Avg_Potassiummg, Avg_Iodineug, Avg_Seleniumug, Avg_Zincmg)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.rnis.slide2 <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat,
+  label = c(RNI_prct_VitaminA ~ "Vitamin A, % RNI",
+            RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
+            RNI_prct_Folate ~ "Folate, % RNI",
+            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            RNI_prct_Iron ~ "Iron, % RNI",
+            RNI_prct_Calcium ~ "Calcium, % RNI",
+            RNI_prct_Magnesium ~ "Magnesium, % RNI",
+            RNI_prct_Potassium ~ "Potassium, % RNI",
+            RNI_prct_Iodine ~ "Iodine, % RNI",
+            RNI_prct_Selenium ~ "Selenium, % RNI",
+            RNI_prct_Zinc ~ "Zinc, % RNI"),
+  statistic = list(all_continuous() ~ "{mean}"),
+  missing = "ifany",
+  include = c(RNI_prct_VitaminA, RNI_prct_Riboflavin, RNI_prct_Folate, RNI_prct_VitaminD,RNI_prct_Iron, RNI_prct_Calcium,
+              RNI_prct_Magnesium, RNI_prct_Potassium, RNI_prct_Iodine, RNI_prct_Selenium, RNI_prct_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+save_as_docx("Mean"=table.rnis.slide1,"Mean % RNI"=table.rnis.slide2,
+             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_RNIs&LRNIs_Slides_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
