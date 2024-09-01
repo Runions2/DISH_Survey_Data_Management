@@ -1,5 +1,5 @@
 # Dietary Intake in Scotland’s CHildren (DISH)
-## Achievement of the Scottish Dietary Goals, Nutrient and Food Group Intake, Food Beyond the School Gate and Consumption of Energy Drinks
+## Achievement of the Scottish Dietary Goals, Nutrient and Food Group Intake, and Consumption of Food Beyond the School Gate and Energy Drinks
 
 This repository processes and analyses data from a national survey of children and young people aged 2 to 15 years living in Scotland. 
 
@@ -19,13 +19,12 @@ This R script processes the raw survey and intake24 data:
 - Renames variables 
 - Removes ineligibles and incompletes
 - Categorises 'other' responses
-- Creates new variables: age groups (2-4y, 5-10y, 11-15y), recall number, number of recalls, number of items per recall, day of the week recall completed, meal types, main food groups, reporting food groups, device intake24 completed on
+- Creates new variables
 - Re-codes missing food codes
 - Removes diet supplements and breast milk
 - Removes dairy-free items from dairy food groups
 - Converts intake24 nutrient variables to numeric and replaces NAs with 0s
-- Creates new nutrient variables: food energy, food and milk energy, food weight, food and milk weight, percent of calories, salt
-
+- Removes or cleans recalls completed in <2 minutes or with <=5 items
 
 ## DISH_intake24
 
