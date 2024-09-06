@@ -1662,10 +1662,24 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # Write files for analysis
 ```{r include=FALSE}
-#write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_280824.csv")
-#write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_280824.csv")
-#write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_280824.csv")
+#write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_060924.csv")
+#write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_060924.csv")
+#write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_060924.csv")
+#write.csv(df.intake24_participant_ndns_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_060924.csv")
+#write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_reporting_food_groups_060924.csv")
+
+
+
 write.csv(df.intake24_participant, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv")
 write.csv(df.intake24_recall, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv")
 write.csv(df.intake24_item, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
+
+#New food group files
+
+#NDNS food groups
+write.csv(df.intake24_participant_ndns_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_ndns_food_groups_060924.csv")
+
+#Reporting/Discretionary food groups
+write.csv(df.intake24_participant_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_reporting_food_groups_060924.csv")
+
 ```
