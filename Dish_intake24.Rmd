@@ -21,9 +21,8 @@ library(grafify)
 library(lubridate)
 library(stringr)
 library(readxl)
-#library(XLConnect)
 library(flextable)
-#library(gtsummary)
+library(gtsummary)
 library(writexl)
 library(forcats)
 library(openxlsx)
@@ -31,10 +30,11 @@ library(openxlsx)
 
 # Import the data
 ```{r include=FALSE}
-#df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_clean_280824.csv") 
-#df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_280824.csv") 
-df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
-df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv")
+df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_050924.csv") 
+df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_050924.csv") 
+
+#df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
+#df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv")
 ```
 
 # Recall Level Values
@@ -50,6 +50,8 @@ df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scot
         age_cat = first(age_cat),
         Sex = first(Sex),
         age_sex_cat = first(age_sex_cat),
+        age_cat_drv = first(age_cat_drv),
+        age_sex_cat_drv = first(age_sex_cat_drv),
         Ethnicity = first(Ethnicity),
         simd_quintile = first(simd_quintile),
         Education = first(Education),
@@ -109,8 +111,12 @@ df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scot
         Day_savourybiscuitsg = sum(TotalGrams[ReportingFoodGroupCode == 11], na.rm = TRUE),
         Day_cakespiesg = sum(TotalGrams[ReportingFoodGroupCode == 12], na.rm = TRUE),
         Day_savourysnacksg = sum(TotalGrams[ReportingFoodGroupCode == 13], na.rm = TRUE),
-        Day_pizzareadymealsg = sum(TotalGrams[ReportingFoodGroupCode == 14], na.rm = TRUE),
-        Day_icecreamg = sum(TotalGrams[ReportingFoodGroupCode == 15], na.rm = TRUE),
+        Day_pizzasg = sum(TotalGrams[ReportingFoodGroupCode == 14], na.rm = TRUE),
+        Day_readymealsg = sum(TotalGrams[ReportingFoodGroupCode == 15], na.rm = TRUE),
+        Day_icecreamg = sum(TotalGrams[ReportingFoodGroupCode == 16], na.rm = TRUE),
+        Day_cerealsg = sum(TotalGrams[ReportingFoodGroupCode == 17], na.rm = TRUE),
+        Day_chipsg = sum(TotalGrams[ReportingFoodGroupCode == 18], na.rm = TRUE),
+        Day_yoghurtdairydessertg = sum(TotalGrams[ReportingFoodGroupCode == 19], na.rm = TRUE),
         
         Day_RRPMg = sum(Beefg, Lambg, Porkg, ProcessedRedMeatg, OtherRedMeatg, Burgersg, Sausagesg, Offalg),
         Day_FV_Beansg = sum(Beansg),
@@ -213,6 +219,75 @@ Low_intake_all_recalls_1 <- left_join(Low_intake_all_recalls, df.intake24_recall
 rm(low_kcal, low_kcal_items, high_kcal, high_kcal_items, low_ids, Low_intake_all_recalls, Low_intake_all_recalls_1)
 ```
 
+```{r}
+#clean low energy outliers
+
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10002909 & RecallNo == 1))
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!(UserID == 10002909 & RecallNo == 1))
+
+df.intake24_item <- df.intake24_item %>%
+  filter(!UserID == 10006095) #removing both recalls as neither passed quality checks (3rd recall also removed in earlier quality checks)
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!UserID == 10006095)
+
+df.survey <- df.survey %>%
+  filter(!UserID == 10006095)
+
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10001709 & RecallNo == 3))
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!(UserID == 10001709 & RecallNo == 3))
+```
+
+
+```{r}
+#clean high energy outliers
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10009887 & RecallNo == 1))
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!(UserID == 10009887 & RecallNo == 1))
+
+  
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10000459 & RecallNo == 1))
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!(UserID == 10000459 & RecallNo == 1))
+
+  
+df.intake24_item <- df.intake24_item %>%
+  filter(!UserID == 20002885) #remove participant as all recalls did not pass quality checks
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!UserID == 20002885)
+
+df.survey <- df.survey %>%
+  filter(!UserID == 20002885)
+
+
+
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 30000069 & RecallNo == 4))
+
+df.intake24_recall <- df.intake24_recall %>%
+  filter(!(UserID == 30000069 & RecallNo == 4))
+```
+
+Need to update changed energy intakes below
+```{r}
+
+
+```
+
+
+
+
 # Participant Level Values
 ## Mean participant nutrient and food group intake (across 1-4 recalls)
 ```{r}
@@ -226,6 +301,8 @@ df.intake24_participant <- df.intake24_recall %>%
         age_cat = first(age_cat),
         Sex = first(Sex),
         age_sex_cat = first(age_sex_cat),
+        age_cat_drv = first(age_cat_drv),
+        age_sex_cat_drv = first(age_sex_cat_drv),
         Ethnicity = first(Ethnicity),
         simd_quintile = first(simd_quintile),
         Education = first(Education),
@@ -292,8 +369,12 @@ df.intake24_participant <- df.intake24_recall %>%
         Avg_savourybiscuitsg = mean(Day_savourybiscuitsg),
         Avg_cakespiesg = mean(Day_cakespiesg),
         Avg_savourysnacksg = mean(Day_savourysnacksg),
-        Avg_pizzareadymealsg = mean(Day_pizzareadymealsg),
+        Avg_pizzasg = mean(Day_pizzasg),
+        Avg_readymealsg = mean(Day_readymealsg),
         Avg_icecreamg = mean(Day_icecreamg),
+        Avg_cerealsg = mean(Day_cerealsg),
+        Avg_chipsg = mean(Day_chipsg),
+        Avg_yoghurtdairydessertg = mean(Day_yoghurtdairydessertg),
         
         Avg_RRPMg = mean(Day_RRPMg),
         Avg_FV_Beansg = mean(Day_FV_Beansg),
@@ -313,7 +394,54 @@ df.intake24_participant <- df.intake24_recall %>%
   ungroup()
 ```
 
-# **TO UPDATE** Contributions of food groups to energy and nutrient intake
+# **CHECK** Contributions of NDNS food groups to nutrient intake
+
+NDNS Food groups - contributions to energy and free sugar intake
+```{r}
+# Calculate daily intakes of energy and free sugars from food groups
+df.intake24_recall_ndns_fg <- df.intake24_item %>%
+  group_by(UserID, RecallNo, MainFoodGroupCode) %>% 
+  summarise(
+        NumberOfRecalls = first(NumberOfRecalls),
+        Day_Energykcal_fg = sum(Energykcal),
+        Day_FoodEnergy_fg = sum(FoodEnergy),
+        Day_FoodMilkEnergy_fg = sum(FoodMilkEnergy),
+        Day_TotalGrams_fg = sum(TotalGrams),
+        Day_FoodGrams_fg = sum(FoodGrams),
+        Day_FoodMilkGrams_fg = sum(FoodMilkGrams),
+        Day_Carbohydrateg_fg = sum(Carbohydrateg),
+        Day_Carbs_kcal_fg = sum(Carbs_kcal),
+        Day_FreeSugarsg_fg = sum(Freesugarsg), 
+        Day_FreeSugars_kcal_fg = sum(Freesugars_kcal),
+        Day_Fatg_fg = sum(Fatg),
+        Day_Fat_kcal_fg = sum(Fat_kcal),
+        Day_SatFatg_fg = sum(Saturatedfattyacidsg),
+        Day_SatFat_kcal_fg = sum(SatFat_Kcal),
+        Day_TransFatg_fg = sum(Transfattyacidsg),
+        Day_TransFat_kcal_fg = sum(TransFat_Kcal),
+        Day_Proteing_fg = sum(Proteing),
+        Day_Protein_kcal_fg = sum(Protein_kcal),
+        Day_Alcoholg_fg = sum(Alcoholg),
+        Day_Alcohol_kcal_fg = sum(Alcohol_kcal),
+        Day_AOACFibreg_fg = sum(AOACg),
+        Day_VitaminAug_fg = sum(VitaminAug),
+        Day_Riboflavinmg_fg = sum(Riboflavinmg),
+        Day_Folateug_fg = sum(Folateug),
+        Day_VitaminDug_fg = sum(VitaminDug),
+        Day_VitaminB12ug_fg = sum(VitaminB12ug),
+        Day_VitaminCmg_fg = sum(VitaminCmg),
+        Day_Ironmg_fg = sum(Ironmg),
+        Day_Calciummg_fg = sum(Calciummg),
+        Day_Sodiummg_fg = sum(Sodiummg),
+        Day_Saltg_fg = sum(Saltg), 
+        Day_Magnesiummg_fg = sum(Magnesiummg),
+        Day_Potassiummg_fg = sum(Potassiummg),
+        Day_Iodineug_fg = sum(Iodineug),
+        Day_Seleniumug_fg = sum(Seleniumug),
+        Day_Zincmg_fg = sum(Zincmg)) 
+
+
+```
 
 Create grids
 ```{r eval=FALSE}
@@ -327,7 +455,7 @@ df.onerecall <- df.intake24_recall %>%
 foodgrid_onerecall <- expand.grid( #create a grid of each combination of the below:
   UserID = unique(df.onerecall$UserID), #take each unique UserID
   RecallNo = unique(df.onerecall$RecallNo), #take each unique RecallNo
-  ReportingFoodGroupCode = factor(1:15)) #create a column of with 1-12 for reporting food groups
+  MainFoodGroupCode = factor(1:61)) #create a column of with 1-61 for reporting food groups
 
 # 2 recalls
 df.tworecalls <- df.intake24_recall %>%
@@ -336,7 +464,7 @@ df.tworecalls <- df.intake24_recall %>%
 foodgrid_tworecalls <- expand.grid(
   UserID = unique(df.tworecalls$UserID),
   RecallNo = unique(df.tworecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:15))
+  MainFoodGroupCode = factor(1:61))
 
 # 3 recalls
 df.threerecalls <- df.intake24_recall %>%
@@ -345,7 +473,7 @@ df.threerecalls <- df.intake24_recall %>%
 foodgrid_threerecalls <- expand.grid(
   UserID = unique(df.threerecalls$UserID),
   RecallNo = unique(df.threerecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:15))
+  MainFoodGroupCode = factor(1:61))
 
 #4 recalls 
 df.fourrecalls <- df.intake24_recall %>%
@@ -354,7 +482,227 @@ df.fourrecalls <- df.intake24_recall %>%
 foodgrid_fourrecalls <- expand.grid(
   UserID = unique(df.fourrecalls$UserID),
   RecallNo = unique(df.threerecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:15))
+  MainFoodGroupCode = factor(1:61))
+```
+
+Combine grids
+```{r eval=FALSE}
+# Combine expanded grids
+foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls) %>%
+  arrange(UserID, RecallNo) %>%
+  mutate(MainFoodGroupCode = as.numeric(MainFoodGroupCode))
+
+# Join daily intakes with expanded grids
+df.intake24_recall_ndns_fg <- left_join(foodgroup_grid, df.intake24_recall_ndns_fg, by = c("UserID", "RecallNo", "MainFoodGroupCode")) %>%
+  relocate(NumberOfRecalls, .after=UserID)
+
+# Change NA values to 0 
+df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>%
+  mutate_all(~ifelse(is.na(.), 0, .))
+
+# Remove datasets no longer needed
+rm(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgroup_grid)
+
+```
+
+Calculate mean daily intakes of energy and nutrients from food groups 
+```{r eval=FALSE}
+# Participant level dataset
+df.intake24_participant_ndns_fg <- df.intake24_recall_ndns_fg %>%
+  group_by(UserID, MainFoodGroupCode) %>% 
+  mutate(
+        Avg_Energykcal_fg = sum(Day_Energykcal_fg)/NumberOfRecalls,
+        Avg_FoodEnergy_fg = sum(Day_FoodEnergy_fg)/NumberOfRecalls,
+        Avg_FoodMilkEnergy_fg = sum(Day_FoodMilkEnergy_fg)/NumberOfRecalls,
+        Avg_TotalGrams_fg = sum(Day_TotalGrams_fg)/NumberOfRecalls,
+        Avg_FoodGrams_fg = sum(Day_FoodGrams_fg)/NumberOfRecalls,
+        Avg_FoodMilkGrams_fg = sum(Day_FoodMilkGrams_fg)/NumberOfRecalls,
+        Avg_Carbohydrateg_fg = sum(Day_Carbohydrateg_fg)/NumberOfRecalls,
+        Avg_Carbs_kcal_fg = sum(Day_Carbs_kcal_fg)/NumberOfRecalls,
+        Avg_FreeSugarsg_fg = sum(Day_FreeSugarsg_fg)/NumberOfRecalls, 
+        Avg_FreeSugars_kcal_fg = sum(Day_FreeSugars_kcal_fg)/NumberOfRecalls,
+        Avg_Fatg_fg = sum(Day_Fatg_fg)/NumberOfRecalls,
+        Avg_Fat_kcal_fg = sum(Day_Fat_kcal_fg)/NumberOfRecalls,
+        Avg_SatFatg_fg = sum(Day_SatFatg_fg)/NumberOfRecalls,
+        Avg_SatFat_kcal_fg = sum(Day_SatFat_kcal_fg)/NumberOfRecalls,
+        Avg_TransFatg_fg = sum(Day_TransFatg_fg)/NumberOfRecalls,
+        Avg_TransFat_kcal_fg = sum(Day_TransFat_kcal_fg)/NumberOfRecalls,
+        Avg_Proteing_fg = sum(Day_Proteing_fg)/NumberOfRecalls,
+        Avg_Protein_kcal_fg = sum(Day_Protein_kcal_fg)/NumberOfRecalls,
+        Avg_Alcoholg_fg = sum(Day_Alcoholg_fg)/NumberOfRecalls,
+        Avg_Alcohol_kcal_fg = sum(Day_Alcohol_kcal_fg)/NumberOfRecalls,
+        Avg_AOACFibreg_fg = sum(Day_AOACFibreg_fg)/NumberOfRecalls,
+        Avg_VitaminAug_fg = sum(Day_VitaminAug_fg)/NumberOfRecalls,
+        Avg_Riboflavinmg_fg = sum(Day_Riboflavinmg_fg)/NumberOfRecalls,
+        Avg_Folateug_fg = sum(Day_Folateug_fg)/NumberOfRecalls,
+        Avg_VitaminDug_fg = sum(Day_VitaminDug_fg)/NumberOfRecalls,
+        Avg_VitaminB12ug_fg = sum(Day_VitaminB12ug_fg)/NumberOfRecalls,
+        Avg_VitaminCmg_fg = sum(Day_VitaminCmg_fg)/NumberOfRecalls,
+        Avg_Ironmg_fg = sum(Day_Ironmg_fg)/NumberOfRecalls,
+        Avg_Calciummg_fg = sum(Day_Calciummg_fg)/NumberOfRecalls,
+        Avg_Sodiummg_fg = sum(Day_Sodiummg_fg)/NumberOfRecalls,
+        Avg_Saltg_fg = sum(Day_Saltg_fg)/NumberOfRecalls, 
+        Avg_Magnesiummg_fg = sum(Day_Magnesiummg_fg)/NumberOfRecalls,
+        Avg_Potassiummg_fg = sum(Day_Potassiummg_fg)/NumberOfRecalls,
+        Avg_Iodineug_fg = sum(Day_Iodineug_fg)/NumberOfRecalls,
+        Avg_Seleniumug_fg = sum(Day_Seleniumug_fg)/NumberOfRecalls,
+        Avg_Zincmg_fg = sum(Day_Zincmg_fg)/NumberOfRecalls) %>%
+  ungroup()
+```
+
+
+```{r eval=FALSE}
+# Change NA values to 0 
+df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+  mutate_all(~ifelse(is.na(.), 0, .))
+
+# Fill in values across food groups in all recalls
+df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+  group_by(UserID, MainFoodGroupCode) %>%
+  mutate(across(starts_with("Avg_"), ~max(., na.rm = TRUE))) %>%
+  ungroup()
+
+# Drop day level variables (as participant level dataset)
+df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+  select(-starts_with("Day_"))
+
+#Keep one line per food group per participant
+df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+  distinct(UserID, MainFoodGroupCode, .keep_all = TRUE)
+
+```
+
+```{r}
+# Add in Main Food Group description variable
+    df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+      mutate(MainFoodGroupDesc = case_when(
+        MainFoodGroupCode == 1 ~ "Pasta, rice and other miscellaneous cereals",
+        MainFoodGroupCode == 2 ~ "White bread",
+        MainFoodGroupCode == 3 ~ "Wholemeal bread",
+        MainFoodGroupCode == 4 ~ "Other breads",
+        MainFoodGroupCode == 5 ~ "High fibre breakfast cereals",
+        MainFoodGroupCode == 6 ~ "Other breakfast cereals",
+        MainFoodGroupCode == 7 ~ "Biscuits",
+        MainFoodGroupCode == 8 ~ "Buns, cakes, pastries and fruit pies",
+        MainFoodGroupCode == 9 ~ "Puddings",
+        MainFoodGroupCode == 10 ~ "Whole milk",
+        MainFoodGroupCode == 11 ~ "Semi-skimmed milk",
+        MainFoodGroupCode == 12 ~ "Skimmed milk",
+        MainFoodGroupCode == 13 ~ "Other milk and cream",
+        MainFoodGroupCode == 14 ~ "Cheese",
+        MainFoodGroupCode == 15 ~ "Yogurt, fromage frais and other dairy desserts",
+        MainFoodGroupCode == 16 ~ "Eggs and egg dishes",
+        MainFoodGroupCode == 17 ~ "Butter",
+        MainFoodGroupCode == 18 ~ "Polyunsaturated margarine and oils",
+        MainFoodGroupCode == 19 ~ "Low fat spread",
+        MainFoodGroupCode == 20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        MainFoodGroupCode == 21 ~ "Reduced fat spread",
+        MainFoodGroupCode == 22 ~ "Bacon and ham",
+        MainFoodGroupCode == 23 ~ "Beef, veal and dishes",
+        MainFoodGroupCode == 24 ~ "Lamb and dishes",
+        MainFoodGroupCode == 25 ~ "Pork and dishes",
+        MainFoodGroupCode == 26 ~ "Coated chicken and turkey manufactured",
+        MainFoodGroupCode == 27 ~ "Chicken and turkey dishes",
+        MainFoodGroupCode == 28 ~ "Liver, products and dishes",
+        MainFoodGroupCode == 29 ~ "Burgers and kebabs",
+        MainFoodGroupCode == 30 ~ "Sausages",
+        MainFoodGroupCode == 31 ~ "Meat pies and pastries",
+        MainFoodGroupCode == 32 ~ "Other meat and meat products",
+        MainFoodGroupCode == 33 ~ "White fish coated or fried",
+        MainFoodGroupCode == 34 ~ "Other white fish, shellfish and fish dishes",
+        MainFoodGroupCode == 35 ~ "Oily fish",
+        MainFoodGroupCode == 36 ~ "Salad and other raw vegetables",
+        MainFoodGroupCode == 37 ~ "Vegetables (not raw)",
+        MainFoodGroupCode == 38 ~ "Chips, fried and roast potatoes and potato products",
+        MainFoodGroupCode == 39 ~ "Other potatoes, potato salads and dishes",
+        MainFoodGroupCode == 40 ~ "Fruit",
+        MainFoodGroupCode == 41 ~ "Sugars, preserves and sweet spreads",
+        MainFoodGroupCode == 42 ~ "Crisps and savoury snacks",
+        MainFoodGroupCode == 43 ~ "Sugar confectionery",
+        MainFoodGroupCode == 44 ~ "Chocolate confectionery",
+        MainFoodGroupCode == 45 ~ "Fruit juice",
+        MainFoodGroupCode == 47 ~ "Spirits and liqueurs",
+        MainFoodGroupCode == 48 ~ "Wine",
+        MainFoodGroupCode == 49 ~ "Beer lager cider and perry",
+        MainFoodGroupCode == 50 ~ "Miscellaneous",
+        MainFoodGroupCode == 51 ~ "Tea, coffee and water",
+        MainFoodGroupCode == 52 ~ "Commercial toddlers foods and drinks",
+        MainFoodGroupCode == 53 ~ "Ice cream",
+        MainFoodGroupCode == 54 ~ "Dietary supplements",
+        MainFoodGroupCode == 55 ~ "Artificial sweeteners",
+        MainFoodGroupCode == 56 ~ "Nuts and seeds",
+        MainFoodGroupCode == 57 ~ "Soft drinks, not diet",
+        MainFoodGroupCode == 58 ~ "Soft drinks, diet",
+        MainFoodGroupCode == 59 ~ "Brown, granary and wheatgerm bread",
+        MainFoodGroupCode == 60 ~ "1% Milk",
+        MainFoodGroupCode == 62 ~ "Sandwiches",
+        MainFoodGroupCode == 63 ~ "Other milk and cream DF",                         
+        MainFoodGroupCode == 64 ~ "Cheese DF",
+        MainFoodGroupCode == 65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        MainFoodGroupCode == 66 ~ "Ice cream DF",
+        TRUE ~ NA)) %>%
+      relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
+```
+
+
+
+# **CHECK** Contributions of Reporting food groups to nutrient intake
+
+Reporting Food groups - contributions to energy and free sugar intake
+```{r}
+# Calculate daily intakes of energy and free sugars from food groups
+df.intake24_recall_fg <- df.intake24_item %>%
+  group_by(UserID, RecallNo, ReportingFoodGroupCode) %>% 
+  summarise(
+    NumberOfRecalls = first(NumberOfRecalls),
+    Day_Energy_fg=sum(Energykcal),
+    Day_FreeSugars_fg=sum(Freesugarsg),
+    Day_Fat_fg = sum(Fatg),
+    Day_SatFat_fg = sum(Saturatedfattyacidsg)) 
+
+
+```
+
+Create grids
+```{r eval=FALSE}
+# Create a grid with all possible food category and recall number combinations for each participant
+# Need to do this separately for different recall numbers
+
+# 1 recall
+df.onerecall <- df.intake24_recall %>%
+  filter(NumberOfRecalls == 1)
+
+foodgrid_onerecall <- expand.grid( #create a grid of each combination of the below:
+  UserID = unique(df.onerecall$UserID), #take each unique UserID
+  RecallNo = unique(df.onerecall$RecallNo), #take each unique RecallNo
+  ReportingFoodGroupCode = factor(1:19)) #create a column of with 1-19 for reporting food groups
+
+# 2 recalls
+df.tworecalls <- df.intake24_recall %>%
+  filter(NumberOfRecalls == 2)
+
+foodgrid_tworecalls <- expand.grid(
+  UserID = unique(df.tworecalls$UserID),
+  RecallNo = unique(df.tworecalls$RecallNo),
+  ReportingFoodGroupCode = factor(1:19))
+
+# 3 recalls
+df.threerecalls <- df.intake24_recall %>%
+  filter(NumberOfRecalls == 3)
+
+foodgrid_threerecalls <- expand.grid(
+  UserID = unique(df.threerecalls$UserID),
+  RecallNo = unique(df.threerecalls$RecallNo),
+  ReportingFoodGroupCode = factor(1:19))
+
+#4 recalls 
+df.fourrecalls <- df.intake24_recall %>%
+  filter(NumberOfRecalls == 4)
+
+foodgrid_fourrecalls <- expand.grid(
+  UserID = unique(df.fourrecalls$UserID),
+  RecallNo = unique(df.threerecalls$RecallNo),
+  ReportingFoodGroupCode = factor(1:19))
 ```
 
 Combine grids
@@ -377,13 +725,15 @@ rm(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgroup_gri
 
 ```
 
-Calculate mean daily intakes of energy and nutrients from food groups
+Calculate mean daily intakes of energy and nutrients from food groups 
 ```{r eval=FALSE}
 # Participant level dataset
 df.intake24_participant_fg <- df.intake24_recall_fg %>%
   group_by(UserID, ReportingFoodGroupCode) %>% 
   mutate(
     Avg_Energy_fg = ifelse(NumberOfRecalls != 0,  sum(Day_Energy_fg)/NumberOfRecalls, NA),
+    Avg_Fat_fg = ifelse(NumberOfRecalls != 0,  sum(Day_Fat_fg)/NumberOfRecalls, NA),
+    Avg_SatFat_fg = ifelse(NumberOfRecalls != 0,  sum(Day_SatFat_fg)/NumberOfRecalls, NA),
     Avg_FreeSugars_fg = ifelse(NumberOfRecalls != 0,  sum(Day_FreeSugars_fg)/NumberOfRecalls, NA))%>%
   ungroup()
 
@@ -410,7 +760,7 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
 Calculate energy and nutrient contributions from food groups
 ```{r eval=FALSE}
 # Pull out mean daily intakes of energy and free sugars
-NutrientIntakes <- subset(df.intake24_participant, select=c(UserID, Avg_Energykcal, Avg_TotalSugars))
+NutrientIntakes <- subset(df.intake24_participant, select=c(UserID, Avg_Energykcal, Avg_FreeSugarsg, Avg_Fatg, Avg_SatFatg))
 
 # Join with mean daily intakes of energy and free sugars from food groups 
 df.intake24_participant_fg <- left_join(NutrientIntakes, df.intake24_participant_fg, by=c("UserID"))
@@ -420,15 +770,18 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
   group_by(UserID, ReportingFoodGroupCode) %>%
   mutate(
     Prop_Energy_fg=(Avg_Energy_fg/Avg_Energykcal)*100,
-    Prop_FreeSugars_fg=(Avg_FreeSugars_fg/Avg_TotalSugars)*100,) %>%
+    Prop_Fat_fg = (Avg_Fat_fg/Avg_Fatg)*100,
+    Prop_SatFat_fg = (Avg_SatFat_fg/Avg_SatFatg)*100,
+    Prop_FreeSugars_fg=(Avg_FreeSugars_fg/Avg_FreeSugarsg)*100) %>%
   ungroup() %>%
   relocate(ReportingFoodGroupCode, .after=UserID) %>% 
-  select(-RecallNo, -NumberOfRecalls, -Avg_Energykcal, -Avg_TotalSugars) %>%
+  select(-RecallNo, -NumberOfRecalls, -Avg_Energykcal, -Avg_FreeSugarsg, -Avg_Fatg, -Avg_SatFatg) %>%
   mutate_at(vars(starts_with("Prop_")), ~round(., 2))
 
 # Change NA values to 0 
 df.intake24_participant_fg <- df.intake24_participant_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
+
 ```
 
 Add in Reporting Food Group descriptions
@@ -436,6 +789,7 @@ Add in Reporting Food Group descriptions
 #add in description of reporting food codes
 df.intake24_participant_fg <- df.intake24_participant_fg %>%
   mutate(ReportingFoodGroupDesc = case_when(
+    ReportingFoodGroupCode == 0 ~ "Other",
     ReportingFoodGroupCode == 1 ~ "Red meat",
     ReportingFoodGroupCode == 2 ~ "Red processed meat",
     ReportingFoodGroupCode == 3 ~ "Oily fish",
@@ -449,9 +803,13 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
     ReportingFoodGroupCode == 11 ~ "Savoury biscuits",
     ReportingFoodGroupCode == 12 ~ "Cakes, pastries and fruit pies",
     ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
-    ReportingFoodGroupCode == 14 ~ "Pizzas and ready meals",
-    ReportingFoodGroupCode == 15 ~ "Ice cream and lollies",
-    TRUE ~ NA_character_))
+    ReportingFoodGroupCode == 14 ~ "Pizzas",
+    ReportingFoodGroupCode == 15 ~ "Ready meals",
+    ReportingFoodGroupCode == 16 ~ "Ice cream and lollies",
+    ReportingFoodGroupCode == 17 ~ "Breakfast cereals",
+    ReportingFoodGroupCode == 18 ~ "Chips, fried and roast potatoes and potato products",
+    ReportingFoodGroupCode == 19 ~ "Yoghurts, fromage frais, and dairy desserts",
+       TRUE ~ NA_character_))
 
 ```
 
@@ -587,73 +945,104 @@ df.intake24_participant <- df.intake24_participant %>%
 ```
 
 # Adherence to RNIs and LRNIs
+** 1 = do NOT adhere i.e. below the RNI or below the LRNI
 ```{r include=FALSE}
 # protein
 df.intake24_participant <- df.intake24_participant %>%
-    mutate(RNI_Protein = case_when(Age >= 1 & Age <= 3 & Avg_Proteing >= 14.5 ~ 1,
-                                  Age >= 4 & Age <= 6 & Avg_Proteing >= 19.7 ~ 1,
-                                  Age >= 7 & Age <= 10 & Avg_Proteing >= 28.3 ~ 1,
-                                  Age >= 11 & Age <= 14 & Avg_Proteing >= 41.2 ~ 1,
-                                  Age >= 15 & Age <= 18 & Avg_Proteing >= 45.4 ~ 1,
+    mutate(RNI_Protein = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Proteing >= 14.5 ~ 0,
+                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Proteing >= 19.7 ~ 0,
+                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Proteing >= 28.3 ~ 0,
+                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Proteing >= 42.1 ~ 0,
+                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Proteing >= 55.2 ~ 0,
                                   
-                                  Age >= 1 & Age <= 3 & Avg_Proteing < 14.5 ~ 0,
-                                  Age >= 4 & Age <= 6 & Avg_Proteing < 19.7 ~ 0,
-                                  Age >= 7 & Age <= 10 & Avg_Proteing < 28.3 ~ 0,
-                                  Age >= 11 & Age <= 14 & Avg_Proteing < 41.2 ~ 0,
-                                  Age >= 15 & Age <= 18 & Avg_Proteing < 45.4 ~ 0,
-           TRUE ~ NA))
+                                   Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Proteing < 14.5 ~ 1,
+                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Proteing < 19.7 ~ 1,
+                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Proteing < 28.3 ~ 1,
+                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Proteing < 42.1 ~ 1,
+                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Proteing < 55.2 ~ 1,
+                                   
+                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Proteing >= 14.5 ~ 0,
+                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Proteing >= 19.7 ~ 0,
+                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Proteing >= 28.3 ~ 0,
+                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Proteing >= 41.2 ~ 0,
+                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Proteing >= 45.4 ~ 0,
+                                  
+                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Proteing < 14.5 ~ 1,
+                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Proteing < 19.7 ~ 1,
+                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Proteing < 28.3 ~ 1,
+                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Proteing < 41.2 ~ 1,
+                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Proteing < 45.4 ~ 1,
+                                   
+                                   TRUE ~ NA_integer_),
+           
+       RNI_prct_Protein = case_when(Sex == "Male" & Age >= 1 & Age <= 3 ~ (Avg_Proteing/14.5)*100,
+                                    Sex == "Male" & Age >= 4 & Age <= 6 ~ (Avg_Proteing/19.7)*100,
+                                    Sex == "Male" & Age >= 7 & Age <= 10 ~ (Avg_Proteing/28.3)*100,
+                                    Sex == "Male" & Age >= 11 & Age <= 14 ~ (Avg_Proteing/42.1)*100,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 ~ (Avg_Proteing/55.2)*100,
+                                    
+                                    Sex == "Female" & Age >= 1 & Age <= 3 ~ (Avg_Proteing/14.5)*100,
+                                    Sex == "Female" & Age >= 4 & Age <= 6 ~ (Avg_Proteing/19.7)*100,
+                                    Sex == "Female" & Age >= 7 & Age <= 10 ~ (Avg_Proteing/28.3)*100,
+                                    Sex == "Female" & Age >= 11 & Age <= 14 ~ (Avg_Proteing/41.2)*100,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 ~ (Avg_Proteing/45.4)*100,
+                                    
+                                     TRUE ~ NA_integer_)
+       ) %>%  
+  
+    relocate(RNI_Protein, RNI_prct_Protein, .after = Avg_Proteing)
 
 # vitamin A
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_VitaminA = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 400 ~ 1,
-                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 400 ~ 1,
-                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 500 ~ 1,
-                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 600 ~ 1,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 700 ~ 1,
+    mutate(RNI_VitaminA = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 400 ~ 0,
+                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 400 ~ 0,
+                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 500 ~ 0,
+                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 600 ~ 0,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 700 ~ 0,
                                   
-                                    Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 400 ~ 0,
-                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 400 ~ 0,
-                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 500 ~ 0,
-                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 600 ~ 0,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 700 ~ 0,
+                                    Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 400 ~ 1,
+                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 400 ~ 1,
+                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 500 ~ 1,
+                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 600 ~ 1,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 700 ~ 1,
                                     
-                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 400 ~ 1,
-                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 400 ~ 1,
-                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 500 ~ 1,
-                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 600 ~ 1,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 600 ~ 1,
+                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 400 ~ 0,
+                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 400 ~ 0,
+                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 500 ~ 0,
+                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 600 ~ 0,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 600 ~ 0,
                                   
-                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 400 ~ 0,
-                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 400 ~ 0,
-                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 500 ~ 0,
-                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 600 ~ 0,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 600 ~ 0,
+                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 400 ~ 1,
+                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 400 ~ 1,
+                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 500 ~ 1,
+                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 600 ~ 1,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 600 ~ 1,
                                     
                                     TRUE ~ NA_integer_),
            
-          LRNI_VitaminA = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 200 ~ 1,
-                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 200 ~ 1,
-                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 250 ~ 1,
-                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 250 ~ 1,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 300 ~ 1,
+          LRNI_VitaminA = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 200 ~ 0,
+                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 200 ~ 0,
+                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 250 ~ 0,
+                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 250 ~ 0,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 300 ~ 0,
                                   
-                                    Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 200 ~ 0,
-                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 200 ~ 0,
-                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 250 ~ 0,
-                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 250 ~ 0,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 300 ~ 0,
+                                    Sex == "Male" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 200 ~ 1,
+                                    Sex == "Male" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 200 ~ 1,
+                                    Sex == "Male" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 250 ~ 1,
+                                    Sex == "Male" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 250 ~ 1,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 300 ~ 1,
                                     
-                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 200 ~ 1,
-                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 200 ~ 1,
-                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 250 ~ 1,
-                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 250 ~ 1,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 250 ~ 1,
+                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug >= 200 ~ 0,
+                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug >= 200 ~ 0,
+                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug >= 250 ~ 0,
+                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug >= 250 ~ 0,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug >= 250 ~ 0,
                                   
-                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 200 ~ 0,
-                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 200 ~ 0,
-                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 250 ~ 0,
-                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 250 ~ 0,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 250 ~ 0,
+                                    Sex == "Female" & Age >= 1 & Age <= 3 & Avg_VitaminAug < 200 ~ 1,
+                                    Sex == "Female" & Age >= 4 & Age <= 6 & Avg_VitaminAug < 200 ~ 1,
+                                    Sex == "Female" & Age >= 7 & Age <= 10 & Avg_VitaminAug < 250 ~ 1,
+                                    Sex == "Female" & Age >= 11 & Age <= 14 & Avg_VitaminAug < 250 ~ 1,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_VitaminAug < 250 ~ 1,
                                     
                                     TRUE ~ NA_integer_),
           
@@ -676,55 +1065,55 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # riboflavin
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_Riboflavin = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.6 ~ 1,
-                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.8 ~ 1,
-                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 1.0 ~ 1,
-                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 1.2 ~ 1,
-                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 1.3 ~ 1,
+    mutate(RNI_Riboflavin = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.6 ~ 0,
+                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.8 ~ 0,
+                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 1.0 ~ 0,
+                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 1.2 ~ 0,
+                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 1.3 ~ 0,
                                   
-                                      Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.6 ~ 0,
-                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.8 ~ 0,
-                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 1.0 ~ 0,
-                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 1.2 ~ 0,
-                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 1.3 ~ 0,
+                                      Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.6 ~ 1,
+                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.8 ~ 1,
+                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 1.0 ~ 1,
+                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 1.2 ~ 1,
+                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 1.3 ~ 1,
                                       
-                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.6 ~ 1,
-                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.8 ~ 1,
-                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 1.0 ~ 1,
-                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 1.1 ~ 1,
-                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 1.1 ~ 1,
+                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.6 ~ 0,
+                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.8 ~ 0,
+                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 1.0 ~ 0,
+                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 1.1 ~ 0,
+                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 1.1 ~ 0,
                                   
-                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.6 ~ 0,
-                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.8 ~ 0,
-                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 1.0 ~ 0,
-                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 1.1 ~ 0,
-                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 1.1 ~ 0,
+                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.6 ~ 1,
+                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.8 ~ 1,
+                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 1.0 ~ 1,
+                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 1.1 ~ 1,
+                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 1.1 ~ 1,
                                       
                                       TRUE ~ NA_integer_),
            
-          LRNI_Riboflavin = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.3 ~ 1,
-                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.4 ~ 1,
-                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 0.5 ~ 1,
-                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 0.8 ~ 1,
-                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 0.8 ~ 1,
+          LRNI_Riboflavin = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.3 ~ 0,
+                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.4 ~ 0,
+                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 0.5 ~ 0,
+                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 0.8 ~ 0,
+                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 0.8 ~ 0,
                                   
-                                      Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.3 ~ 0,
-                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.4 ~ 0,
-                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 0.5 ~ 0,
-                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 0.8 ~ 0,
-                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 0.8 ~ 0,
+                                      Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.3 ~ 1,
+                                      Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.4 ~ 1,
+                                      Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 0.5 ~ 1,
+                                      Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 0.8 ~ 1,
+                                      Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 0.8 ~ 1,
                                       
-                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.3 ~ 1,
-                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.4 ~ 1,
-                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 0.5 ~ 1,
-                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 0.8 ~ 1,
-                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 0.8 ~ 1,
+                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg >= 0.3 ~ 0,
+                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg >= 0.4 ~ 0,
+                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg >= 0.5 ~ 0,
+                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg >= 0.8 ~ 0,
+                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg >= 0.8 ~ 0,
                                   
-                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.3 ~ 0,
-                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.4 ~ 0,
-                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 0.5 ~ 0,
-                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 0.8 ~ 0,
-                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 0.8 ~ 0,
+                                      Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Riboflavinmg < 0.3 ~ 1,
+                                      Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Riboflavinmg < 0.4 ~ 1,
+                                      Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Riboflavinmg < 0.5 ~ 1,
+                                      Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Riboflavinmg < 0.8 ~ 1,
+                                      Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Riboflavinmg < 0.8 ~ 1,
                                       
                                       TRUE ~ NA_integer_),
           
@@ -747,31 +1136,31 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # folate - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_Folate = case_when(Age >= 1 & Age <= 3 & Avg_Folateug >= 70 ~ 1,
-                                  Age >= 4 & Age <= 6 & Avg_Folateug >= 100 ~ 1,
-                                  Age >= 7 & Age <= 10 & Avg_Folateug >= 150 ~ 1,
-                                  Age >= 11 & Age <= 14 & Avg_Folateug >= 200 ~ 1,
-                                  Age >= 15 & Age <= 18 & Avg_Folateug >= 200 ~ 1,
+    mutate(RNI_Folate = case_when(Age >= 1 & Age <= 3 & Avg_Folateug >= 70 ~ 0,
+                                  Age >= 4 & Age <= 6 & Avg_Folateug >= 100 ~ 0,
+                                  Age >= 7 & Age <= 10 & Avg_Folateug >= 150 ~ 0,
+                                  Age >= 11 & Age <= 14 & Avg_Folateug >= 200 ~ 0,
+                                  Age >= 15 & Age <= 18 & Avg_Folateug >= 200 ~ 0,
                                   
-                                  Age >= 1 & Age <= 3 & Avg_Folateug < 70 ~ 0,
-                                  Age >= 4 & Age <= 6 & Avg_Folateug < 100 ~ 0,
-                                  Age >= 7 & Age <= 10 & Avg_Folateug < 150 ~ 0,
-                                  Age >= 11 & Age <= 14 & Avg_Folateug < 200 ~ 0,
-                                  Age >= 15 & Age <= 18 & Avg_Folateug < 200 ~ 0,
+                                  Age >= 1 & Age <= 3 & Avg_Folateug < 70 ~ 1,
+                                  Age >= 4 & Age <= 6 & Avg_Folateug < 100 ~ 1,
+                                  Age >= 7 & Age <= 10 & Avg_Folateug < 150 ~ 1,
+                                  Age >= 11 & Age <= 14 & Avg_Folateug < 200 ~ 1,
+                                  Age >= 15 & Age <= 18 & Avg_Folateug < 200 ~ 1,
                                   
                                   TRUE ~ NA_integer_),
            
-          LRNI_Folate = case_when(Age >= 1 & Age <= 3 & Avg_Folateug >= 35 ~ 1,
-                                  Age >= 4 & Age <= 6 & Avg_Folateug >= 50 ~ 1,
-                                  Age >= 7 & Age <= 10 & Avg_Folateug >= 75 ~ 1,
-                                  Age >= 11 & Age <= 14 & Avg_Folateug >= 100 ~ 1,
-                                  Age >= 15 & Age <= 18 & Avg_Folateug >= 100 ~ 1,
+          LRNI_Folate = case_when(Age >= 1 & Age <= 3 & Avg_Folateug >= 35 ~ 0,
+                                  Age >= 4 & Age <= 6 & Avg_Folateug >= 50 ~ 0,
+                                  Age >= 7 & Age <= 10 & Avg_Folateug >= 75 ~ 0,
+                                  Age >= 11 & Age <= 14 & Avg_Folateug >= 100 ~ 0,
+                                  Age >= 15 & Age <= 18 & Avg_Folateug >= 100 ~ 0,
                                   
-                                  Age >= 1 & Age <= 3 & Avg_Folateug < 35 ~ 0,
-                                  Age >= 4 & Age <= 6 & Avg_Folateug < 50 ~ 0,
-                                  Age >= 7 & Age <= 10 & Avg_Folateug < 75 ~ 0,
-                                  Age >= 11 & Age <= 14 & Avg_Folateug < 100 ~ 0,
-                                  Age >= 15 & Age <= 18 & Avg_Folateug < 100 ~ 0,
+                                  Age >= 1 & Age <= 3 & Avg_Folateug < 35 ~ 1,
+                                  Age >= 4 & Age <= 6 & Avg_Folateug < 50 ~ 1,
+                                  Age >= 7 & Age <= 10 & Avg_Folateug < 75 ~ 1,
+                                  Age >= 11 & Age <= 14 & Avg_Folateug < 100 ~ 1,
+                                  Age >= 15 & Age <= 18 & Avg_Folateug < 100 ~ 1,
                                   
                                   TRUE ~ NA_integer_),
           
@@ -788,17 +1177,17 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # vitamin D - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_VitaminD = case_when(Age >= 1 & Age <= 3 & Avg_VitaminDug >= 10 ~ 1,
-                                    Age >= 4 & Age <= 6 & Avg_VitaminDug >= 10 ~ 1,
-                                    Age >= 7 & Age <= 10 & Avg_VitaminDug >= 10 ~ 1,
-                                    Age >= 11 & Age <= 14 & Avg_VitaminDug >= 10 ~ 1,
-                                    Age >= 15 & Age <= 18 & Avg_VitaminDug >= 10 ~ 1,
+    mutate(RNI_VitaminD = case_when(Age >= 1 & Age <= 3 & Avg_VitaminDug >= 10 ~ 0,
+                                    Age >= 4 & Age <= 6 & Avg_VitaminDug >= 10 ~ 0,
+                                    Age >= 7 & Age <= 10 & Avg_VitaminDug >= 10 ~ 0,
+                                    Age >= 11 & Age <= 14 & Avg_VitaminDug >= 10 ~ 0,
+                                    Age >= 15 & Age <= 18 & Avg_VitaminDug >= 10 ~ 0,
                                   
-                                    Age >= 1 & Age <= 3 & Avg_VitaminDug < 10 ~ 0,
-                                    Age >= 4 & Age <= 6 & Avg_VitaminDug < 10 ~ 0,
-                                    Age >= 7 & Age <= 10 & Avg_VitaminDug < 10 ~ 0,
-                                    Age >= 11 & Age <= 14 & Avg_VitaminDug < 10 ~ 0,
-                                    Age >= 15 & Age <= 18 & Avg_VitaminDug < 10 ~ 0,
+                                    Age >= 1 & Age <= 3 & Avg_VitaminDug < 10 ~ 1,
+                                    Age >= 4 & Age <= 6 & Avg_VitaminDug < 10 ~ 1,
+                                    Age >= 7 & Age <= 10 & Avg_VitaminDug < 10 ~ 1,
+                                    Age >= 11 & Age <= 14 & Avg_VitaminDug < 10 ~ 1,
+                                    Age >= 15 & Age <= 18 & Avg_VitaminDug < 10 ~ 1,
                                     TRUE ~ NA_integer_),
           
       RNI_prct_VitaminD = case_when(Age >= 1 & Age <= 3 ~ (Avg_VitaminDug/10)*100,
@@ -814,31 +1203,31 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # vitamin b12 - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_VitaminB12 = case_when(Age >= 1 & Age <= 3 & Avg_VitaminB12ug >= 0.5 ~ 1,
-                                      Age >= 4 & Age <= 6 & Avg_VitaminB12ug >= 0.8 ~ 1,
-                                      Age >= 7 & Age <= 10 & Avg_VitaminB12ug >= 1.0 ~ 1,
-                                      Age >= 11 & Age <= 14 & Avg_VitaminB12ug >= 1.2 ~ 1,
-                                      Age >= 15 & Age <= 18 & Avg_VitaminB12ug >= 1.5 ~ 1,
+    mutate(RNI_VitaminB12 = case_when(Age >= 1 & Age <= 3 & Avg_VitaminB12ug >= 0.5 ~ 0,
+                                      Age >= 4 & Age <= 6 & Avg_VitaminB12ug >= 0.8 ~ 0,
+                                      Age >= 7 & Age <= 10 & Avg_VitaminB12ug >= 1.0 ~ 0,
+                                      Age >= 11 & Age <= 14 & Avg_VitaminB12ug >= 1.2 ~ 0,
+                                      Age >= 15 & Age <= 18 & Avg_VitaminB12ug >= 1.5 ~ 0,
                                       
-                                      Age >= 1 & Age <= 3 & Avg_VitaminB12ug < 0.5 ~ 0,
-                                      Age >= 4 & Age <= 6 & Avg_VitaminB12ug < 0.8 ~ 0,
-                                      Age >= 7 & Age <= 10 & Avg_VitaminB12ug < 1.0 ~ 0,
-                                      Age >= 11 & Age <= 14 & Avg_VitaminB12ug < 1.2 ~ 0,
-                                      Age >= 15 & Age <= 18 & Avg_VitaminB12ug < 1.5 ~ 0,
+                                      Age >= 1 & Age <= 3 & Avg_VitaminB12ug < 0.5 ~ 1,
+                                      Age >= 4 & Age <= 6 & Avg_VitaminB12ug < 0.8 ~ 1,
+                                      Age >= 7 & Age <= 10 & Avg_VitaminB12ug < 1.0 ~ 1,
+                                      Age >= 11 & Age <= 14 & Avg_VitaminB12ug < 1.2 ~ 1,
+                                      Age >= 15 & Age <= 18 & Avg_VitaminB12ug < 1.5 ~ 1,
                                       
                                       TRUE ~ NA_integer_),
            
-           LRNI_VitaminB12 = case_when(Age >= 1 & Age <= 3 & Avg_VitaminB12ug >= 0.3 ~ 1, 
-                                       Age >= 4 & Age <= 6 & Avg_VitaminB12ug >= 0.5 ~ 1,
-                                       Age >= 7 & Age <= 10 & Avg_VitaminB12ug >= 0.6 ~ 1,
-                                       Age >= 11 & Age <= 14 & Avg_VitaminB12ug >= 0.8 ~ 1,
-                                       Age >= 15 & Age <=18 & Avg_VitaminB12ug >= 1.0 ~ 1,
+           LRNI_VitaminB12 = case_when(Age >= 1 & Age <= 3 & Avg_VitaminB12ug >= 0.3 ~ 0, 
+                                       Age >= 4 & Age <= 6 & Avg_VitaminB12ug >= 0.5 ~ 0,
+                                       Age >= 7 & Age <= 10 & Avg_VitaminB12ug >= 0.6 ~ 0,
+                                       Age >= 11 & Age <= 14 & Avg_VitaminB12ug >= 0.8 ~ 0,
+                                       Age >= 15 & Age <=18 & Avg_VitaminB12ug >= 1.0 ~ 0,
                                        
-                                       Age >= 1 & Age <= 3 & Avg_VitaminB12ug < 0.3 ~ 0,
-                                       Age >= 4 & Age <= 6 & Avg_VitaminB12ug < 0.5 ~ 0,
-                                       Age >= 7 & Age <= 10 & Avg_VitaminB12ug < 0.6 ~ 0,
-                                       Age >= 11 & Age <= 14 & Avg_VitaminB12ug < 0.8 ~ 0,
-                                       Age >= 15 & Age <=18 & Avg_VitaminB12ug < 1.0 ~ 0,
+                                       Age >= 1 & Age <= 3 & Avg_VitaminB12ug < 0.3 ~ 1,
+                                       Age >= 4 & Age <= 6 & Avg_VitaminB12ug < 0.5 ~ 1,
+                                       Age >= 7 & Age <= 10 & Avg_VitaminB12ug < 0.6 ~ 1,
+                                       Age >= 11 & Age <= 14 & Avg_VitaminB12ug < 0.8 ~ 1,
+                                       Age >= 15 & Age <=18 & Avg_VitaminB12ug < 1.0 ~ 1,
                                        
                                        TRUE ~ NA_integer_),
                      
@@ -855,9 +1244,9 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # vitamin C - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_VitaminC = case_when(Age >= 1 & Age <= 10 & Avg_VitaminCmg >= 30 ~ 1,
-                                    Age >= 11 & Age <= 14 & Avg_VitaminCmg >= 35 ~ 1,
-                                    Age >= 15 & Age <= 18 & Avg_VitaminCmg >= 40 ~ 1,
+    mutate(RNI_VitaminC = case_when(Age >= 1 & Age <= 10 & Avg_VitaminCmg >= 30 ~ 0,
+                                    Age >= 11 & Age <= 14 & Avg_VitaminCmg >= 35 ~ 0,
+                                    Age >= 15 & Age <= 18 & Avg_VitaminCmg >= 40 ~ 0,
                                     
                                     Age >= 1 & Age <= 10 & Avg_VitaminCmg < 30 ~ 1,
                                     Age >= 11 & Age <= 14 & Avg_VitaminCmg < 35 ~ 1,
@@ -865,13 +1254,13 @@ df.intake24_participant <- df.intake24_participant %>%
                                       
                                       TRUE ~ NA_integer_),
            
-           LRNI_VitaminC = case_when(Age >= 1 & Age <= 10 & Avg_VitaminCmg >= 8 ~ 1, 
-                                       Age >= 11 & Age <= 14 & Avg_VitaminCmg >= 9 ~ 1,
-                                       Age >= 15 & Age <= 18 & Avg_VitaminCmg >= 10 ~ 1,
+           LRNI_VitaminC = case_when(Age >= 1 & Age <= 10 & Avg_VitaminCmg >= 8 ~ 0, 
+                                       Age >= 11 & Age <= 14 & Avg_VitaminCmg >= 9 ~ 0,
+                                       Age >= 15 & Age <= 18 & Avg_VitaminCmg >= 10 ~ 0,
                                        
-                                       Age >= 1 & Age <= 10 & Avg_VitaminCmg < 8 ~ 0,
-                                       Age >= 11 & Age <= 14 & Avg_VitaminCmg < 9 ~ 0,
-                                       Age >= 15 & Age <= 18 & Avg_VitaminCmg < 10 ~ 0,
+                                       Age >= 1 & Age <= 10 & Avg_VitaminCmg < 8 ~ 1,
+                                       Age >= 11 & Age <= 14 & Avg_VitaminCmg < 9 ~ 1,
+                                       Age >= 15 & Age <= 18 & Avg_VitaminCmg < 10 ~ 1,
                                        
                                        TRUE ~ NA_integer_),
                      
@@ -886,55 +1275,55 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # iron    
 df.intake24_participant <- df.intake24_participant %>%
-    mutate(RNI_Iron = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 6.9 ~ 1,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 6.1 ~ 1,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 8.7 ~ 1,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 11.3 ~ 1,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 11.3 ~ 1,
+    mutate(RNI_Iron = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 6.9 ~ 0,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 6.1 ~ 0,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 8.7 ~ 0,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 11.3 ~ 0,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 11.3 ~ 0,
                                   
-                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg < 6.9 ~ 0,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg < 6.1 ~ 0,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg < 8.7 ~ 0,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg < 11.3 ~ 0,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg < 11.3 ~ 0,
+                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg < 6.9 ~ 1,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg < 6.1 ~ 1,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg < 8.7 ~ 1,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg < 11.3 ~ 1,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg < 11.3 ~ 1,
                                       
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 6.9 ~ 1,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 6.1 ~ 1,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 8.7 ~ 1,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 14.8 ~ 1,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 14.8 ~ 1,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 6.9 ~ 0,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 6.1 ~ 0,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 8.7 ~ 0,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 14.8 ~ 0,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 14.8 ~ 0,
                                       
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg < 6.9 ~ 0,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg < 6.1 ~ 0,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg < 8.7 ~ 0,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg < 14.8 ~ 0,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg < 14.8 ~ 0,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg < 6.9 ~ 1,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg < 6.1 ~ 1,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg < 8.7 ~ 1,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg < 14.8 ~ 1,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg < 14.8 ~ 1,
                                       
                                 TRUE ~ NA_integer_),
            
-          LRNI_Iron = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 3.7 ~ 1,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 3.3 ~ 1,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 4.7 ~ 1,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 6.1 ~ 1,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 6.1 ~ 1,
+          LRNI_Iron = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 3.7 ~ 0,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 3.3 ~ 0,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 4.7 ~ 0,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 6.1 ~ 0,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 6.1 ~ 0,
                                   
-                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg < 3.7 ~ 0,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg < 3.3 ~ 0,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg < 4.7 ~ 0,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg < 6.1 ~ 0,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg < 6.1 ~ 0,
+                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Ironmg < 3.7 ~ 1,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Ironmg < 3.3 ~ 1,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Ironmg < 4.7 ~ 1,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Ironmg < 6.1 ~ 1,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Ironmg < 6.1 ~ 1,
                                       
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 3.7 ~ 1,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 3.3 ~ 1,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 4.7 ~ 1,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 8.0 ~ 1,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 8.0 ~ 1,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg >= 3.7 ~ 0,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg >= 3.3 ~ 0,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg >= 4.7 ~ 0,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg >= 8.0 ~ 0,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg >= 8.0 ~ 0,
                                   
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg < 3.7 ~ 0,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg < 3.3 ~ 0,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg < 4.7 ~ 0,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg < 8.0 ~ 0,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg < 8.0 ~ 0,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Ironmg < 3.7 ~ 1,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Ironmg < 3.3 ~ 1,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Ironmg < 4.7 ~ 1,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Ironmg < 8.0 ~ 1,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Ironmg < 8.0 ~ 1,
                                       
                                 TRUE ~ NA_integer_),
           
@@ -957,55 +1346,55 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # calcium   
 df.intake24_participant <- df.intake24_participant %>%
-    mutate(RNI_Calcium = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 350 ~ 1,
-                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 450 ~ 1,
-                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 550 ~ 1,
-                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 1000 ~ 1,
-                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 1000 ~ 1,
+    mutate(RNI_Calcium = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 350 ~ 0,
+                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 450 ~ 0,
+                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 550 ~ 0,
+                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 1000 ~ 0,
+                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 1000 ~ 0,
                                     
-                                   Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg < 350 ~ 0,
-                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg < 450 ~ 0,
-                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg < 550 ~ 0,
-                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg < 1000 ~ 0,
-                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg < 1000 ~ 0,
+                                   Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg < 350 ~ 1,
+                                   Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg < 450 ~ 1,
+                                   Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg < 550 ~ 1,
+                                   Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg < 1000 ~ 1,
+                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg < 1000 ~ 1,
                                         
-                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 350 ~ 1,
-                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 450 ~ 1,
-                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 550 ~ 1,
-                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 800 ~ 1,
-                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 800 ~ 1,
+                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 350 ~ 0,
+                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 450 ~ 0,
+                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 550 ~ 0,
+                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 800 ~ 0,
+                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 800 ~ 0,
                                         
-                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg < 350 ~ 0,
-                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg < 450 ~ 0,
-                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg < 550 ~ 0,
-                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg < 800 ~ 0,
-                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg < 800 ~ 0,
+                                   Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg < 350 ~ 1,
+                                   Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg < 450 ~ 1,
+                                   Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg < 550 ~ 1,
+                                   Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg < 800 ~ 1,
+                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg < 800 ~ 1,
                                         
                                    TRUE ~ NA_integer_),
            
-          LRNI_Calcium = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 200 ~ 1,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 275 ~ 1,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 325 ~ 1,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 480 ~ 1,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 480 ~ 1,
+          LRNI_Calcium = case_when(Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 200 ~ 0,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 275 ~ 0,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 325 ~ 0,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 480 ~ 0,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 480 ~ 0,
                                   
-                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg < 200 ~ 0,
-                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg < 275 ~ 0,
-                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg < 325 ~ 0,
-                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg < 480 ~ 0,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg < 480 ~ 0,
+                                Sex == "Male" & Age >= 1 & Age <= 3 & Avg_Calciummg < 200 ~ 1,
+                                Sex == "Male" & Age >= 4 & Age <= 6 & Avg_Calciummg < 275 ~ 1,
+                                Sex == "Male" & Age >= 7 & Age <= 10 & Avg_Calciummg < 325 ~ 1,
+                                Sex == "Male" & Age >= 11 & Age <= 14 & Avg_Calciummg < 480 ~ 1,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Calciummg < 480 ~ 1,
                                       
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 200 ~ 1,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 275 ~ 1,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 325 ~ 1,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 450 ~ 1,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 450 ~ 1,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg >= 200 ~ 0,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg >= 275 ~ 0,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg >= 325 ~ 0,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg >= 450 ~ 0,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg >= 450 ~ 0,
                                   
-                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg < 200 ~ 0,
-                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg < 275 ~ 0,
-                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg < 325 ~ 0,
-                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg < 450 ~ 0,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg < 450 ~ 0,
+                                Sex == "Female" & Age >= 1 & Age <= 3 & Avg_Calciummg < 200 ~ 1,
+                                Sex == "Female" & Age >= 4 & Age <= 6 & Avg_Calciummg < 275 ~ 1,
+                                Sex == "Female" & Age >= 7 & Age <= 10 & Avg_Calciummg < 325 ~ 1,
+                                Sex == "Female" & Age >= 11 & Age <= 14 & Avg_Calciummg < 450 ~ 1,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Calciummg < 450 ~ 1,
                                       
                                 TRUE ~ NA_integer_),
           
@@ -1028,31 +1417,31 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # magnesium - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_Magnesium = case_when(Age >= 1 & Age <= 3 & Avg_Magnesiummg >= 85 ~ 1,
-                                     Age >= 4 & Age <= 6 & Avg_Magnesiummg >= 120 ~ 1,
-                                     Age >= 7 & Age <= 10 & Avg_Magnesiummg >= 200 ~ 1,
-                                     Age >= 11 & Age <= 14 & Avg_Magnesiummg >= 280 ~ 1,
-                                     Age >= 15 & Age <= 18 & Avg_Magnesiummg >= 300 ~ 1,
+    mutate(RNI_Magnesium = case_when(Age >= 1 & Age <= 3 & Avg_Magnesiummg >= 85 ~ 0,
+                                     Age >= 4 & Age <= 6 & Avg_Magnesiummg >= 120 ~ 0,
+                                     Age >= 7 & Age <= 10 & Avg_Magnesiummg >= 200 ~ 0,
+                                     Age >= 11 & Age <= 14 & Avg_Magnesiummg >= 280 ~ 0,
+                                     Age >= 15 & Age <= 18 & Avg_Magnesiummg >= 300 ~ 0,
                                       
-                                     Age >= 1 & Age <= 3 & Avg_Magnesiummg < 85 ~ 0,
-                                     Age >= 4 & Age <= 6 & Avg_Magnesiummg < 120 ~ 0,
-                                     Age >= 7 & Age <= 10 & Avg_Magnesiummg < 200 ~ 0,
-                                     Age >= 11 & Age <= 14 & Avg_Magnesiummg < 280 ~ 0,
-                                     Age >= 15 & Age <= 18 & Avg_Magnesiummg < 300 ~ 0,
+                                     Age >= 1 & Age <= 3 & Avg_Magnesiummg < 85 ~ 1,
+                                     Age >= 4 & Age <= 6 & Avg_Magnesiummg < 120 ~ 1,
+                                     Age >= 7 & Age <= 10 & Avg_Magnesiummg < 200 ~ 1,
+                                     Age >= 11 & Age <= 14 & Avg_Magnesiummg < 280 ~ 1,
+                                     Age >= 15 & Age <= 18 & Avg_Magnesiummg < 300 ~ 1,
                                       
                                      TRUE ~ NA_integer_),
            
-           LRNI_Magnesium = case_when(Age >= 1 & Age <= 3 & Avg_Magnesiummg >= 50 ~ 1, 
-                                      Age >= 4 & Age <= 6 & Avg_Magnesiummg >= 70 ~ 1,
-                                      Age >= 7 & Age <= 10 & Avg_Magnesiummg >= 115 ~ 1,
-                                      Age >= 11 & Age <= 14 & Avg_Magnesiummg >= 180 ~ 1,
-                                      Age >= 15 & Age <=18 & Avg_Magnesiummg >= 190 ~ 1,
+           LRNI_Magnesium = case_when(Age >= 1 & Age <= 3 & Avg_Magnesiummg >= 50 ~ 0, 
+                                      Age >= 4 & Age <= 6 & Avg_Magnesiummg >= 70 ~ 0,
+                                      Age >= 7 & Age <= 10 & Avg_Magnesiummg >= 115 ~ 0,
+                                      Age >= 11 & Age <= 14 & Avg_Magnesiummg >= 180 ~ 0,
+                                      Age >= 15 & Age <=18 & Avg_Magnesiummg >= 190 ~ 0,
                                        
-                                      Age >= 1 & Age <= 3 & Avg_Magnesiummg < 50 ~ 0,
-                                      Age >= 4 & Age <= 6 & Avg_Magnesiummg < 70 ~ 0,
-                                      Age >= 7 & Age <= 10 & Avg_Magnesiummg < 115 ~ 0,
-                                      Age >= 11 & Age <= 14 & Avg_Magnesiummg < 180 ~ 0,
-                                      Age >= 15 & Age <=18 & Avg_Magnesiummg < 190 ~ 0,
+                                      Age >= 1 & Age <= 3 & Avg_Magnesiummg < 50 ~ 1,
+                                      Age >= 4 & Age <= 6 & Avg_Magnesiummg < 70 ~ 1,
+                                      Age >= 7 & Age <= 10 & Avg_Magnesiummg < 115 ~ 1,
+                                      Age >= 11 & Age <= 14 & Avg_Magnesiummg < 180 ~ 1,
+                                      Age >= 15 & Age <=18 & Avg_Magnesiummg < 190 ~ 1,
                                        
                                       TRUE ~ NA_integer_),
                      
@@ -1069,31 +1458,31 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # potassium - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_Potassium = case_when(Age >= 1 & Age <= 3 & Avg_Potassiummg >= 800 ~ 1,
-                                     Age >= 4 & Age <= 6 & Avg_Potassiummg >= 1100 ~ 1,
-                                     Age >= 7 & Age <= 10 & Avg_Potassiummg >= 2000 ~ 1,
-                                     Age >= 11 & Age <= 14 & Avg_Potassiummg >= 3100 ~ 1,
-                                     Age >= 15 & Age <= 18 & Avg_Potassiummg >= 3500 ~ 1,
+    mutate(RNI_Potassium = case_when(Age >= 1 & Age <= 3 & Avg_Potassiummg >= 800 ~ 0,
+                                     Age >= 4 & Age <= 6 & Avg_Potassiummg >= 1100 ~ 0,
+                                     Age >= 7 & Age <= 10 & Avg_Potassiummg >= 2000 ~ 0,
+                                     Age >= 11 & Age <= 14 & Avg_Potassiummg >= 3100 ~ 0,
+                                     Age >= 15 & Age <= 18 & Avg_Potassiummg >= 3500 ~ 0,
                                       
-                                     Age >= 1 & Age <= 3 & Avg_Potassiummg < 800 ~ 0,
-                                     Age >= 4 & Age <= 6 & Avg_Potassiummg < 1100 ~ 0,
-                                     Age >= 7 & Age <= 10 & Avg_Potassiummg < 2000 ~ 0,
-                                     Age >= 11 & Age <= 14 & Avg_Potassiummg < 3100 ~ 0,
-                                     Age >= 15 & Age <= 18 & Avg_Potassiummg < 3500 ~ 0,
+                                     Age >= 1 & Age <= 3 & Avg_Potassiummg < 800 ~ 1,
+                                     Age >= 4 & Age <= 6 & Avg_Potassiummg < 1100 ~ 1,
+                                     Age >= 7 & Age <= 10 & Avg_Potassiummg < 2000 ~ 1,
+                                     Age >= 11 & Age <= 14 & Avg_Potassiummg < 3100 ~ 1,
+                                     Age >= 15 & Age <= 18 & Avg_Potassiummg < 3500 ~ 1,
                                       
                                      TRUE ~ NA_integer_),
            
-           LRNI_Potassium = case_when(Age >= 1 & Age <= 3 & Avg_Potassiummg >= 450 ~ 1, 
-                                      Age >= 4 & Age <= 6 & Avg_Potassiummg >= 600 ~ 1,
-                                      Age >= 7 & Age <= 10 & Avg_Potassiummg >= 950 ~ 1,
-                                      Age >= 11 & Age <= 14 & Avg_Potassiummg >= 1600 ~ 1,
-                                      Age >= 15 & Age <=18 & Avg_Potassiummg >= 2000 ~ 1,
+           LRNI_Potassium = case_when(Age >= 1 & Age <= 3 & Avg_Potassiummg >= 450 ~ 0, 
+                                      Age >= 4 & Age <= 6 & Avg_Potassiummg >= 600 ~ 0,
+                                      Age >= 7 & Age <= 10 & Avg_Potassiummg >= 950 ~ 0,
+                                      Age >= 11 & Age <= 14 & Avg_Potassiummg >= 1600 ~ 0,
+                                      Age >= 15 & Age <=18 & Avg_Potassiummg >= 2000 ~ 0,
                                        
-                                      Age >= 1 & Age <= 3 & Avg_Potassiummg < 450 ~ 0,
-                                      Age >= 4 & Age <= 6 & Avg_Potassiummg < 600 ~ 0,
-                                      Age >= 7 & Age <= 10 & Avg_Potassiummg < 950 ~ 0,
-                                      Age >= 11 & Age <= 14 & Avg_Potassiummg < 1600 ~ 0,
-                                      Age >= 15 & Age <=18 & Avg_Potassiummg < 2000 ~ 0,
+                                      Age >= 1 & Age <= 3 & Avg_Potassiummg < 450 ~ 1,
+                                      Age >= 4 & Age <= 6 & Avg_Potassiummg < 600 ~ 1,
+                                      Age >= 7 & Age <= 10 & Avg_Potassiummg < 950 ~ 1,
+                                      Age >= 11 & Age <= 14 & Avg_Potassiummg < 1600 ~ 1,
+                                      Age >= 15 & Age <=18 & Avg_Potassiummg < 2000 ~ 1,
                                        
                                       TRUE ~ NA_integer_),
                      
@@ -1110,31 +1499,31 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # iodine - no differences between males and females
 df.intake24_participant <- df.intake24_participant %>%  
-    mutate(RNI_Iodine = case_when(Age >= 1 & Age <= 3 & Avg_Iodineug >= 70 ~ 1,
-                                     Age >= 4 & Age <= 6 & Avg_Iodineug >= 100 ~ 1,
-                                     Age >= 7 & Age <= 10 & Avg_Iodineug >= 110 ~ 1,
-                                     Age >= 11 & Age <= 14 & Avg_Iodineug >= 130 ~ 1,
-                                     Age >= 15 & Age <= 18 & Avg_Iodineug >= 140 ~ 1,
+    mutate(RNI_Iodine = case_when(Age >= 1 & Age <= 3 & Avg_Iodineug >= 70 ~ 0,
+                                     Age >= 4 & Age <= 6 & Avg_Iodineug >= 100 ~ 0,
+                                     Age >= 7 & Age <= 10 & Avg_Iodineug >= 110 ~ 0,
+                                     Age >= 11 & Age <= 14 & Avg_Iodineug >= 130 ~ 0,
+                                     Age >= 15 & Age <= 18 & Avg_Iodineug >= 140 ~ 0,
                                       
-                                     Age >= 1 & Age <= 3 & Avg_Iodineug < 70 ~ 0,
-                                     Age >= 4 & Age <= 6 & Avg_Iodineug < 100 ~ 0,
-                                     Age >= 7 & Age <= 10 & Avg_Iodineug < 110 ~ 0,
-                                     Age >= 11 & Age <= 14 & Avg_Iodineug < 130 ~ 0,
-                                     Age >= 15 & Age <= 18 & Avg_Iodineug < 140 ~ 0,
+                                     Age >= 1 & Age <= 3 & Avg_Iodineug < 70 ~ 1,
+                                     Age >= 4 & Age <= 6 & Avg_Iodineug < 100 ~ 1,
+                                     Age >= 7 & Age <= 10 & Avg_Iodineug < 110 ~ 1,
+                                     Age >= 11 & Age <= 14 & Avg_Iodineug < 130 ~ 1,
+                                     Age >= 15 & Age <= 18 & Avg_Iodineug < 140 ~ 1,
                                       
                                      TRUE ~ NA_integer_),
            
-           LRNI_Iodine = case_when(Age >= 1 & Age <= 3 & Avg_Iodineug >= 40 ~ 1, 
-                                      Age >= 4 & Age <= 6 & Avg_Iodineug >= 50 ~ 1,
-                                      Age >= 7 & Age <= 10 & Avg_Iodineug >= 55 ~ 1,
-                                      Age >= 11 & Age <= 14 & Avg_Iodineug >= 65 ~ 1,
-                                      Age >= 15 & Age <=18 & Avg_Iodineug >= 70 ~ 1,
+           LRNI_Iodine = case_when(Age >= 1 & Age <= 3 & Avg_Iodineug >= 40 ~ 0, 
+                                      Age >= 4 & Age <= 6 & Avg_Iodineug >= 50 ~ 0,
+                                      Age >= 7 & Age <= 10 & Avg_Iodineug >= 55 ~ 0,
+                                      Age >= 11 & Age <= 14 & Avg_Iodineug >= 65 ~ 0,
+                                      Age >= 15 & Age <=18 & Avg_Iodineug >= 70 ~ 0,
                                        
-                                      Age >= 1 & Age <= 3 & Avg_Iodineug < 40 ~ 0,
-                                      Age >= 4 & Age <= 6 & Avg_Iodineug < 50 ~ 0,
-                                      Age >= 7 & Age <= 10 & Avg_Iodineug < 55 ~ 0,
-                                      Age >= 11 & Age <= 14 & Avg_Iodineug < 65 ~ 0,
-                                      Age >= 15 & Age <=18 & Avg_Iodineug < 70 ~ 0,
+                                      Age >= 1 & Age <= 3 & Avg_Iodineug < 40 ~ 1,
+                                      Age >= 4 & Age <= 6 & Avg_Iodineug < 50 ~ 1,
+                                      Age >= 7 & Age <= 10 & Avg_Iodineug < 55 ~ 1,
+                                      Age >= 11 & Age <= 14 & Avg_Iodineug < 65 ~ 1,
+                                      Age >= 15 & Age <=18 & Avg_Iodineug < 70 ~ 1,
                                        
                                       TRUE ~ NA_integer_),
                      
@@ -1151,33 +1540,33 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # selenium 
 df.intake24_participant <- df.intake24_participant %>%
-    mutate(RNI_Selenium = case_when(Age >= 1 & Age <= 3 & Avg_Seleniumug >= 15 ~ 1,
-                                    Age >= 4 & Age <= 6 & Avg_Seleniumug >=20 ~ 1,
-                                    Age >= 7 & Age <= 10 & Avg_Seleniumug >= 30 ~ 1,
-                                    Age >= 11 & Age <= 14 & Avg_Seleniumug >= 45 ~ 1,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Seleniumug >= 70 ~ 1,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Seleniumug >= 60 ~ 1,
+    mutate(RNI_Selenium = case_when(Age >= 1 & Age <= 3 & Avg_Seleniumug >= 15 ~ 0,
+                                    Age >= 4 & Age <= 6 & Avg_Seleniumug >=20 ~ 0,
+                                    Age >= 7 & Age <= 10 & Avg_Seleniumug >= 30 ~ 0,
+                                    Age >= 11 & Age <= 14 & Avg_Seleniumug >= 45 ~ 0,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Seleniumug >= 70 ~ 0,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Seleniumug >= 60 ~ 0,
                                     
-                                    Age >= 1 & Age <= 3 & Avg_Seleniumug < 15 ~ 0,
-                                    Age >= 4 & Age <= 6 & Avg_Seleniumug < 20 ~ 0,
-                                    Age >= 7 & Age <= 10 & Avg_Seleniumug < 30 ~ 0,
-                                    Age >= 11 & Age <= 14 & Avg_Seleniumug < 45 ~ 0,
-                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Seleniumug < 70 ~ 0,
-                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Seleniumug < 60 ~ 0,
+                                    Age >= 1 & Age <= 3 & Avg_Seleniumug < 15 ~ 1,
+                                    Age >= 4 & Age <= 6 & Avg_Seleniumug < 20 ~ 1,
+                                    Age >= 7 & Age <= 10 & Avg_Seleniumug < 30 ~ 1,
+                                    Age >= 11 & Age <= 14 & Avg_Seleniumug < 45 ~ 1,
+                                    Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Seleniumug < 70 ~ 1,
+                                    Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Seleniumug < 60 ~ 1,
            
                                     TRUE ~ NA_integer_),
            
-           LRNI_Selenium = case_when(Age >= 1 & Age <= 3 & Avg_Seleniumug >= 7 ~ 1,
-                                     Age >= 4 & Age <= 6 & Avg_Seleniumug >= 10 ~ 1,
-                                     Age >= 7 & Age <= 10 & Avg_Seleniumug >= 16 ~ 1,
-                                     Age >= 11 & Age <= 14 & Avg_Seleniumug >= 25 ~ 1,
-                                     Age >= 15 & Age <= 18 & Avg_Seleniumug >= 40 ~ 1,
+           LRNI_Selenium = case_when(Age >= 1 & Age <= 3 & Avg_Seleniumug >= 7 ~ 0,
+                                     Age >= 4 & Age <= 6 & Avg_Seleniumug >= 10 ~ 0,
+                                     Age >= 7 & Age <= 10 & Avg_Seleniumug >= 16 ~ 0,
+                                     Age >= 11 & Age <= 14 & Avg_Seleniumug >= 25 ~ 0,
+                                     Age >= 15 & Age <= 18 & Avg_Seleniumug >= 40 ~ 0,
                                      
-                                    Age >= 1 & Age <= 3 & Avg_Seleniumug < 7 ~ 0,
-                                    Age >= 4 & Age <= 6 & Avg_Seleniumug < 10 ~ 0,
-                                    Age >= 7 & Age <= 10 & Avg_Seleniumug < 16 ~ 0,
-                                    Age >= 11 & Age <= 14 & Avg_Seleniumug < 25 ~ 0,
-                                    Age >= 15 & Age <= 18 & Avg_Seleniumug < 40 ~ 0,
+                                    Age >= 1 & Age <= 3 & Avg_Seleniumug < 7 ~ 1,
+                                    Age >= 4 & Age <= 6 & Avg_Seleniumug < 10 ~ 1,
+                                    Age >= 7 & Age <= 10 & Avg_Seleniumug < 16 ~ 1,
+                                    Age >= 11 & Age <= 14 & Avg_Seleniumug < 25 ~ 1,
+                                    Age >= 15 & Age <= 18 & Avg_Seleniumug < 40 ~ 1,
                                    
                                     TRUE ~ NA_integer_),
                      
@@ -1195,35 +1584,35 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # zinc   
 df.intake24_participant <- df.intake24_participant %>%
-    mutate(RNI_Zinc = case_when(Age >= 1 & Age <= 3 & Avg_Zincmg >= 5.0 ~ 1,
-                                Age >= 4 & Age <= 6 & Avg_Zincmg >= 6.5 ~ 1,
-                                Age >= 7 & Age <= 10 & Avg_Zincmg >= 7.0 ~ 1,
-                                Age >= 11 & Age <= 14 & Avg_Zincmg >= 9.0 ~ 1,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 9.5 ~ 1,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 7.0 ~ 1,
+    mutate(RNI_Zinc = case_when(Age >= 1 & Age <= 3 & Avg_Zincmg >= 5.0 ~ 0,
+                                Age >= 4 & Age <= 6 & Avg_Zincmg >= 6.5 ~ 0,
+                                Age >= 7 & Age <= 10 & Avg_Zincmg >= 7.0 ~ 0,
+                                Age >= 11 & Age <= 14 & Avg_Zincmg >= 9.0 ~ 0,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 9.5 ~ 0,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 7.0 ~ 0,
                                 
-                                Age >= 1 & Age <= 3 & Avg_Zincmg < 5.0 ~ 0,
-                                Age >= 4 & Age <= 6 & Avg_Zincmg < 6.5 ~ 0,
-                                Age >= 7 & Age <= 10 & Avg_Zincmg < 7.0 ~ 0,
-                                Age >= 11 & Age <= 14 & Avg_Zincmg < 9.0 ~ 0,
-                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg < 9.5 ~ 0,
-                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg < 7.0 ~ 0,
+                                Age >= 1 & Age <= 3 & Avg_Zincmg < 5.0 ~ 1,
+                                Age >= 4 & Age <= 6 & Avg_Zincmg < 6.5 ~ 1,
+                                Age >= 7 & Age <= 10 & Avg_Zincmg < 7.0 ~ 1,
+                                Age >= 11 & Age <= 14 & Avg_Zincmg < 9.0 ~ 1,
+                                Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg < 9.5 ~ 1,
+                                Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg < 7.0 ~ 1,
            
                                 TRUE ~ NA_integer_),
            
-           LRNI_Zinc = case_when(Age >= 1 & Age <= 3 & Avg_Zincmg >= 3.0 ~ 1, 
-                                 Age >= 4 & Age <= 6 & Avg_Zincmg >= 4.0 ~ 1,
-                                 Age >= 7 & Age <= 10 & Avg_Zincmg >= 4.0 ~ 1,
-                                 Age >= 11 & Age <= 14 & Avg_Zincmg >= 5.3 ~ 1,
-                                 Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 5.5 ~ 1,
-                                 Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 4.0 ~ 1,
+           LRNI_Zinc = case_when(Age >= 1 & Age <= 3 & Avg_Zincmg >= 3.0 ~ 0, 
+                                 Age >= 4 & Age <= 6 & Avg_Zincmg >= 4.0 ~ 0,
+                                 Age >= 7 & Age <= 10 & Avg_Zincmg >= 4.0 ~ 0,
+                                 Age >= 11 & Age <= 14 & Avg_Zincmg >= 5.3 ~ 0,
+                                 Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 5.5 ~ 0,
+                                 Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg >= 4.0 ~ 0,
                                  
-                                 Age >= 1 & Age < 4 & Avg_Zincmg < 3.0 ~ 0,
-                                   Age >= 4 & Age < 7 & Avg_Zincmg < 4.0 ~ 0,
-                                   Age >= 7 & Age < 11 & Avg_Zincmg < 4.0 ~ 0,
-                                   Age >= 11 & Age < 15 & Avg_Zincmg < 5.3 ~ 0,
-                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg < 5.5 ~ 0,
-                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg < 4.0 ~ 0,
+                                 Age >= 1 & Age < 4 & Avg_Zincmg < 3.0 ~ 1,
+                                   Age >= 4 & Age < 7 & Avg_Zincmg < 4.0 ~ 1,
+                                   Age >= 7 & Age < 11 & Avg_Zincmg < 4.0 ~ 1,
+                                   Age >= 11 & Age < 15 & Avg_Zincmg < 5.3 ~ 1,
+                                   Sex == "Male" & Age >= 15 & Age <= 18 & Avg_Zincmg < 5.5 ~ 1,
+                                   Sex == "Female" & Age >= 15 & Age <= 18 & Avg_Zincmg < 4.0 ~ 1,
                                  
                                    TRUE ~ NA_integer_),
                      
@@ -1239,36 +1628,36 @@ df.intake24_participant <- df.intake24_participant %>%
   
     relocate(RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc, .after = Avg_Zincmg)
 
-## Add values "Yes" or "No"
+## Add values "Below" or "Above"
 df.intake24_participant <- df.intake24_participant %>%
   mutate(across(c(RNI_VitaminA, LRNI_VitaminA, RNI_Riboflavin, LRNI_Riboflavin, RNI_Folate, LRNI_Folate, RNI_VitaminD, RNI_VitaminB12, LRNI_VitaminB12, RNI_VitaminC, LRNI_VitaminC, RNI_Iron, LRNI_Iron, RNI_Calcium, LRNI_Calcium, RNI_Magnesium, LRNI_Magnesium, RNI_Potassium, LRNI_Potassium, RNI_Iodine, LRNI_Iodine, RNI_Selenium, LRNI_Selenium, RNI_Zinc, LRNI_Zinc),as.factor))
 
 df.intake24_participant <- df.intake24_participant %>%
-  mutate(RNI_VitaminA=fct_recode(RNI_VitaminA,"Yes"="1", "No"="0"),
-         LRNI_VitaminA=fct_recode(LRNI_VitaminA,"Yes"="1", "No"="0"),
-         RNI_Riboflavin=fct_recode(RNI_Riboflavin,"Yes"="1", "No"="0"),
-         LRNI_Riboflavin=fct_recode(LRNI_Riboflavin,"Yes"="1", "No"="0"),
-         RNI_Folate=fct_recode(RNI_Folate,"Yes"="1", "No"="0"),
-         LRNI_Folate=fct_recode(LRNI_Folate,"Yes"="1", "No"="0"),
-         RNI_VitaminD=fct_recode(RNI_VitaminD,"Yes"="1", "No"="0"),
-         RNI_VitaminB12=fct_recode(RNI_VitaminB12,"Yes"="1", "No"="0"),
-         LRNI_VitaminB12=fct_recode(LRNI_VitaminB12,"Yes"="1", "No"="0"),
-         RNI_VitaminC=fct_recode(RNI_VitaminC,"Yes"="1", "No"="0"),
-         LRNI_VitaminC=fct_recode(LRNI_VitaminC,"Yes"="1", "No"="0"),
-         RNI_Iron=fct_recode(RNI_Iron,"Yes"="1", "No"="0"),
-         LRNI_Iron=fct_recode(LRNI_Iron,"Yes"="1", "No"="0"),
-         RNI_Calcium=fct_recode(RNI_Calcium,"Yes"="1", "No"="0"),
-         LRNI_Calcium=fct_recode(LRNI_Calcium,"Yes"="1", "No"="0"),
-         RNI_Magnesium=fct_recode(RNI_Magnesium,"Yes"="1", "No"="0"),
-         LRNI_Magnesium=fct_recode(LRNI_Magnesium,"Yes"="1", "No"="0"),
-         RNI_Potassium=fct_recode(RNI_Potassium,"Yes"="1", "No"="0"),
-         LRNI_Potassium=fct_recode(LRNI_Potassium,"Yes"="1", "No"="0"),
-         RNI_Iodine=fct_recode(RNI_Iodine,"Yes"="1", "No"="0"),
-         LRNI_Iodine=fct_recode(LRNI_Iodine,"Yes"="1", "No"="0"),
-         RNI_Selenium=fct_recode(RNI_Selenium,"Yes"="1", "No"="0"),
-         LRNI_Selenium=fct_recode(LRNI_Selenium,"Yes"="1", "No"="0"),
-         RNI_Zinc=fct_recode(RNI_Zinc,"Yes"="1", "No"="0"),
-         LRNI_Zinc=fct_recode(LRNI_Zinc,"Yes"="1", "No"="0"))
+  mutate(RNI_VitaminA=fct_recode(RNI_VitaminA,"Below"="1", "Above"="0"),
+         LRNI_VitaminA=fct_recode(LRNI_VitaminA,"Below"="1", "Above"="0"),
+         RNI_Riboflavin=fct_recode(RNI_Riboflavin,"Below"="1", "Above"="0"),
+         LRNI_Riboflavin=fct_recode(LRNI_Riboflavin,"Below"="1", "Above"="0"),
+         RNI_Folate=fct_recode(RNI_Folate,"Below"="1", "Above"="0"),
+         LRNI_Folate=fct_recode(LRNI_Folate,"Below"="1", "Above"="0"),
+         RNI_VitaminD=fct_recode(RNI_VitaminD,"Below"="1", "Above"="0"),
+         RNI_VitaminB12=fct_recode(RNI_VitaminB12,"Below"="1", "Above"="0"),
+         LRNI_VitaminB12=fct_recode(LRNI_VitaminB12,"Below"="1", "Above"="0"),
+         RNI_VitaminC=fct_recode(RNI_VitaminC,"Below"="1", "Above"="0"),
+         LRNI_VitaminC=fct_recode(LRNI_VitaminC,"Below"="1", "Above"="0"),
+         RNI_Iron=fct_recode(RNI_Iron,"Below"="1", "Above"="0"),
+         LRNI_Iron=fct_recode(LRNI_Iron,"Below"="1", "Above"="0"),
+         RNI_Calcium=fct_recode(RNI_Calcium,"Below"="1", "Above"="0"),
+         LRNI_Calcium=fct_recode(LRNI_Calcium,"Below"="1", "Above"="0"),
+         RNI_Magnesium=fct_recode(RNI_Magnesium,"Below"="1", "Above"="0"),
+         LRNI_Magnesium=fct_recode(LRNI_Magnesium,"Below"="1", "Above"="0"),
+         RNI_Potassium=fct_recode(RNI_Potassium,"Below"="1", "Above"="0"),
+         LRNI_Potassium=fct_recode(LRNI_Potassium,"Below"="1", "Above"="0"),
+         RNI_Iodine=fct_recode(RNI_Iodine,"Below"="1", "Above"="0"),
+         LRNI_Iodine=fct_recode(LRNI_Iodine,"Below"="1", "Above"="0"),
+         RNI_Selenium=fct_recode(RNI_Selenium,"Below"="1", "Above"="0"),
+         LRNI_Selenium=fct_recode(LRNI_Selenium,"Below"="1", "Above"="0"),
+         RNI_Zinc=fct_recode(RNI_Zinc,"Below"="1", "Above"="0"),
+         LRNI_Zinc=fct_recode(LRNI_Zinc,"Below"="1", "Above"="0"))
 ```
 
 # Write files for analysis
