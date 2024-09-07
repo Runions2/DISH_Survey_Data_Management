@@ -556,6 +556,9 @@ df.intake24_participant_ndns_fg <- df.intake24_recall_ndns_fg %>%
 df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
 
+df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+  mutate_all(~ifelse(is.infinite(.), 0, .))
+
 # Fill in values across food groups in all recalls
 df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
   group_by(UserID, MainFoodGroupCode) %>%
@@ -731,15 +734,18 @@ Calculate mean daily intakes of energy and nutrients from food groups
 df.intake24_participant_fg <- df.intake24_recall_fg %>%
   group_by(UserID, ReportingFoodGroupCode) %>% 
   mutate(
-    Avg_Energy_fg = ifelse(NumberOfRecalls != 0,  sum(Day_Energy_fg)/NumberOfRecalls, NA),
-    Avg_Fat_fg = ifelse(NumberOfRecalls != 0,  sum(Day_Fat_fg)/NumberOfRecalls, NA),
-    Avg_SatFat_fg = ifelse(NumberOfRecalls != 0,  sum(Day_SatFat_fg)/NumberOfRecalls, NA),
-    Avg_FreeSugars_fg = ifelse(NumberOfRecalls != 0,  sum(Day_FreeSugars_fg)/NumberOfRecalls, NA))%>%
+    Avg_Energy_fg =   sum(Day_Energy_fg)/NumberOfRecalls,
+    Avg_Fat_fg =  sum(Day_Fat_fg)/NumberOfRecalls,
+    Avg_SatFat_fg = sum(Day_SatFat_fg)/NumberOfRecalls,
+    Avg_FreeSugars_fg = sum(Day_FreeSugars_fg)/NumberOfRecalls)%>%
   ungroup()
 
 # Change NA values to 0 
 df.intake24_participant_fg <- df.intake24_participant_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
+
+df.intake24_participant_fg <- df.intake24_participant_fg %>%
+  mutate_all(~ifelse(is.infinite(.), 0, .))
 
 # Fill in values across food groups in all recalls
 df.intake24_participant_fg <- df.intake24_participant_fg %>%
@@ -809,7 +815,8 @@ df.intake24_participant_fg <- df.intake24_participant_fg %>%
     ReportingFoodGroupCode == 17 ~ "Breakfast cereals",
     ReportingFoodGroupCode == 18 ~ "Chips, fried and roast potatoes and potato products",
     ReportingFoodGroupCode == 19 ~ "Yoghurts, fromage frais, and dairy desserts",
-       TRUE ~ NA_character_))
+       TRUE ~ NA_character_)) %>%
+  relocate(ReportingFoodGroupDesc, .after = ReportingFoodGroupCode)
 
 ```
 
