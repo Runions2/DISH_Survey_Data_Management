@@ -8,7 +8,7 @@ output:
 This notebook outputs weighted estimates into tables.
 
 # Prepare R Environment 
-```{r include=FALSE}
+```{r warning=FALSE, include=FALSE}
 
   # Clear R environment
   rm(list = ls())
@@ -34,17 +34,34 @@ This notebook outputs weighted estimates into tables.
 
 # Import the data
 ```{r include=FALSE}
-  #df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_280824.csv") 
-  #df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_280824.csv") 
-  #df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_280824.csv")
-  #df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_280824.csv") 
-  #df.weights_full <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/survey_weights_140824.csv") 
+  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_090924.csv") 
+  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_090924.csv") 
+  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_090924.csv")
+  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_090924.csv") 
+  df.weights_full <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/sample_survey_weights_050924.csv") 
+ 
+  df.intake24_recall_ndns_fg <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_090924.csv")
+
+  df.intake24_participant_ndns_fg_wide <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_090924.csv")
+
+df.intake24_recall_discretionary_fg <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_090924.csv")
+
+df.intake24_participant_discretionary_fg_wide <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_090924.csv") 
+
+  #df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_28_08_24.csv") 
+  #df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_28_08_24.csv") 
+  #df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_28_08_24.csv")
+  #df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_for_management_280824.csv") 
+  #df.weights_full <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/sample_survey_weights_140824.csv") 
   
-  df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
-  df.intake24_participant <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv") 
-  df.intake24_recall <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv") 
-  df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv") 
-  df.weights_full <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_weights_140824.csv") 
+  
+  
+  
+ # df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
+  #df.intake24_participant <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv") 
+  #df.intake24_recall <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv") 
+  #df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv") 
+  #df.weights_full <- read.csv("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_weights_140824.csv") 
 ```
 
 # Sample weights
@@ -63,33 +80,44 @@ df.intake24_participant <- left_join(df.intake24_participant, df.weights, by = "
 df.intake24_participant <- df.intake24_participant %>%
   relocate(sampleweight, .after=UserID)
 
-rm(df.weights, df.weights_full)
+
+#rm(df.weights, df.weights_full)
+
 
 # **TO UPDATE** replace NA weights with 1
 df.survey <- df.survey %>%
   mutate(sampleweight = case_when(
             is.na(sampleweight) ~ 1,
-            TRUE ~ sampleweight))
+          TRUE ~ sampleweight))
 
 df.intake24_participant <- df.intake24_participant %>%
   mutate(sampleweight = case_when(
             is.na(sampleweight) ~ 1,
             TRUE ~ sampleweight))
+
+
 
 # replace 'Prefer not to say" sex to NA
 df.intake24_participant <- df.intake24_participant %>%
   mutate(Sex = case_when(Sex == "Prefer not to say" ~ NA,
                          TRUE ~ Sex))
 
+#set factor levels
+df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
+
+df.intake24_participant$age_sex_cat <- factor(df.intake24_participant$age_sex_cat, levels = c("Female, 2-4y", "Female, 5-10y", "Female, 11-15y", "Male, 2-4y", "Male, 5-10y", "Male, 11-15y"))
+
+
 # set survey weights and psu
 svy.df.survey <- svydesign(id = ~psu, weights = ~sampleweight, data = df.survey)
 svy.df.intake24_participant <- svydesign(id = ~psu, weights = ~sampleweight, data = df.intake24_participant)
+
 ```
 
 # Sample characteristics
-```{r message=FALSE, warning=FALSE}
-svyciprop(~I(Sex=="Female"), svy, method="mean")
-svyciprop(~I(Sex=="Male"), svy, method="mean")
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+#svyciprop(~I(Sex=="Female"), svy, method="mean")
+#svyciprop(~I(Sex=="Male"), svy, method="mean")
 
 table.demo <- tbl_svysummary(
   svy.df.survey,
@@ -107,8 +135,9 @@ table.demo <- tbl_svysummary(
   add_overall()%>%
   as_flex_table()
 
-save_as_docx(table.demo, 
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_Demographics_",format(Sys.time(),"%d%m%Y"),".docx"))
+#save_as_docx(table.demo, path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_Demographics_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+table.demo
 
 ```
 
@@ -116,21 +145,21 @@ save_as_docx(table.demo,
 ## Overall
 ```{r echo=FALSE}
 df.intake24_participant %>% 
-  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>% # select variables for table
+  select(Avg_EnergyDensity, Avg_FV_Portions_Total, Avg_RRPMg, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_FreeSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibreg) %>% # select variables for table
   tbl_summary(missing = "no", # set to 'always' or 'ifany' to show unknowns in table
               digits = list(all_categorical() ~ c(1,0)), # set categorical variables to one decimal place
               type = list(all_continuous() ~ "continuous2"), 
               statistic = list(all_continuous() ~ c("{mean} ({sd})", "{median} ({p25}, {p75})")),
               label = c(        # rename variables for table               
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
-                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_FV_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_RRPMg ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
                 Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
-                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_FreeSugars_PropFoodEnergy ~ "Free sugars - % food energy",
                 Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
-                Avg_AOACFibre ~ "Fibre - g/day"
+                Avg_AOACFibreg ~ "Fibre - g/day"
                 )
   ) %>%
   add_ci() %>% #add confidence interval
@@ -148,7 +177,7 @@ stats <- c("N" = "{length}",
 
 
 df.intakes <- df.intake24_participant %>% 
-  select(Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) # select variables for table
+  select(Avg_EnergyDensity, Avg_FV_Portions_Total, Avg_FV_Portions_Total_NoJuiceSmoothie, Avg_RRPMg, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_FreeSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibreg) # select variables for table
 
 #useimap from purr package to combine summary tables and reformat with stats in header row
 intakes_reformat <- imap( 
@@ -158,15 +187,15 @@ intakes_reformat <- imap(
               statistic = ~.x,
               label = c(        # rename variables for table               
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
-                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
-                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_FV_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_FV_Portions_Total_NoJuiceSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_RRPMg ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
                 Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
-                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_FreeSugars_PropFoodEnergy ~ "Free sugars - % food energy",
                 Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
-                Avg_AOACFibre ~ "Fibre - g/day"
+                Avg_AOACFibreg ~ "Fibre - g/day"
                 )) %>%
 
     modify_header(all_stat_cols() ~ stringr::str_glue("**{.y}**"))
@@ -181,12 +210,25 @@ intakes_reformat
 
 ```
 
+Create full-demo subset
+```{r include=FALSE}
+# create a subset that removes any participant without full demographic information (age/sex variables)
+df.intake24_full_demo <- df.intake24_participant %>% 
+  filter(Sex != "Prefer not to say")
+
+n_distinct(df.intake24_full_demo$UserID)
+
+# set factor level
+df.intake24_full_demo$Sex <- factor(df.intake24_full_demo$Sex, levels = c("Female", "Male"))
+```
+
+
 ## by Age
 *11 participants removed that refused demographic information
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
-  select(age_cat, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  select(age_cat, Avg_EnergyDensity, Avg_FV_Portions_Total, Avg_FV_Portions_Total_NoJuiceSmoothie, Avg_RRPMg, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_FreeSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibreg) %>%
   tbl_summary(missing = "no",
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
@@ -195,15 +237,15 @@ df.intake24_full_demo %>%
               by = age_cat, 
               label = c(
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
-                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
-                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_FV_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_FV_Portions_Total_NoJuiceSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_RRPMg ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
                 Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
-                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_FreeSugars_PropFoodEnergy ~ "Free sugars - % food energy",
                 Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
-                Avg_AOACFibre ~ "Fibre - g/day"
+                Avg_AOACFibreg ~ "Fibre - g/day"
                 )
   ) %>%
   add_p() %>%
@@ -218,7 +260,7 @@ df.intake24_full_demo %>%
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
-  select(Sex, Avg_EnergyDensity, Avg_Portions_Total, Avg_Portions_Total_NoFruitSmoothie, Avg_redprocessedmeat, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_TotalSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibre) %>%
+  select(Sex, Avg_EnergyDensity, Avg_FV_Portions_Total, Avg_FV_Portions_Total_NoJuiceSmoothie, Avg_RRPMg, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_FreeSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibreg) %>%
   tbl_summary(missing = "no",
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
@@ -227,15 +269,15 @@ df.intake24_full_demo %>%
               by = Sex, 
               label = c(
                 Avg_EnergyDensity ~ "Energy density",
-                Avg_Portions_Total ~ "Fruit and vegetables - portions/day",
-                Avg_Portions_Total_NoFruitSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
-                Avg_redprocessedmeat ~ "Red and red processed meat - g/day",
+                Avg_FV_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_FV_Portions_Total_NoJuiceSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_RRPMg ~ "Red and red processed meat - g/day",
                 Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
                 Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
                 Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
-                Avg_TotalSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_FreeSugars_PropFoodEnergy ~ "Free sugars - % food energy",
                 Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
-                Avg_AOACFibre ~ "Fibre - g/day"
+                Avg_AOACFibreg ~ "Fibre - g/day"
                 )
   ) %>%
   add_p() %>%
@@ -243,6 +285,9 @@ df.intake24_full_demo %>%
   modify_header(label ~ "**Daily Intakes**") %>%
   bold_labels() %>%  
   as_flex_table() 
+
+
+
 
 table.sdgs.age <- tbl_svysummary(
   svy.df.intake24_participant,
@@ -269,10 +314,68 @@ table.sdgs.age <- tbl_svysummary(
   bold_labels() %>% 
   as_flex_table()
 
+
+table.sdgs.age
 ```
 
 ## **TO UPDATE** by SIMD
+```{r echo=FALSE}
 
+df.intake24_full_demo %>% 
+  select(simd_quintile, Avg_EnergyDensity, Avg_FV_Portions_Total, Avg_FV_Portions_Total_NoJuiceSmoothie, Avg_RRPMg, Avg_Fat_PropFoodEnergy, Avg_SatFat_PropFoodEnergy, Avg_TransFat_PropFoodEnergy, Avg_FreeSugars_PropFoodEnergy, Avg_Carbs_PropFoodEnergy, Avg_AOACFibreg) %>%
+  tbl_summary(missing = "no",
+              digits = list(all_categorical() ~ c(1,0)),
+              type = list(all_continuous() ~ "continuous2"),
+              statistic = list(all_continuous() ~ c("{mean} ({sd})",
+                                                    "{median} ({p25}, {p75})")),
+              by = simd_quintile, 
+              label = c(
+                Avg_EnergyDensity ~ "Energy density",
+                Avg_FV_Portions_Total ~ "Fruit and vegetables - portions/day",
+                Avg_FV_Portions_Total_NoJuiceSmoothie ~ "Fruit and vegetables - portions/day (no fruit smoothie)",
+                Avg_RRPMg ~ "Red and red processed meat - g/day",
+                Avg_Fat_PropFoodEnergy ~ "Total fat - % food energy",
+                Avg_SatFat_PropFoodEnergy ~ "Saturated fat - % food energy",
+                Avg_TransFat_PropFoodEnergy ~ "Trans fat - % food energy",
+                Avg_FreeSugars_PropFoodEnergy ~ "Free sugars - % food energy",
+                Avg_Carbs_PropFoodEnergy ~ "Total carbs - % food energy",
+                Avg_AOACFibreg ~ "Fibre - g/day"
+                )
+  ) %>%
+  add_p() %>%
+  add_significance_stars() %>%
+  modify_header(label ~ "**Daily Intakes**") %>%
+  bold_labels() %>%  
+  as_flex_table() 
+
+table.sdgs.simd <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = simd_quintile,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({SD})
+                                       {min} - {max}", all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+
+table.sdgs.simd
+```
 
 ## Oily Fish FFQ
 ```{r echo=FALSE}
@@ -347,7 +450,9 @@ figure.sdgs <- ggplot(figure.df.sdgs, aes(x=reorder(SDG,desc(Value)), y=Value)) 
        theme_minimal() +
        theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5))
 
-ggsave(figure.sdgs, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_overall.jpeg",width = 6.5, height = 5)
+figure.sdgs
+
+#ggsave(figure.sdgs, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_overall.jpeg",width = 6.5, height = 5)
 ```
 
 ## by Age 
@@ -413,7 +518,9 @@ fig.sdg.age <- ggplot(fig.df.sdg.age, aes(x=reorder(SDG,desc(Value)), y=Value, f
        theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
        scale_fill_manual(values=c("#440154FF", "#1F968BFF","#FDE725FF")) 
 
-ggsave(fig.sdg.age, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_byAge.jpeg",width = 7.5, height = 5)
+fig.sdg.age
+
+#ggsave(fig.sdg.age, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_byAge.jpeg",width = 7.5, height = 5)
 ```
 
 ## by Sex 
@@ -454,8 +561,10 @@ table.forfigure.sdgs.sex <- tbl_svysummary(
   add_overall() %>%
   bold_labels() %>% 
   as_flex_table()
-save_as_docx("SDG by Sex Table for Figure"=table.forfigure.sdgs.sex,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Sex_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+table.forfigure.sdgs.sex
+
+#save_as_docx("SDG by Sex Table for Figure"=table.forfigure.sdgs.sex,path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Sex_",format(Sys.time(),"%d%m%Y"),".docx"))
 
 fig.df.sdg.sex <- data.frame(Sex=as.factor(c("Female","Female","Female","Female","Female","Female","Female","Female","Female","Female","Female",
                                              "Male","Male","Male","Male","Male","Male","Male","Male","Male","Male","Male")),
@@ -473,7 +582,9 @@ fig.sdg.sex <- ggplot(fig.df.sdg.sex, aes(x=reorder(SDG,desc(Value)), y=Value, f
        theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
        scale_fill_manual(values=c("#440154FF", "#1F968BFF")) 
 
-ggsave(fig.sdg.sex, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySex.jpeg",width = 7.5, height = 5)
+fig.sdg.sex
+
+#ggsave(fig.sdg.sex, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySex.jpeg",width = 7.5, height = 5)
 ```
 
 ## by SIMD 
@@ -514,8 +625,9 @@ table.forfigure.sdgs.simd <- tbl_svysummary(
   add_overall() %>%
   bold_labels() %>% 
   as_flex_table()
-save_as_docx("SDG by SIMD Table for Figure"=table.forfigure.sdgs.simd,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_SIMD_",format(Sys.time(),"%d%m%Y"),".docx"))
+
+
+#save_as_docx("SDG by SIMD Table for Figure"=table.forfigure.sdgs.simd,path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_SIMD_",format(Sys.time(),"%d%m%Y"),".docx"))
 
 fig.df.sdg.simd <- data.frame(SIMD=as.factor(c("1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)","1st (Most Deprived)",
                                              "2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd","2nd",
@@ -542,14 +654,53 @@ fig.sdg.simd <- ggplot(fig.df.sdg.simd, aes(x=reorder(SDG,desc(Value)), y=Value,
        theme(legend.position = "top", axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=0.5)) +
        scale_fill_viridis_d(option = "viridis", direction = -1)
 
-ggsave(fig.sdg.simd, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySIMD.jpeg",width = 7.5, height = 5)
+fig.sdg.simd
+
+#ggsave(fig.sdg.simd, filename = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/SDGs_bySIMD.jpeg",width = 7.5, height = 5)
 ```
 
 ## Output tables for appendix 
 ```{r echo=FALSE, warning=FALSE}
+#save_as_docx("Overall"=table.sdgs, "by Age"=table.sdgs.age, "by Sex"=table.sdgs.sex, "by SIMD"=table.sdgs.simd,path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_SDGs_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
 
-save_as_docx("Overall"=table.sdgs, "by Age"=table.sdgs.age, "by Sex"=table.sdgs.sex, "by SIMD"=table.sdgs.simd,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_SDGs_",format(Sys.time(),"%d%m%Y"),".docx"))
+### Output Excel Sheet
+```{r echo=FALSE, warning=FALSE}
+# Convert flextables to data frames
+df.table.sdgs <- table.sdgs$body$dataset %>%
+  rename(SDG = label,
+         Overall = stat_0)
+df.table.sdgs.age <- table.sdgs.age$body$dataset %>%
+  rename(SDG = label,
+    Overall = stat_0,
+         "2-4y" = stat_1,
+         "5-10y" = stat_2,
+         "11-15y" = stat_3)
+df.table.sdgs.sex <- table.sdgs.sex$body$dataset %>%
+  rename(SDG = label,
+         Overall = stat_0,
+         Female = stat_1,
+         Male = stat_2)
+df.table.sdgs.simd <- table.sdgs.simd$body$dataset %>%
+  rename(SDG = label,
+         Overall = stat_0,
+         "1" = stat_1,
+         "2" = stat_2,
+         "3" = stat_3,
+         "4" = stat_4,
+         "5" = stat_5)
+
+
+write_xlsx(
+  list(
+    "Overall" = df.table.sdgs,
+    "by Age" = df.table.sdgs.age,
+    "by Sex" = df.table.sdgs.sex,
+    "by SIMD" = df.table.sdgs.simd
+  ),
+  path = paste0("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/Table_SDGs_", format(Sys.time(), "%d%m%Y"), ".xlsx")
+)
+
 ```
 
 ## Explore Vegetables and Fruit Goal
@@ -574,6 +725,33 @@ table.sdgs.vegfruit <- tbl_svysummary(
   bold_labels() %>% 
   as_flex_table()
 
+table.sdgs.vegfruit
+```
+
+### Output Excel Sheet
+```{r eval=FALSE, warning=FALSE, include=FALSE}
+df.table.sdgs.vegfruit <- table.sdgs.vegfruit$body$dataset %>%
+  rename(SDG = label,
+    Overall = stat_0,
+         "2-4y" = stat_1,
+         "5-10y" = stat_2,
+         "11-15y" = stat_3)
+
+write_xlsx(
+  list(
+    "Overall" = df.table.sdgs,
+    "by Age" = df.table.sdgs.age,
+    "by Sex" = df.table.sdgs.sex,
+    "by SIMD" = df.table.sdgs.simd,
+    "Fruit and Veg" = df.table.sdgs.vegfruit
+  ),
+  path = paste0("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/Table_SDGs_FV_", format(Sys.time(), "%d%m%Y"), ".xlsx")
+)
+
+```
+
+Remove? No longer needed?
+```{r include=FALSE, warning=FALSE}
 # Most Commonly Reported Vegetables
 Vegetables <- df.intake24_item %>%
   filter(MainFoodGroupCode %in% c(37, 36))
@@ -599,8 +777,7 @@ Veg_sub %>%
   bold_labels() %>%  
   as_flex_table() 
 
-save_as_docx("Mean portions"=table.sdgs.vegfruit,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_F&V_",format(Sys.time(),"%d%m%Y"),".docx"))
+#save_as_docx("Mean portions"=table.sdgs.vegfruit,path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_F&V_",format(Sys.time(),"%d%m%Y"),".docx"))
 ```
 
 # RNIs and LRNIs
@@ -611,47 +788,47 @@ table.rnis.age <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
-            RNI_VitaminA ~ "Vitamin A, % above RNI",
-            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_VitaminA ~ "Vitamin A, % below RNI",
+            LRNI_VitaminA ~ "Vitamin A, % below LRNI",
             RNI_prct_VitaminA ~ "Vitamin A, % RNI",
             Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
-            RNI_Riboflavin ~ "Riboflavin, % above RNI",
-            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_Riboflavin ~ "Riboflavin, % below RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % below LRNI",
             RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
             Avg_Folateug ~ "Folate (µg/day)",
-            RNI_Folate ~ "Folate, % above RNI",
-            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_Folate ~ "Folate, % below RNI",
+            LRNI_Folate ~ "Folate, % below LRNI",
             RNI_prct_Folate ~ "Folate, % RNI",
             Avg_VitaminDug ~ "Vitamin D (µg/day)",
-            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_VitaminD ~ "Vitamin D, % below RNI",
             RNI_prct_VitaminD ~ "Vitamin D, % RNI",
             Avg_Ironmg ~ "Iron (mg/day)",
-            RNI_Iron ~ "Iron, % above RNI",
-            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_Iron ~ "Iron, % below RNI",
+            LRNI_Iron ~ "Iron, % below LRNI",
             RNI_prct_Iron ~ "Iron, % RNI",
             Avg_Calciummg ~ "Calcium (mg/day)",
-            RNI_Calcium ~ "Calcium, % above RNI",
-            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_Calcium ~ "Calcium, % below RNI",
+            LRNI_Calcium ~ "Calcium, % below LRNI",
             RNI_prct_Calcium ~ "Calcium, % RNI",
             Avg_Magnesiummg ~ "Magnesium (mg/day)",
-            RNI_Magnesium ~ "Magnesium, % above RNI",
-            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_Magnesium ~ "Magnesium, % below RNI",
+            LRNI_Magnesium ~ "Magnesium, % below LRNI",
             RNI_prct_Magnesium ~ "Magnesium, % RNI",
             Avg_Potassiummg ~ "Potassium (mg/day)",
-            RNI_Potassium ~ "Potassium, % above RNI",
-            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_Potassium ~ "Potassium, % below RNI",
+            LRNI_Potassium ~ "Potassium, % below LRNI",
             RNI_prct_Potassium ~ "Potassium, % RNI",
             Avg_Iodineug ~ "Iodine (µg/day)",
-            RNI_Iodine ~ "Iodine, % above RNI",
-            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_Iodine ~ "Iodine, % below RNI",
+            LRNI_Iodine ~ "Iodine, % below LRNI",
             RNI_prct_Iodine ~ "Iodine, % RNI",
             Avg_Seleniumug ~ "Selenium (µg/day)",
-            RNI_Selenium ~ "Selenium, % above RNI",
-            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_Selenium ~ "Selenium, % below RNI",
+            LRNI_Selenium ~ "Selenium, % below LRNI",
             RNI_prct_Selenium ~ "Selenium, % RNI",
             Avg_Zincmg ~ "Zinc (mg/day)",
-            RNI_Zinc ~ "Zinc, % above RNI",
-            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_Zinc ~ "Zinc, % below RNI",
+            LRNI_Zinc ~ "Zinc, % below LRNI",
             RNI_prct_Zinc ~ "Zinc, % RNI"),
   statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
                                        {mean} ({mean.std.error})
@@ -668,6 +845,8 @@ table.rnis.age <- tbl_svysummary(
               Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
   bold_labels() %>% 
   as_flex_table()
+
+table.rnis.age
 ```
 
 ## by Sex
@@ -676,47 +855,47 @@ table.rnis.sex <- tbl_svysummary(
   svy.df.intake24_participant,
   by = Sex,
   label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
-            RNI_VitaminA ~ "Vitamin A, % above RNI",
-            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_VitaminA ~ "Vitamin A, % below RNI",
+            LRNI_VitaminA ~ "Vitamin A, % below LRNI",
             RNI_prct_VitaminA ~ "Vitamin A, % RNI",
             Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
-            RNI_Riboflavin ~ "Riboflavin, % above RNI",
-            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_Riboflavin ~ "Riboflavin, % below RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % below LRNI",
             RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
             Avg_Folateug ~ "Folate (µg/day)",
-            RNI_Folate ~ "Folate, % above RNI",
-            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_Folate ~ "Folate, % below RNI",
+            LRNI_Folate ~ "Folate, % below LRNI",
             RNI_prct_Folate ~ "Folate, % RNI",
             Avg_VitaminDug ~ "Vitamin D (µg/day)",
-            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_VitaminD ~ "Vitamin D, % below RNI",
             RNI_prct_VitaminD ~ "Vitamin D, % RNI",
             Avg_Ironmg ~ "Iron (mg/day)",
-            RNI_Iron ~ "Iron, % above RNI",
-            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_Iron ~ "Iron, % below RNI",
+            LRNI_Iron ~ "Iron, % below LRNI",
             RNI_prct_Iron ~ "Iron, % RNI",
             Avg_Calciummg ~ "Calcium (mg/day)",
-            RNI_Calcium ~ "Calcium, % above RNI",
-            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_Calcium ~ "Calcium, % below RNI",
+            LRNI_Calcium ~ "Calcium, % below LRNI",
             RNI_prct_Calcium ~ "Calcium, % RNI",
             Avg_Magnesiummg ~ "Magnesium (mg/day)",
-            RNI_Magnesium ~ "Magnesium, % above RNI",
-            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_Magnesium ~ "Magnesium, % below RNI",
+            LRNI_Magnesium ~ "Magnesium, % below LRNI",
             RNI_prct_Magnesium ~ "Magnesium, % RNI",
             Avg_Potassiummg ~ "Potassium (mg/day)",
-            RNI_Potassium ~ "Potassium, % above RNI",
-            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_Potassium ~ "Potassium, % below RNI",
+            LRNI_Potassium ~ "Potassium, % below LRNI",
             RNI_prct_Potassium ~ "Potassium, % RNI",
             Avg_Iodineug ~ "Iodine (µg/day)",
-            RNI_Iodine ~ "Iodine, % above RNI",
-            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_Iodine ~ "Iodine, % below RNI",
+            LRNI_Iodine ~ "Iodine, % below LRNI",
             RNI_prct_Iodine ~ "Iodine, % RNI",
             Avg_Seleniumug ~ "Selenium (µg/day)",
-            RNI_Selenium ~ "Selenium, % above RNI",
-            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_Selenium ~ "Selenium, % below RNI",
+            LRNI_Selenium ~ "Selenium, % below LRNI",
             RNI_prct_Selenium ~ "Selenium, % RNI",
             Avg_Zincmg ~ "Zinc (mg/day)",
-            RNI_Zinc ~ "Zinc, % above RNI",
-            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_Zinc ~ "Zinc, % below RNI",
+            LRNI_Zinc ~ "Zinc, % below LRNI",
             RNI_prct_Zinc ~ "Zinc, % RNI"),
   statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
                                        {mean} ({mean.std.error})
@@ -733,6 +912,8 @@ table.rnis.sex <- tbl_svysummary(
               Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
   bold_labels() %>% 
   as_flex_table()
+
+table.rnis.sex
 ```
 
 ## by Age and Sex
@@ -742,47 +923,47 @@ table.rnis.agesex <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_sex_cat,
   label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
-            RNI_VitaminA ~ "Vitamin A, % above RNI",
-            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_VitaminA ~ "Vitamin A, % below RNI",
+            LRNI_VitaminA ~ "Vitamin A, % below LRNI",
             RNI_prct_VitaminA ~ "Vitamin A, % RNI",
             Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
-            RNI_Riboflavin ~ "Riboflavin, % above RNI",
-            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_Riboflavin ~ "Riboflavin, % below RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % below LRNI",
             RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
             Avg_Folateug ~ "Folate (µg/day)",
-            RNI_Folate ~ "Folate, % above RNI",
-            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_Folate ~ "Folate, % below RNI",
+            LRNI_Folate ~ "Folate, % below LRNI",
             RNI_prct_Folate ~ "Folate, % RNI",
             Avg_VitaminDug ~ "Vitamin D (µg/day)",
-            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_VitaminD ~ "Vitamin D, % below RNI",
             RNI_prct_VitaminD ~ "Vitamin D, % RNI",
             Avg_Ironmg ~ "Iron (mg/day)",
-            RNI_Iron ~ "Iron, % above RNI",
-            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_Iron ~ "Iron, % below RNI",
+            LRNI_Iron ~ "Iron, % below LRNI",
             RNI_prct_Iron ~ "Iron, % RNI",
             Avg_Calciummg ~ "Calcium (mg/day)",
-            RNI_Calcium ~ "Calcium, % above RNI",
-            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_Calcium ~ "Calcium, % below RNI",
+            LRNI_Calcium ~ "Calcium, % below LRNI",
             RNI_prct_Calcium ~ "Calcium, % RNI",
             Avg_Magnesiummg ~ "Magnesium (mg/day)",
-            RNI_Magnesium ~ "Magnesium, % above RNI",
-            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_Magnesium ~ "Magnesium, % below RNI",
+            LRNI_Magnesium ~ "Magnesium, % below LRNI",
             RNI_prct_Magnesium ~ "Magnesium, % RNI",
             Avg_Potassiummg ~ "Potassium (mg/day)",
-            RNI_Potassium ~ "Potassium, % above RNI",
-            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_Potassium ~ "Potassium, % below RNI",
+            LRNI_Potassium ~ "Potassium, % below LRNI",
             RNI_prct_Potassium ~ "Potassium, % RNI",
             Avg_Iodineug ~ "Iodine (µg/day)",
-            RNI_Iodine ~ "Iodine, % above RNI",
-            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_Iodine ~ "Iodine, % below RNI",
+            LRNI_Iodine ~ "Iodine, % below LRNI",
             RNI_prct_Iodine ~ "Iodine, % RNI",
             Avg_Seleniumug ~ "Selenium (µg/day)",
-            RNI_Selenium ~ "Selenium, % above RNI",
-            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_Selenium ~ "Selenium, % below RNI",
+            LRNI_Selenium ~ "Selenium, % below LRNI",
             RNI_prct_Selenium ~ "Selenium, % RNI",
             Avg_Zincmg ~ "Zinc (mg/day)",
-            RNI_Zinc ~ "Zinc, % above RNI",
-            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_Zinc ~ "Zinc, % below RNI",
+            LRNI_Zinc ~ "Zinc, % below LRNI",
             RNI_prct_Zinc ~ "Zinc, % RNI"),
   statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
                                        {mean} ({mean.std.error})
@@ -799,6 +980,8 @@ table.rnis.agesex <- tbl_svysummary(
               Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
   bold_labels() %>% 
   as_flex_table()
+
+table.rnis.agesex 
 ```
 
 ## by SIMD
@@ -808,47 +991,47 @@ table.rnis.simd <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
-            RNI_VitaminA ~ "Vitamin A, % above RNI",
-            LRNI_VitaminA ~ "Vitamin A, % above LRNI",
+            RNI_VitaminA ~ "Vitamin A, % below RNI",
+            LRNI_VitaminA ~ "Vitamin A, % below LRNI",
             RNI_prct_VitaminA ~ "Vitamin A, % RNI",
             Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
-            RNI_Riboflavin ~ "Riboflavin, % above RNI",
-            LRNI_Riboflavin ~ "Riboflavin, % above LRNI",
+            RNI_Riboflavin ~ "Riboflavin, % below RNI",
+            LRNI_Riboflavin ~ "Riboflavin, % below LRNI",
             RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
             Avg_Folateug ~ "Folate (µg/day)",
-            RNI_Folate ~ "Folate, % above RNI",
-            LRNI_Folate ~ "Folate, % above LRNI",
+            RNI_Folate ~ "Folate, % below RNI",
+            LRNI_Folate ~ "Folate, % below LRNI",
             RNI_prct_Folate ~ "Folate, % RNI",
             Avg_VitaminDug ~ "Vitamin D (µg/day)",
-            RNI_VitaminD ~ "Vitamin D, % above RNI",
+            RNI_VitaminD ~ "Vitamin D, % below RNI",
             RNI_prct_VitaminD ~ "Vitamin D, % RNI",
             Avg_Ironmg ~ "Iron (mg/day)",
-            RNI_Iron ~ "Iron, % above RNI",
-            LRNI_Iron ~ "Iron, % above LRNI",
+            RNI_Iron ~ "Iron, % below RNI",
+            LRNI_Iron ~ "Iron, % below LRNI",
             RNI_prct_Iron ~ "Iron, % RNI",
             Avg_Calciummg ~ "Calcium (mg/day)",
-            RNI_Calcium ~ "Calcium, % above RNI",
-            LRNI_Calcium ~ "Calcium, % above LRNI",
+            RNI_Calcium ~ "Calcium, % below RNI",
+            LRNI_Calcium ~ "Calcium, % below LRNI",
             RNI_prct_Calcium ~ "Calcium, % RNI",
             Avg_Magnesiummg ~ "Magnesium (mg/day)",
-            RNI_Magnesium ~ "Magnesium, % above RNI",
-            LRNI_Magnesium ~ "Magnesium, % above LRNI",
+            RNI_Magnesium ~ "Magnesium, % below RNI",
+            LRNI_Magnesium ~ "Magnesium, % below LRNI",
             RNI_prct_Magnesium ~ "Magnesium, % RNI",
             Avg_Potassiummg ~ "Potassium (mg/day)",
-            RNI_Potassium ~ "Potassium, % above RNI",
-            LRNI_Potassium ~ "Potassium, % above LRNI",
+            RNI_Potassium ~ "Potassium, % below RNI",
+            LRNI_Potassium ~ "Potassium, % below LRNI",
             RNI_prct_Potassium ~ "Potassium, % RNI",
             Avg_Iodineug ~ "Iodine (µg/day)",
-            RNI_Iodine ~ "Iodine, % above RNI",
-            LRNI_Iodine ~ "Iodine, % above LRNI",
+            RNI_Iodine ~ "Iodine, % below RNI",
+            LRNI_Iodine ~ "Iodine, % below LRNI",
             RNI_prct_Iodine ~ "Iodine, % RNI",
             Avg_Seleniumug ~ "Selenium (µg/day)",
-            RNI_Selenium ~ "Selenium, % above RNI",
-            LRNI_Selenium ~ "Selenium, % above LRNI",
+            RNI_Selenium ~ "Selenium, % below RNI",
+            LRNI_Selenium ~ "Selenium, % below LRNI",
             RNI_prct_Selenium ~ "Selenium, % RNI",
             Avg_Zincmg ~ "Zinc (mg/day)",
-            RNI_Zinc ~ "Zinc, % above RNI",
-            LRNI_Zinc ~ "Zinc, % above LRNI",
+            RNI_Zinc ~ "Zinc, % below RNI",
+            LRNI_Zinc ~ "Zinc, % below LRNI",
             RNI_prct_Zinc ~ "Zinc, % RNI"),
   statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
                                        {mean} ({mean.std.error})
@@ -865,6 +1048,9 @@ table.rnis.simd <- tbl_svysummary(
               Avg_Zincmg, RNI_Zinc, LRNI_Zinc, RNI_prct_Zinc)) %>%
   bold_labels() %>% 
   as_flex_table()
+
+
+table.rnis.simd
 ```
 
 ## Output tables for appendix 
@@ -874,16 +1060,62 @@ save_as_docx("by Age"=table.rnis.age, "by Sex"=table.rnis.sex, "by Age and Sex"=
              path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_RNIs&LRNIs_",format(Sys.time(),"%d%m%Y"),".docx"))
 ```
 
-## Advisory group slides
-```{r echo=FALSE, warning=FALSE}
 
+### Output Excel Sheet
+```{r echo=FALSE, warning=FALSE}
+# Convert flextables to data frames
+df.table.rnis.age <- table.rnis.age$body$dataset %>%
+  rename(RNI_LRNI = label,
+         "2-4y" = stat_1,
+         "5-10y" = stat_2,
+         "11-15y" = stat_3)
+
+df.table.rnis.sex <- table.rnis.sex$body$dataset %>%
+  rename(RNI_LRNI = label,
+    Female = stat_1,
+         Male = stat_2)
+
+df.table.rnis.agesex <- table.rnis.agesex$body$dataset %>%
+  rename(RNI_LRNI = label,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.rnis.simd <- table.rnis.simd$body$dataset %>%
+  rename(RNI_LRNI = label,
+         "1" = stat_1,
+         "2" = stat_2,
+         "3" = stat_3,
+         "4" = stat_4,
+         "5" = stat_5)
+
+
+write_xlsx(
+  list(
+    "by Age" = df.table.rnis.age,
+    "by Sex" = df.table.rnis.sex,
+    "by Age_Sex" = df.table.rnis.agesex,
+    "by SIMD" = df.table.rnis.simd),
+  path = paste0("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/Table_RNI_LRNI_", format(Sys.time(), "%d%m%Y"), ".xlsx")
+)
+
+
+```
+
+
+# Advisory group slides
+```{r echo=FALSE, warning=FALSE}
 table.rnis.slide1 <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_sex_cat,
   label = c(Avg_VitaminAug ~ "Vitamin A (µg/day)",
             Avg_Riboflavinmg ~ "Riboflavin (mg/day)",
             Avg_Folateug ~ "Folate (µg/day)",
-            Avg_VitaminDug ~ "Vitamin D (µg/day)",
+            Avg_VitaminB12ug ~ "Vitamin B12 (µg/day)",
+            Avg_VitaminCmg ~ "Vitamin C (mg/day)",
             Avg_Ironmg ~ "Iron (mg/day)",
             Avg_Calciummg ~ "Calcium (mg/day)",
             Avg_Magnesiummg ~ "Magnesium (mg/day)",
@@ -893,7 +1125,7 @@ table.rnis.slide1 <- tbl_svysummary(
             Avg_Zincmg ~ "Zinc (mg/day)"),
   statistic = list(all_continuous() ~ "{mean}"),
   missing = "ifany",
-  include = c(Avg_VitaminAug, Avg_Riboflavinmg, Avg_Folateug, Avg_VitaminDug, Avg_Ironmg, Avg_Calciummg, 
+  include = c(Avg_VitaminAug, Avg_Riboflavinmg, Avg_Folateug, Avg_VitaminB12ug, Avg_VitaminCmg, Avg_Ironmg, Avg_Calciummg, 
               Avg_Magnesiummg, Avg_Potassiummg, Avg_Iodineug, Avg_Seleniumug, Avg_Zincmg)) %>%
   bold_labels() %>% 
   as_flex_table()
@@ -904,7 +1136,8 @@ table.rnis.slide2 <- tbl_svysummary(
   label = c(RNI_prct_VitaminA ~ "Vitamin A, % RNI",
             RNI_prct_Riboflavin ~ "Riboflavin, % RNI",
             RNI_prct_Folate ~ "Folate, % RNI",
-            RNI_prct_VitaminD ~ "Vitamin D, % RNI",
+            RNI_prct_VitaminB12 ~ "Vitamin B12, % RNI",
+            RNI_prct_VitaminC ~ "Vitamin C, % RNI",
             RNI_prct_Iron ~ "Iron, % RNI",
             RNI_prct_Calcium ~ "Calcium, % RNI",
             RNI_prct_Magnesium ~ "Magnesium, % RNI",
@@ -914,11 +1147,69 @@ table.rnis.slide2 <- tbl_svysummary(
             RNI_prct_Zinc ~ "Zinc, % RNI"),
   statistic = list(all_continuous() ~ "{mean}"),
   missing = "ifany",
-  include = c(RNI_prct_VitaminA, RNI_prct_Riboflavin, RNI_prct_Folate, RNI_prct_VitaminD,RNI_prct_Iron, RNI_prct_Calcium,
+  include = c(RNI_prct_VitaminA, RNI_prct_Riboflavin, RNI_prct_Folate, RNI_prct_VitaminB12, RNI_prct_VitaminC, RNI_prct_Iron, RNI_prct_Calcium,
               RNI_prct_Magnesium, RNI_prct_Potassium, RNI_prct_Iodine, RNI_prct_Selenium, RNI_prct_Zinc)) %>%
   bold_labels() %>% 
   as_flex_table()
 
-save_as_docx("Mean"=table.rnis.slide1,"Mean % RNI"=table.rnis.slide2,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_RNIs&LRNIs_Slides_",format(Sys.time(),"%d%m%Y"),".docx"))
+table.rnis.slide3 <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat,
+  label = c(RNI_Protein ~ "Protein, % below RNI",
+            LRNI_VitaminA ~ "Vitamin A, % below LRNI",
+            LRNI_Riboflavin ~ "Riboflavin, % below LRNI",
+            LRNI_Folate ~ "Folate, % below LRNI",
+            LRNI_VitaminB12 ~ "Vitamin B12, % below LRNI",
+            LRNI_VitaminC ~ "Vitamin C, % below LRNI",
+            LRNI_Iron ~ "Iron, % below LRNI",
+            LRNI_Calcium ~ "Calcium, % below LRNI",
+            LRNI_Magnesium ~ "Magnesium, % below LRNI",
+            LRNI_Potassium ~ "Potassium, % below LRNI",
+            LRNI_Iodine ~ "Iodine, % below LRNI",
+            LRNI_Selenium ~ "Selenium, % below LRNI",
+            LRNI_Zinc ~ "Zinc, % below LRNI"),
+  statistic = list(all_categorical() ~ "{p}"),
+  missing = "ifany",
+  digits = list(all_continuous() ~ c(1,0),
+                all_categorical() ~ c(1,0)),
+  include = c(RNI_Protein, LRNI_VitaminA, LRNI_Riboflavin, LRNI_Folate, LRNI_VitaminB12, LRNI_VitaminC, LRNI_Iron, LRNI_Calcium, LRNI_Magnesium, LRNI_Potassium, LRNI_Iodine, LRNI_Selenium, LRNI_Zinc)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.rnis.slide4 <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat,
+  label = c(Avg_FoodEnergy ~ "Total energy excluding alcohol",
+            Avg_Proteing ~ "Protein (g)",
+            RNI_prct_Protein ~ "Protein, % RNI"),
+  statistic = list(all_continuous() ~ "{mean}"),
+  missing = "ifany",
+  include = c(Avg_FoodEnergy, Avg_Proteing, RNI_prct_Protein)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.rnis.slide5 <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_sex_cat_drv,
+  label = c(Avg_FoodEnergy ~ "Total energy excluding alcohol"),
+  statistic = list(all_continuous() ~ "{mean}"),
+  missing = "ifany",
+  include = c(Avg_FoodEnergy)) %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+#save_as_docx("Mean"=table.rnis.slide1,"Mean % RNI"=table.rnis.slide2,"% LRNI"=table.rnis.slide3, "Energy protein report age group"=table.rnis.slide4, "Energy protein DRV age group"=table.rnis.slide5, path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","Table_RNIs&LRNIs_Slides_",format(Sys.time(),"%d%m%Y"),".docx"))
+```
+
+
+```{r echo=FALSE, warning=FALSE}
+table.rnis.slide1
+
+table.rnis.slide2
+
+table.rnis.slide3
+
+table.rnis.slide4
+
+table.rnis.slide5
 ```
