@@ -13,7 +13,6 @@ rm(list = ls())
 #fixing error on rJava when reading in excel sheet - override memory limit, this may not work for every instance or machine - must be run before loading libraries
 options(java.parameters = "- Xmx1024m")
 
-
 #load required packages
 library(dplyr)
 library(tidyr)
@@ -39,6 +38,7 @@ library(forcats)
 #import sheets from excel file
 df.survey_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/Initial_survey_26.08.24.xlsx")
 df.intake24_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/intake24_26.08.24.xlsx")
+
 #df.survey_full <- read_excel( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_26.08.24.xlsx")
 #df.intake24_full <- read_excel( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_26.08.24.xlsx")
 ```
@@ -49,7 +49,8 @@ df.intake24_full <- read_excel( "/Users/ricki/Desktop/DISH_data_cleaning/Data/in
 df.survey <- clean_names(df.survey_full)
 df.intake24_item <- clean_names(df.intake24_full)
 
-#rm(df.survey_full, df.intake24_full)
+# remove dataframes that are no longer needed
+rm(df.survey_full, df.intake24_full)
 ```
 
 ## Rename variables - survey
@@ -110,7 +111,7 @@ df.survey <- df.survey %>%
          AgreeOSG6 = q43e, 
          AgreeOSG7 = q43f, 
          AgreeOSG_Other = q44, 
-         Q45 = q45, 
+         UseFoodApps = q45, 
          EnergyDrinksFirstOrderAge = q46, 
          FreqOSG = q47, 
          FreqEnergyDrinks = q48, 
@@ -141,9 +142,9 @@ df.survey <- df.survey %>%
 
 ## Rename variables - intake24
 ```{r}
-# select only the variables of interest
+# **TO UPDATE** select only the variables of interest
 df.intake24_item <- df.intake24_item %>%
-  select(-proxy, -proxy_issues, -serving_image, -leftovers_image, -food_group_local, -brand, -meal_index, -meal_id, -food_index, -nutrient_table_name, -reasonable_amount, -water, -total_nitrogen, -nitrogen_conversion_factor, -non_milk_extrinsic_sugars, -intrinsic_and_milk_sugars, -starch, -englyst_fibre, -glucose, -fructose, -maltose, -lactose, -sucrose, -total_sugars, -other_sugars_uk, -fs_table_sugar, -fs_other_added_sugar, -fs_honey, -fs_fruit_juice, -fs_dried_fruit, -fs_fruit_puree, -fs_stewed_fruit, -fs_vegetable_puree, -cis_mon_fa, -cis_n3_fa, -cis_n6_fa, -cholesterol, -retinol, -total_carotene, -alpha_carotene, -beta_carotene, -beta_cryptoxanthin, -tryptophan_60, -niacin_equivalent, -copper, -chloride, -manganese, -thiamin, -vitamin_e, -niacin, -vitamin_b6, -pantothenic_acid, -biotin, -phosphorus) #wait to add these back, consider adding back for final dataset for data archive
+  select(-proxy, -proxy_issues, -serving_image, -leftovers_image, -food_group_local, -brand, -meal_index, -meal_id, -food_index, -nutrient_table_name, -reasonable_amount, -water, -total_nitrogen, -nitrogen_conversion_factor, -non_milk_extrinsic_sugars, -intrinsic_and_milk_sugars, -starch, -englyst_fibre, -glucose, -fructose, -maltose, -lactose, -sucrose, -total_sugars, -other_sugars_uk, -fs_table_sugar, -fs_other_added_sugar, -fs_honey, -fs_fruit_juice, -fs_dried_fruit, -fs_fruit_puree, -fs_stewed_fruit, -fs_vegetable_puree, -cis_mon_fa, -cis_n3_fa, -cis_n6_fa, -cholesterol, -retinol, -total_carotene, -alpha_carotene, -beta_carotene, -beta_cryptoxanthin, -tryptophan_60, -niacin_equivalent, -copper, -chloride, -manganese, -thiamin, -vitamin_e, -niacin, -vitamin_b6, -pantothenic_acid, -biotin, -phosphorus) #add back all nutrients before data archival
 
 # rename variable columns
 df.intake24_item <- df.intake24_item %>%
@@ -234,7 +235,6 @@ df.intake24_item <- df.intake24_item %>%
   ) 
 ```
 
-
 # Clean Data
 ## Check duplicates
 ```{r}
@@ -242,7 +242,6 @@ df.intake24_item <- df.intake24_item %>%
 n_distinct(df.survey$UserID)
 n_distinct(df.intake24_item$UserID)
 ```
-
 ## Remove ineligibles
 ```{r}
 # calculate the age of the participant. This calculates the interval between two columns, the birthdate and the survey completion date and then divides by a function setting the years to 1
@@ -279,10 +278,6 @@ df.survey <- df.survey %>%
   semi_join(participant_ids, by = "UserID")
 
 rm(age_removed, participant_ids)
-
-df.survey %>%
-  filter(UserID == 20002338)
-
 ```
 
 ## Re-code NA food insecurity responses
@@ -315,7 +310,6 @@ df.survey <- df.survey %>%
     FoodParcels =="Not sure" ~ "No",
     TRUE ~ FoodParcels
   ))
-
 ```
 
 # Categorise 'other' text
@@ -336,42 +330,22 @@ df.survey <- df.survey %>%
     TRUE ~ Ethnicity
   ))
 
-#create subset df of 'Other' text to recategorise 
+# create subset df of 'Other' text to recategorise 
 subset_AgreeOSG_Other <- df.survey %>% 
-  filter(!is.na(AgreeOSG_Other)) #if there is any text in Q50, create a df with those participants 
+  filter(!is.na(AgreeOSG_Other)) %>% #if there is any text in Q50, create a df with those participants 
+  select(UserID, Age, Sex, YPFreqOffSchlGrounds, AgreeOSG1, AgreeOSG2, AgreeOSG3, AgreeOSG4, AgreeOSG5, AgreeOSG6, AgreeOSG7, AgreeOSG_Other)
 
 subset_ImportanceED_Other <- df.survey %>% 
-  filter(!is.na(ImportanceED_Other)) #if there is any text in Q50, create a df with those participants 
+  filter(!is.na(ImportanceED_Other)) %>% #if there is any text in Q50, create a df with those participants 
+  select(UserID, Age, Sex, FreqOSG, FreqEnergyDrinks, ImportanceED1, ImportanceED2, ImportanceED3, ImportanceED4, ImportanceED5, ImportanceED_Other)
 
-#Example code to create a new column when more than 5 participants report a response 
+# export for review
+#write.xlsx(subset_AgreeOSG_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_OSG_280824.xlsx")
+#write.xlsx(subset_ImportanceED_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_ED_280824.xlsx")
+#write.xlsx(subset_AgreeOSG_Other, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Other_response_OSG_280824.xlsx")
+#write.xlsx(subset_ImportanceED_Other, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Other_response_ED_280824.xlsx")
 
-#df.survey_2 <- df.survey_2 %>%
-#   mutate(new_column = case_when(         #change name of new_column to response reason
-#    ID.name == 10000035  ~ "Response",    #change values in column
-#    ID.name == 	10000033 ~ "Response",
-#    TRUE ~ NA  # Keep NA for other rows
-#  ))
- 
- #move the new column next to Q50 
-
-#df.survey_2 <- df.survey_2 %>%
-#  relocate(new_column, .after = Q50)
-
-
-#Recategorise responses if they fit in another column
-
-#df.survey_2_NA <- df.survey_2_NA %>%
- # mutate(Q49d = ifelse(Survey.ID == 10000035, "Somewhat important", Q49d))  #change the value in column Q49d for the row with this ID.name, otherwise, keep all other values in Q49d
-
-
-```
-
-```{r}
-#export for review
-write.xlsx(subset_AgreeOSG_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_OSG_280824.xlsx")
-write.xlsx(subset_ImportanceED_Other, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Other_response_ED_280824.xlsx")
-
-#remove unneeded dataframes once checked
+# remove dataframes that are no longer needed
 rm(subset_Ethnicity_Other, subset_AgreeOSG_Other, subset_ImportanceED_Other)
 ```
 
@@ -440,7 +414,7 @@ df.survey <- df.survey %>%
   mutate(
     adults_cat = case_when(
       HhldAdults == 1 ~ "1",
-      HhldAdults ==2  ~ "2", 
+      HhldAdults == 2  ~ "2", 
       HhldAdults >= 3 ~ "3 or more",
       TRUE ~ NA)) %>%
   relocate(adults_cat, .after = HhldAdults)
@@ -452,7 +426,7 @@ df.survey <- df.survey %>%
   mutate(
     children_cat = case_when(
       HhldChildren == 1 ~ "1",
-      HhldChildren ==2  ~ "2", 
+      HhldChildren == 2  ~ "2", 
       HhldChildren >= 3 ~ "3 or more",
       TRUE ~ NA)) %>%
   relocate(children_cat, .after = HhldChildren)
@@ -461,11 +435,9 @@ df.survey <- df.survey %>%
 ## Number of siblings in sample
 ```{r}
 df.survey %>%
-  filter(grepl("^3", UserID)) %>% #filter userids starting with 3, ^ indicates 'starts with'
+  filter(grepl("^3", UserID)) %>% #filter UserIDs starting with 3, ^ indicates 'starts with'
   summarise(count = n_distinct(UserID)) #180 siblings in the final dataset
-
 ```
-
 
 ## 'RecallNo' and 'NumberOfRecalls'
 ```{r include=FALSE}
@@ -489,7 +461,7 @@ df.intake24_uniquetime$RecallNo <- as.numeric(df.intake24_uniquetime$RecallNo)
 
 # NumberOfRecalls
     
-#Participant's max RecallNo is their number of recalls
+# Participant's max RecallNo is their number of recalls
 df.intake24_uniquetime <- df.intake24_uniquetime %>%
   group_by(UserID) %>%
   mutate(NumberOfRecalls = max(RecallNo, na.rm = TRUE)) %>%
@@ -501,11 +473,11 @@ df.intake24_recallvariables <-  df.intake24_uniquetime  %>%
   
 df.intake24_item <- left_join(df.intake24_item, df.intake24_recallvariables, by= c("UserID", "date"))
 
-#relocate variables 
+# relocate variables 
 df.intake24_item <- df.intake24_item %>%
   relocate(RecallNo, NumberOfRecalls, date, .after = FinishTime)
 
-#remove data frames that are no longer needed
+# remove dataframes that are no longer needed
 rm(df.intake24_uniquetime, df.intake24_recallvariables)
 ```
 
@@ -716,145 +688,149 @@ df.intake24_item <- df.intake24_item %>%
       relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
 ```
 
-discretionary foods - energy, sat fat, total fat, free sugars
+## Discretionary Food Groups 
+We're reporting intakes of the following discretionary food groups:
 
-## Reporting Food Groups - **double check and match to slides
-We're reporting intakes of the following food groups:
-
-Red meat
-Red processed meat
-Oily fish
-Fruit
-Vegetables
-Fruit and vegetables combined
-Fruit juice
-Sugar-sweetened beverages
-Sugar confectionery
-Chocolate confectionery
 Sweet biscuits
-Savoury biscuits
-Cakes, pastries and fruit pies
-Crisps and savoury snacks
-Pizzas and ready meals
+Cakes, sweet pastries & puddings
+Crisps & savoury snacks
+Confectionery
+Ice cream & ice lollies
+Sugar-containing soft drinks
+Breakfast cereals
+Roast potatoes, chips and similar roasted potato products
+Pizza
+Yoghurts, fromage frais and dairy desserts
+Ready meals
 
 ```{r}
-#create binary variable and categorise all red and red processed meat based on main food group codes
+#re-categorise discretionary foods 
+
+# biscuits
+biscuits <- df.intake24_item %>% 
+  filter(MainFoodGroupCode == 7) %>% 
+  select(NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(biscuits, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Biscuits_280824.xlsx")
+
+biscuits_exclude_list <- c("7649","251","252","3973","7650","8330","258","256","255","273","3267","266","267","3236","279","10062","11242","274","7652")
+
+
+# crisps and savoury snacks 
+crisps <- df.intake24_item %>% 
+  filter(MainFoodGroupCode == 42) %>% 
+  select(NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(crisps, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Crisps_280824.xlsx")
+
+crisps_exclude_list <- c("8033","8155","7876")
+crisps_include_list <- c("11499","2269","11607") #popcorns
+
+
+# confectionery
+confectionery <- df.intake24_item %>% 
+  filter(MainFoodGroupCode == 43 | MainFoodGroupCode == 44) %>% 
+  select(NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(confectionery, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Confectionery_280824.xlsx")
+
+confectionery_exclude_list <- c("7762", "2262","11499","2269","11607")
+lollies_inclued_list <- c("7762", "2262")
+
+
+# breakfast cereals
+bfastcereals <- df.intake24_item %>% 
+  filter(MainFoodGroupCode == 5 | MainFoodGroupCode == 6) %>% 
+  select(NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(bfastcereals, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Breakfast_Cereals_280824.xlsx")
+
+# **TO UPDATE BASED ON RESPONSE FROM FSS**
+#bfastcereals_exclude_list <- c("8853","5331","8756","3797","3925","3210","10284","10338","11125","3421","219")
+
+
+# roast potatoes, chips and similar roasted potato products
+potatoes <- df.intake24_item %>% 
+  filter(MainFoodGroupCode == 39) %>% 
+  select(NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(potatoes, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Potatoes_280824.xlsx")
+
+potatoes_include_list <- c("5065","11493")
+
+
+# ready meals  
+readymeals <- df.intake24_item %>% 
+  filter(SubFoodGroupCode == "1D" | SubFoodGroupCode == "1F" | SubFoodGroupCode == "16C" | SubFoodGroupCode == "22A" 
+         | SubFoodGroupCode == "23A" | SubFoodGroupCode == "24A" | SubFoodGroupCode == "25A" | SubFoodGroupCode == "26A"
+         | SubFoodGroupCode == "27A" | SubFoodGroupCode == "30A" | SubFoodGroupCode == "31A" | SubFoodGroupCode == "32A"
+         | SubFoodGroupCode == "34C" | SubFoodGroupCode == "34E" | SubFoodGroupCode == "34G" | SubFoodGroupCode == "35A"
+         | MainFoodGroupCode == "37" | SubFoodGroupCode == "39A" | SubFoodGroupCode == "50C") %>% 
+  select(MainFoodGroupCode, SubFoodGroupCode, NutrientTableCode, Description_English) %>%
+  distinct(NutrientTableCode, .keep_all = TRUE)
+
+#write.xlsx(readymeals, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/ReadyMeals_280824.xlsx")
+
+readymeal_include_list <- c("8049","9245","3187","1347","9386","9244","8666","4283","6393","5321","7094","9318","9270","1116","5627","8286","9726","5313")
+
+
+# Create discretionary food groups 
 df.intake24_item <- df.intake24_item %>% 
-      mutate(RedMeat = case_when(
-        MainFoodGroupCode %in% c(23, 24, 25, 28, 22, 29, 30, 31, 32) ~ 1, 
-        TRUE ~ 0
-        )) %>%
-      relocate(RedMeat, .after = GameBirdsg)
-                                               
-#check 'other meat' category to determine what needs to be re-coded
-check <- df.intake24_item %>%
-  filter(MainFoodGroupCode == "32")
-                                               
-#remove any meat that is not red meat from binary variable
-df.intake24_item <- df.intake24_item %>%
-  mutate(RedMeat = case_when(
-    MainFoodGroupCode == "32" &
-      (str_detect(Description_English, regex("chicken", ignore_case = TRUE))) ~ 0,
-    TRUE ~ RedMeat
-    ))
-
-rm(check)
-```
-
-```{r}
-#re-categorise discretionary foods *** double check we're not missing any food codes that appear in DISH but not shes and create other categories 
-savoury_biscuits_list <- c("7649","251","252","3973","7650","8330","258","256","255","273","3267","266","267","3236","279","10062","11242","274","7652")
-    
-lollies <- c("7762", "2262")
-    
-pizza <- c("11511", "10029","10028","10030","10032","11514","11508","10026","11516","11512","11509","11510","11512", "10031", "11511","2743","10033","10034") #11512 has 2 different descriptions, same code
-    
-ready_meal <- c("8049","8011","9245","3187","1347","9386","9244","8666","10298","4283","3730","10755","6393","9328","1356","8588","5320","2734","9300","5321","7094","9318","9270","1116","5627","8038","1352")
-
-
-cereals <- c("8169", "10274", "11149", "10872", "8483", "8409", "206", "213", "5328", "11530", "7626", "8483", "7630", "224", "10513", "204", "205", "10512", "227", "220", "223", "10123","9032", "8169", "7630", "223", "2970", "11071", "213") #excluding poptarts (8853) from MainFoodGroup
-
-potatoes <- c("11117", "11119", "1837", "1830", "1838", "8294", "3991", "2609", "2608", "5065")
-
-
-```
-
-
-
-```{r}
-# Create reporting food groups 
-df.intake24_item <- df.intake24_item %>% 
- mutate(ReportingFoodGroupCode = case_when (
-   #Red meat
-   MainFoodGroupCode %in% c(23, 24, 25, 28) & RedMeat == 1 ~ 1,
-   #Red processed meat
-   MainFoodGroupCode %in% c(22, 29, 30, 31, 32) & RedMeat == 1 ~ 2,
-   #Oily fish
-   MainFoodGroupCode == 35 ~ 3,
-   #Fruit
-   MainFoodGroupCode == 40 ~ 4,
-   # Vegetables
-   MainFoodGroupCode == 36 ~ 5,
-   # Fruit juice - sometimes need to specify the subfoodgroup instead of main food group - this captures only fruit juice and not smoothies
-   SubFoodGroupCode == "45R" ~ 6,
-   # Sugar-sweetened beverages
-   MainFoodGroupCode == 57 ~ 7,
-   # Sugar confectionery
-   MainFoodGroupCode == 43 & !NutrientTableCode %in% c(lollies) ~ 8,
-   # Chocolate confectionery
-   MainFoodGroupCode == 44 ~ 9,
+ mutate(DiscretionaryFoodGroupCode = case_when (
    # Sweet biscuits
-   MainFoodGroupCode == 7 & !NutrientTableCode %in% c(savoury_biscuits_list) ~ 10,
-  # Savoury biscuits
-  MainFoodGroupCode == 7 & NutrientTableCode %in% c(savoury_biscuits_list) ~ 11,
-   # Cakes, pastries and fruit pies
-   MainFoodGroupCode == 8 | MainFoodGroupCode == 9 ~ 12,
+   MainFoodGroupCode == 7 & !NutrientTableCode %in% c(biscuits_exclude_list) ~ 1,
+   # Cakes, sweet pastries & puddings
+   MainFoodGroupCode == 8 | MainFoodGroupCode == 9 ~ 2,
    # Crisps and savoury snacks
-   MainFoodGroupCode == 42 ~ 13,
-   #Pizzas
-   NutrientTableCode %in% c(pizza) ~ 14,
-   #ready meals
-   NutrientTableCode %in% c(ready_meal) ~ 15,
-   #Ice creams
-   MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies) ~ 16,
-   #cereals
-   MainFoodGroupCode == 5 | NutrientTableCode %in% c(cereals) ~ 17,
-   #Chips, fried and roast potatoes and potato products
-   MainFoodGroupCode == 38 | NutrientTableCode %in% c(potatoes) ~ 18,
-   #Yoghurts, fromage frais, and dairy desserts
-   MainFoodGroupCode == 15 ~ 19, 
-      TRUE ~ NA))
+   (MainFoodGroupCode == 42 | NutrientTableCode %in% c(crisps_include_list)) & 
+     !NutrientTableCode %in% c(crisps_exclude_list) ~ 3,
+   # Confectionery
+   (MainFoodGroupCode == 43 | MainFoodGroupCode == 44) & !NutrientTableCode %in% c(confectionery_exclude_list) ~ 4,
+   # Ice creams & ice lollies
+   MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies_inclued_list) ~ 5,
+   # Sugar-containing soft drinks
+   MainFoodGroupCode == 57 ~ 6,
+   # Breakfast cereals
+   MainFoodGroupCode == 5 | MainFoodGroupCode == 6 ~ 7,
+   # Roast potatoes, chips and similar roasted potato products
+   MainFoodGroupCode == 38 | NutrientTableCode %in% c(potatoes_include_list) ~ 8,
+   # Pizza
+   SubFoodGroupCode == "1C" ~ 9,
+   # Yoghurts, fromage frais and dairy desserts
+   MainFoodGroupCode == 15 ~ 10,
+   # Ready meals
+   NutrientTableCode %in% c(readymeal_include_list) ~ 11,
+   TRUE ~ NA))
 
 # Add description variable
 df.intake24_item <- df.intake24_item %>%
-  mutate(ReportingFoodGroupDesc = case_when(
-    ReportingFoodGroupCode == 1 ~ "Red meat",
-    ReportingFoodGroupCode == 2 ~ "Red processed meat",
-    ReportingFoodGroupCode == 3 ~ "Oily fish",
-    ReportingFoodGroupCode == 4 ~ "Fruit",
-    ReportingFoodGroupCode == 5 ~ "Vegetables",
-    ReportingFoodGroupCode == 6 ~ "Fruit juice",
-    ReportingFoodGroupCode == 7 ~ "Sugar-sweetened beverages",
-    ReportingFoodGroupCode == 8 ~ "Sugar confectionery",
-    ReportingFoodGroupCode == 9 ~ "Chocolate confectionery",
-    ReportingFoodGroupCode == 10 ~ "Sweet biscuits",
-    ReportingFoodGroupCode == 11 ~ "Savoury biscuits",
-    ReportingFoodGroupCode == 12 ~ "Cakes, pastries and fruit pies",
-    ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
-    ReportingFoodGroupCode == 14 ~ "Pizzas",
-    ReportingFoodGroupCode == 15 ~ "Ready meals",
-    ReportingFoodGroupCode == 16 ~ "Ice cream and lollies",
-    ReportingFoodGroupCode == 17 ~ "Breakfast cereals",
-    ReportingFoodGroupCode == 18 ~ "Chips, fried and roast potatoes and potato products",
-    ReportingFoodGroupCode == 19 ~ "Yoghurts, fromage frais, and dairy desserts",
-       TRUE ~ "Other")) %>%
+  mutate(DiscretionaryFoodGroupDesc = case_when(
+    DiscretionaryFoodGroupCode == 1 ~ "Sweet biscuits",
+    DiscretionaryFoodGroupCode == 2 ~ "Cakes, sweet pastries & puddings",
+    DiscretionaryFoodGroupCode == 3 ~ "Crisps and savoury snacks",
+    DiscretionaryFoodGroupCode == 4 ~ "Confectionery",
+    DiscretionaryFoodGroupCode == 5 ~ "Ice creams & ice lollies",
+    DiscretionaryFoodGroupCode == 6 ~ "Sugar-containing soft drinks",
+    DiscretionaryFoodGroupCode == 7 ~ "Breakfast cereals",
+    DiscretionaryFoodGroupCode == 8 ~ "Roast potatoes, chips and similar roasted potato products",
+    DiscretionaryFoodGroupCode == 9 ~ "Pizza",
+    DiscretionaryFoodGroupCode == 10 ~ "Yoghurts, fromage frais and dairy desserts",
+    DiscretionaryFoodGroupCode == 11 ~ "Ready meals",
+    TRUE ~ "Other")) %>%
   
-    relocate(ReportingFoodGroupCode, ReportingFoodGroupDesc, .after = MainFoodGroupDesc)
+  relocate(DiscretionaryFoodGroupCode, DiscretionaryFoodGroupDesc, .after = MainFoodGroupDesc)
+
+# remove dataframes that are no longer needed
+rm(biscuits, crisps, confectionery, bfastcereals, potatoes, readymeals)
 ```
 
 ## Device intake24 completed on
 ```{r include=FALSE}
-#create new variable grouping Devices into phone, ipad, or computer
 df.intake24_item <- df.intake24_item %>%
   mutate(Device_group = ifelse(grepl("Android|iPhone", Device), "phone", ifelse(grepl("iPad", Device), "ipad", "computer"))
   )
@@ -867,11 +843,10 @@ df.intake24_item <- df.intake24_item %>%
 Food items entered using the ‘Report a missing food’ function will be manually coded and linked to appropriate nutritional information from the NDNS Nutrient Databank 
 ```{r}
 #Create a subset to look at the Missing Food Items to manually code and link to nutritional information
-df.intake24_missing_food  <- df.intake24_item %>%
+df.intake24_missing_food <- df.intake24_item %>%
   subset(df.intake24_item$MissingFoodID != "N/A")
 
 ```
-
 
 ```{r eval=FALSE, include=FALSE}
 write.csv(df.intake24_missing_food, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Missing_Food_Codes_050924.csv")
@@ -889,14 +864,12 @@ df.intake24_item <- df.intake24_item %>%
 # Remove breast milk
 breast_milk <- df.intake24_item %>%
   filter(Description_English =="Breast milk")
-    
- 
-  df.intake24_item <- df.intake24_item %>%
-      filter(Description_English != "Breast milk") 
 
+df.intake24_item <- df.intake24_item %>%
+  filter(Description_English != "Breast milk") 
+
+rm(supplements, breast_milk)
 ```
-
-
 
 # Clean up dairy food groups
 ## Remove dairy-free items from milk product subfood groups
@@ -982,8 +955,7 @@ breast_milk <- df.intake24_item %>%
         SubFoodGroupCode == "50A" ~ 50,
         TRUE ~ MainFoodGroupCode))
 
-
-    # Move milky coffees into 'other milk'
+# Move milky coffees into 'other milk'
     
     #Sub food group
     df.intake24_item <- df.intake24_item %>% 
@@ -1017,33 +989,30 @@ breast_milk <- df.intake24_item %>%
     df.dairy_free <- df.dairy_free %>% distinct(Description_English, .keep_all = TRUE)  
   
 rm(df.dairy_free)
-    
 ```
 
 ## Food Group Descriptions
 ```{r}
 Descriptions <- df.intake24_item %>%
-  count(MainFoodGroupDesc, MainFoodGroupCode,Description_English, SubFoodGroupCode, ReportingFoodGroupDesc, ReportingFoodGroupCode, NutrientTableCode)
+  count(MainFoodGroupDesc, MainFoodGroupCode,Description_English, SubFoodGroupCode, DiscretionaryFoodGroupDesc, DiscretionaryFoodGroupCode, NutrientTableCode)
 ```
-
 
 ```{r eval=FALSE, include=FALSE}
 write.csv(Descriptions, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Food_groups_060924.csv")
 ```
-
 
 # Convert variables to numeric and replace NAs with 0s
 ```{r include=FALSE}
 #convert to numeric from characters
 
 # List of variables to not convert
-    char_not_to_convert <- c("SurveyID", "UserID", "Device", "Device_group", "StartTime", "FinishTime", "SurveyDuration", "date", "DayofWeek", "FoodAmount", "FoodAmountReason", "MealName", "NewMealName", "MealTime", "NewMealTime", "FoodSource", "SearchTerm", "Intake24FoodCode", "Description_English", "Description_Local", "FoodGroupCode", "FoodGroupEnglish", "MainFoodGroupDesc", "AsServedWeightFactor", "SubFoodGroupCode", "ReportingFoodGroupDesc", "ReadyMeal",  "MissingFoodID", "MissingFoodDescription", "MissingFoodPortionSize", "MissingFoodLeftovers")
+    char_not_to_convert <- c("SurveyID", "UserID", "Device", "Device_group", "StartTime", "FinishTime", "SurveyDuration", "date", "DayofWeek", "FoodAmount", "FoodAmountReason", "MealName", "NewMealName", "MealTime", "NewMealTime", "FoodSource", "SearchTerm", "Intake24FoodCode", "Description_English", "Description_Local", "FoodGroupCode", "FoodGroupEnglish", "MainFoodGroupDesc", "AsServedWeightFactor", "SubFoodGroupCode", "DiscretionaryFoodGroupDesc", "ReadyMeal",  "MissingFoodID", "MissingFoodDescription", "MissingFoodPortionSize", "MissingFoodLeftovers")
     
     df.intake24_item <- df.intake24_item %>%
       mutate(across(-all_of(char_not_to_convert), as.numeric))
     
-  # Change NA values to 0
-    df.intake24_item <- df.intake24_item %>%
+# Change NA values to 0
+  df.intake24_item <- df.intake24_item %>%
       mutate(across(-all_of(char_not_to_convert), ~ifelse(is.na(.), 0, .)))
 ```
 
@@ -1110,66 +1079,40 @@ under_2min <- df.intake24_item %>%
   filter(SurveyDuration <= 2)
 
 n_distinct(under_2min$UserID)
-```
 
-
-```{r eval=FALSE, include=FALSE}
 #write.xlsx(under_2min, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/two_minutes_check_280824.xlsx")
-write.xlsx(under_2min, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/two_minutes_check_280824.xlsx")
+#write.xlsx(under_2min, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/two_minutes_check_280824.xlsx")
 
 rm(under_2min)
-```
 
-
-```{r eval=FALSE, include=FALSE}
-#remove recalls that didn't pass quality check
+# remove recalls that didn't pass quality check
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10008833 & RecallNo == 2))
 
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10000459 & RecallNo == 3))
-
 ```
 
-
-
-# **TO CONFIRM** Recalls with fewer than 5 items
+# Recalls with fewer than 5 items
 ```{r include=FALSE}
 #create a subset of all responses that have 5 or fewer responses to check 
 food_count_5 <- df.intake24_item %>%
   filter(NumberOfItems <= 5)
 
 n_distinct(food_count_5$UserID)
-```
 
-
-```{r eval=FALSE, include=FALSE}
 #write.xlsx(food_count_5, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/five_items_check_280824.xlsx")
-write.xlsx(food_count_5, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/five_items_check_280824.xlsx")
+#write.xlsx(food_count_5, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/five_items_check_280824.xlsx")
 
 rm(food_count_5)
+
+# remove recalls that didn't pass quality check
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10013179 & RecallNo == 2))
+
+df.intake24_item <- df.intake24_item %>%
+  filter(!(UserID == 10012849 & RecallNo == 1)) 
 ```
-
-
-```{r eval=FALSE, include=FALSE}
-
-#remove recalls that didn't pass quality check
-df.intake24_item <- df.intake24_item %>%
-  filter(!UserID == 10013908) #Geraldine opts to keep this recall, need agreement here
-
-df.survey <- df.survey %>%
-  filter(!UserID == 10013908) #removing from survey as they only have 1 recall
-
-df.intake24_item <- df.intake24_item %>%
-  filter(!(UserID == 10006095 & RecallNo == 3)) #Geraldine opts to keep this recall, need agreement here
-
-df.intake24_item <- df.intake24_item %>%
-  filter(!(UserID == 10013179 & RecallNo == 2)) #unsure if Geraldine agrees on this exclusion
-
-```
-
-
-
 
 # Create sample characteristics data frame
 ```{r}
@@ -1196,20 +1139,11 @@ df.intake24_item <- df.intake24_item %>%
 ```
 
 # Write data frames to CSV files
-```{r eval=FALSE, include=FALSE}
-write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_050924.csv")
-write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_050924.csv")
-
+```{r include=FALSE}
+write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_090924.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_090924.csv")
+write.csv(df.char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_090924.csv")
 
 #write.csv(df.intake24_item, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
 #write.csv(df.survey, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv")
 ```
-
-```{r}
-check <- df.intake24_item %>%
-  distinct(Description_English, NutrientTableCode)
-
-write.csv(check, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/Intake24_items_060924.csv")
-```
-
-
