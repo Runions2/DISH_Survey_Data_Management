@@ -30,8 +30,10 @@ library(openxlsx)
 
 # Import the data
 ```{r include=FALSE}
-df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_050924.csv") 
-df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_050924.csv") 
+df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_090924.csv") 
+df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_090924.csv") 
+df.char <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_090924.csv") 
+
 
 #df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
 #df.survey <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv")
@@ -96,27 +98,17 @@ df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_cl
         Day_Seleniumug = sum(Seleniumug),
         Day_Zincmg = sum(Zincmg),
         
-        Day_redmeatg = sum(TotalGrams[ReportingFoodGroupCode == 1 ], na.rm = TRUE),
-        Day_processedmeatg = sum(TotalGrams[ReportingFoodGroupCode == 2], na.rm = TRUE),
-        Day_redprocessedmeatg = sum(TotalGrams[ReportingFoodGroupCode %in% c(1, 2)], na.rm = TRUE),
-        Day_oilyfishg = sum(TotalGrams[ReportingFoodGroupCode == 3], na.rm = TRUE),
-        Day_fruitg = sum(TotalGrams[ReportingFoodGroupCode == 4], na.rm = TRUE),
-        Day_vegg = sum(TotalGrams[ReportingFoodGroupCode == 5], na.rm = TRUE),
-        Day_fruitvegg = sum(TotalGrams[ReportingFoodGroupCode %in% c(4, 5)], na.rm = TRUE),
-        Day_fruitjuiceg = sum(TotalGrams[ReportingFoodGroupCode == 6], na.rm = TRUE),
-        Day_ssbg = sum(TotalGrams[ReportingFoodGroupCode == 7], na.rm = TRUE),
-        Day_sugarconfecg = sum(TotalGrams[ReportingFoodGroupCode == 8], na.rm = TRUE),
-        Day_chocolateconfecg = sum(TotalGrams[ReportingFoodGroupCode == 9], na.rm = TRUE),
-        Day_sweetbiscuitsg = sum(TotalGrams[ReportingFoodGroupCode == 10], na.rm = TRUE),
-        Day_savourybiscuitsg = sum(TotalGrams[ReportingFoodGroupCode == 11], na.rm = TRUE),
-        Day_cakespiesg = sum(TotalGrams[ReportingFoodGroupCode == 12], na.rm = TRUE),
-        Day_savourysnacksg = sum(TotalGrams[ReportingFoodGroupCode == 13], na.rm = TRUE),
-        Day_pizzasg = sum(TotalGrams[ReportingFoodGroupCode == 14], na.rm = TRUE),
-        Day_readymealsg = sum(TotalGrams[ReportingFoodGroupCode == 15], na.rm = TRUE),
-        Day_icecreamg = sum(TotalGrams[ReportingFoodGroupCode == 16], na.rm = TRUE),
-        Day_cerealsg = sum(TotalGrams[ReportingFoodGroupCode == 17], na.rm = TRUE),
-        Day_chipsg = sum(TotalGrams[ReportingFoodGroupCode == 18], na.rm = TRUE),
-        Day_yoghurtdairydessertg = sum(TotalGrams[ReportingFoodGroupCode == 19], na.rm = TRUE),
+        Day_sweetbiscuitsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 1], na.rm = TRUE),
+        Day_cakespastriespuddingsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 2], na.rm = TRUE),
+        Day_crispsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 3], na.rm = TRUE),
+        Day_confectioneryg = sum(TotalGrams[DiscretionaryFoodGroupCode == 4], na.rm = TRUE),
+        Day_icecreamg = sum(TotalGrams[DiscretionaryFoodGroupCode == 5], na.rm = TRUE),
+        Day_sugarydrinksg = sum(TotalGrams[DiscretionaryFoodGroupCode == 6], na.rm = TRUE),
+        Day_bfastcerealsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 7], na.rm = TRUE),
+        Day_potatoesg = sum(TotalGrams[DiscretionaryFoodGroupCode == 8], na.rm = TRUE),
+        Day_pizzag = sum(TotalGrams[DiscretionaryFoodGroupCode == 9], na.rm = TRUE),
+        Day_dairydessertsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 10], na.rm = TRUE),
+        Day_readymealsg = sum(TotalGrams[DiscretionaryFoodGroupCode == 11], na.rm = TRUE),
         
         Day_RRPMg = sum(Beefg, Lambg, Porkg, ProcessedRedMeatg, OtherRedMeatg, Burgersg, Sausagesg, Offalg),
         Day_FV_Beansg = sum(Beansg),
@@ -191,7 +183,7 @@ df.intake24_recall <- df.intake24_recall %>%
 ```
 
 ## **TO UPDATE** Clean high and low energy recalls
-```{r eval=FALSE}
+```{r eval=FALSE, include=FALSE}
 #create a subset of recalls where kcals are less than 400
 low_kcal <- df.intake24_recall %>%
   filter(Day_Energykcal <= 400)
@@ -219,7 +211,7 @@ Low_intake_all_recalls_1 <- left_join(Low_intake_all_recalls, df.intake24_recall
 rm(low_kcal, low_kcal_items, high_kcal, high_kcal_items, low_ids, Low_intake_all_recalls, Low_intake_all_recalls_1)
 ```
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 #clean low energy outliers
 
 df.intake24_item <- df.intake24_item %>%
@@ -229,13 +221,10 @@ df.intake24_recall <- df.intake24_recall %>%
   filter(!(UserID == 10002909 & RecallNo == 1))
 
 df.intake24_item <- df.intake24_item %>%
-  filter(!UserID == 10006095) #removing both recalls as neither passed quality checks (3rd recall also removed in earlier quality checks)
+  filter(!UserID == 10006095 & RecallNo %in% c(1,2)) 
 
 df.intake24_recall <- df.intake24_recall %>%
-  filter(!UserID == 10006095)
-
-df.survey <- df.survey %>%
-  filter(!UserID == 10006095)
+  filter(!UserID == 10006095 & RecallNo %in% c(1,2))
 
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10001709 & RecallNo == 3))
@@ -244,22 +233,23 @@ df.intake24_recall <- df.intake24_recall %>%
   filter(!(UserID == 10001709 & RecallNo == 3))
 ```
 
-
-```{r}
+```{r eval=FALSE, include=FALSE}
 #clean high energy outliers
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10009887 & RecallNo == 1))
 
 df.intake24_recall <- df.intake24_recall %>%
   filter(!(UserID == 10009887 & RecallNo == 1))
-
   
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10000459 & RecallNo == 1))
 
+#fix number of recalls variable
+df.intake24_item <- df.intake24_item %>%
+  mutate(NumberOfRecalls = ifelse(UserID == 10000459, 2, NumberOfRecalls))
+
 df.intake24_recall <- df.intake24_recall %>%
   filter(!(UserID == 10000459 & RecallNo == 1))
-
   
 df.intake24_item <- df.intake24_item %>%
   filter(!UserID == 20002885) #remove participant as all recalls did not pass quality checks
@@ -270,8 +260,6 @@ df.intake24_recall <- df.intake24_recall %>%
 df.survey <- df.survey %>%
   filter(!UserID == 20002885)
 
-
-
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 30000069 & RecallNo == 4))
 
@@ -280,13 +268,10 @@ df.intake24_recall <- df.intake24_recall %>%
 ```
 
 Need to update changed energy intakes below
-```{r}
+```{r eval=FALSE, include=FALSE}
 
 
 ```
-
-
-
 
 # Participant Level Values
 ## Mean participant nutrient and food group intake (across 1-4 recalls)
@@ -354,28 +339,18 @@ df.intake24_participant <- df.intake24_recall %>%
         Avg_Seleniumug = mean(Day_Seleniumug),
         Avg_Zincmg = mean(Day_Zincmg),
         
-        Avg_redmeatg = mean(Day_redmeatg),
-        Avg_processedmeatg = mean(Day_processedmeatg),
-        Avg_redprocessedmeatg = mean(Day_redprocessedmeatg),
-        Avg_oilyfish = mean(Day_oilyfishg),
-        Avg_fruitg = mean(Day_fruitg),
-        Avg_vegg = mean(Day_vegg),
-        Avg_fruitvegg = mean(Day_fruitvegg),
-        Avg_fruitjuiceg = mean(Day_fruitjuiceg),
-        Avg_ssbg = mean(Day_ssbg),
-        Avg_sugarconfecg = mean(Day_sugarconfecg),
-        Avg_chocolateconfecg = mean(Day_chocolateconfecg),
         Avg_sweetbiscuitsg = mean(Day_sweetbiscuitsg),
-        Avg_savourybiscuitsg = mean(Day_savourybiscuitsg),
-        Avg_cakespiesg = mean(Day_cakespiesg),
-        Avg_savourysnacksg = mean(Day_savourysnacksg),
-        Avg_pizzasg = mean(Day_pizzasg),
-        Avg_readymealsg = mean(Day_readymealsg),
+        Avg_cakespastriespuddingsg = mean(Day_cakespastriespuddingsg),
+        Avg_crispsg = mean(Day_crispsg),
+        Avg_confectioneryg = mean(Day_confectioneryg),
         Avg_icecreamg = mean(Day_icecreamg),
-        Avg_cerealsg = mean(Day_cerealsg),
-        Avg_chipsg = mean(Day_chipsg),
-        Avg_yoghurtdairydessertg = mean(Day_yoghurtdairydessertg),
-        
+        Avg_sugarydrinksg = mean(Day_sugarydrinksg),
+        Avg_bfastcerealsg = mean(Day_bfastcerealsg),
+        Avg_potatoesg = mean(Day_potatoesg),
+        Avg_pizzag = mean(Day_pizzag),
+        Avg_dairydessertsg = mean(Day_dairydessertsg),
+        Avg_readymealsg = mean(Day_readymealsg),
+    
         Avg_RRPMg = mean(Day_RRPMg),
         Avg_FV_Beansg = mean(Day_FV_Beansg),
         Avg_FV_Portions_Beans = mean(Day_FV_Portions_Beans),
@@ -394,35 +369,20 @@ df.intake24_participant <- df.intake24_recall %>%
   ungroup()
 ```
 
-# **CHECK** Contributions of NDNS food groups to nutrient intake
-
-NDNS Food groups - contributions to energy and free sugar intake
+# Contributions of NDNS food groups to nutrient intake
+## Total daily energy and nutrient intakes from food groups
 ```{r}
-# Calculate daily intakes of energy and free sugars from food groups
 df.intake24_recall_ndns_fg <- df.intake24_item %>%
   group_by(UserID, RecallNo, MainFoodGroupCode) %>% 
   summarise(
         NumberOfRecalls = first(NumberOfRecalls),
         Day_Energykcal_fg = sum(Energykcal),
-        Day_FoodEnergy_fg = sum(FoodEnergy),
-        Day_FoodMilkEnergy_fg = sum(FoodMilkEnergy),
-        Day_TotalGrams_fg = sum(TotalGrams),
-        Day_FoodGrams_fg = sum(FoodGrams),
-        Day_FoodMilkGrams_fg = sum(FoodMilkGrams),
         Day_Carbohydrateg_fg = sum(Carbohydrateg),
-        Day_Carbs_kcal_fg = sum(Carbs_kcal),
         Day_FreeSugarsg_fg = sum(Freesugarsg), 
-        Day_FreeSugars_kcal_fg = sum(Freesugars_kcal),
         Day_Fatg_fg = sum(Fatg),
-        Day_Fat_kcal_fg = sum(Fat_kcal),
         Day_SatFatg_fg = sum(Saturatedfattyacidsg),
-        Day_SatFat_kcal_fg = sum(SatFat_Kcal),
         Day_TransFatg_fg = sum(Transfattyacidsg),
-        Day_TransFat_kcal_fg = sum(TransFat_Kcal),
         Day_Proteing_fg = sum(Proteing),
-        Day_Protein_kcal_fg = sum(Protein_kcal),
-        Day_Alcoholg_fg = sum(Alcoholg),
-        Day_Alcohol_kcal_fg = sum(Alcohol_kcal),
         Day_AOACFibreg_fg = sum(AOACg),
         Day_VitaminAug_fg = sum(VitaminAug),
         Day_Riboflavinmg_fg = sum(Riboflavinmg),
@@ -433,18 +393,13 @@ df.intake24_recall_ndns_fg <- df.intake24_item %>%
         Day_Ironmg_fg = sum(Ironmg),
         Day_Calciummg_fg = sum(Calciummg),
         Day_Sodiummg_fg = sum(Sodiummg),
-        Day_Saltg_fg = sum(Saltg), 
         Day_Magnesiummg_fg = sum(Magnesiummg),
         Day_Potassiummg_fg = sum(Potassiummg),
         Day_Iodineug_fg = sum(Iodineug),
         Day_Seleniumug_fg = sum(Seleniumug),
-        Day_Zincmg_fg = sum(Zincmg)) 
+        Day_Zincmg_fg = sum(Zincmg)) %>%
+ ungroup()
 
-
-```
-
-Create grids
-```{r eval=FALSE}
 # Create a grid with all possible food category and recall number combinations for each participant
 # Need to do this separately for different recall numbers
 
@@ -455,7 +410,7 @@ df.onerecall <- df.intake24_recall %>%
 foodgrid_onerecall <- expand.grid( #create a grid of each combination of the below:
   UserID = unique(df.onerecall$UserID), #take each unique UserID
   RecallNo = unique(df.onerecall$RecallNo), #take each unique RecallNo
-  MainFoodGroupCode = factor(1:61)) #create a column of with 1-61 for reporting food groups
+  MainFoodGroupCode = factor(1:66)) #create a column of with 1-61 for reporting food groups
 
 # 2 recalls
 df.tworecalls <- df.intake24_recall %>%
@@ -464,7 +419,7 @@ df.tworecalls <- df.intake24_recall %>%
 foodgrid_tworecalls <- expand.grid(
   UserID = unique(df.tworecalls$UserID),
   RecallNo = unique(df.tworecalls$RecallNo),
-  MainFoodGroupCode = factor(1:61))
+  MainFoodGroupCode = factor(1:66))
 
 # 3 recalls
 df.threerecalls <- df.intake24_recall %>%
@@ -473,7 +428,7 @@ df.threerecalls <- df.intake24_recall %>%
 foodgrid_threerecalls <- expand.grid(
   UserID = unique(df.threerecalls$UserID),
   RecallNo = unique(df.threerecalls$RecallNo),
-  MainFoodGroupCode = factor(1:61))
+  MainFoodGroupCode = factor(1:66))
 
 #4 recalls 
 df.fourrecalls <- df.intake24_recall %>%
@@ -481,19 +436,22 @@ df.fourrecalls <- df.intake24_recall %>%
 
 foodgrid_fourrecalls <- expand.grid(
   UserID = unique(df.fourrecalls$UserID),
-  RecallNo = unique(df.threerecalls$RecallNo),
-  MainFoodGroupCode = factor(1:61))
-```
+  RecallNo = unique(df.fourrecalls$RecallNo),
+  MainFoodGroupCode = factor(1:66))
 
-Combine grids
-```{r eval=FALSE}
 # Combine expanded grids
-foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls) %>%
+foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgrid_fourrecalls) %>%
   arrange(UserID, RecallNo) %>%
   mutate(MainFoodGroupCode = as.numeric(MainFoodGroupCode))
 
 # Join daily intakes with expanded grids
 df.intake24_recall_ndns_fg <- left_join(foodgroup_grid, df.intake24_recall_ndns_fg, by = c("UserID", "RecallNo", "MainFoodGroupCode")) %>%
+  select(-NumberOfRecalls)
+
+# Fill in NumberOfRecalls
+df.numberrecalls <- df.intake24_participant %>% select(UserID, NumberOfRecalls)
+df.intake24_recall_ndns_fg <- left_join(df.intake24_recall_ndns_fg, df.numberrecalls, by = "UserID") 
+df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>%
   relocate(NumberOfRecalls, .after=UserID)
 
 # Change NA values to 0 
@@ -501,83 +459,82 @@ df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
 
 # Remove datasets no longer needed
-rm(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgroup_grid)
-
+rm(df.onerecall, df.tworecalls, df.threerecalls, df.fourrecalls, foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgrid_fourrecalls, foodgroup_grid)
 ```
 
-Calculate mean daily intakes of energy and nutrients from food groups 
-```{r eval=FALSE}
-# Participant level dataset
-df.intake24_participant_ndns_fg <- df.intake24_recall_ndns_fg %>%
-  group_by(UserID, MainFoodGroupCode) %>% 
-  mutate(
-        Avg_Energykcal_fg = sum(Day_Energykcal_fg)/NumberOfRecalls,
-        Avg_FoodEnergy_fg = sum(Day_FoodEnergy_fg)/NumberOfRecalls,
-        Avg_FoodMilkEnergy_fg = sum(Day_FoodMilkEnergy_fg)/NumberOfRecalls,
-        Avg_TotalGrams_fg = sum(Day_TotalGrams_fg)/NumberOfRecalls,
-        Avg_FoodGrams_fg = sum(Day_FoodGrams_fg)/NumberOfRecalls,
-        Avg_FoodMilkGrams_fg = sum(Day_FoodMilkGrams_fg)/NumberOfRecalls,
-        Avg_Carbohydrateg_fg = sum(Day_Carbohydrateg_fg)/NumberOfRecalls,
-        Avg_Carbs_kcal_fg = sum(Day_Carbs_kcal_fg)/NumberOfRecalls,
-        Avg_FreeSugarsg_fg = sum(Day_FreeSugarsg_fg)/NumberOfRecalls, 
-        Avg_FreeSugars_kcal_fg = sum(Day_FreeSugars_kcal_fg)/NumberOfRecalls,
-        Avg_Fatg_fg = sum(Day_Fatg_fg)/NumberOfRecalls,
-        Avg_Fat_kcal_fg = sum(Day_Fat_kcal_fg)/NumberOfRecalls,
-        Avg_SatFatg_fg = sum(Day_SatFatg_fg)/NumberOfRecalls,
-        Avg_SatFat_kcal_fg = sum(Day_SatFat_kcal_fg)/NumberOfRecalls,
-        Avg_TransFatg_fg = sum(Day_TransFatg_fg)/NumberOfRecalls,
-        Avg_TransFat_kcal_fg = sum(Day_TransFat_kcal_fg)/NumberOfRecalls,
-        Avg_Proteing_fg = sum(Day_Proteing_fg)/NumberOfRecalls,
-        Avg_Protein_kcal_fg = sum(Day_Protein_kcal_fg)/NumberOfRecalls,
-        Avg_Alcoholg_fg = sum(Day_Alcoholg_fg)/NumberOfRecalls,
-        Avg_Alcohol_kcal_fg = sum(Day_Alcohol_kcal_fg)/NumberOfRecalls,
-        Avg_AOACFibreg_fg = sum(Day_AOACFibreg_fg)/NumberOfRecalls,
-        Avg_VitaminAug_fg = sum(Day_VitaminAug_fg)/NumberOfRecalls,
-        Avg_Riboflavinmg_fg = sum(Day_Riboflavinmg_fg)/NumberOfRecalls,
-        Avg_Folateug_fg = sum(Day_Folateug_fg)/NumberOfRecalls,
-        Avg_VitaminDug_fg = sum(Day_VitaminDug_fg)/NumberOfRecalls,
-        Avg_VitaminB12ug_fg = sum(Day_VitaminB12ug_fg)/NumberOfRecalls,
-        Avg_VitaminCmg_fg = sum(Day_VitaminCmg_fg)/NumberOfRecalls,
-        Avg_Ironmg_fg = sum(Day_Ironmg_fg)/NumberOfRecalls,
-        Avg_Calciummg_fg = sum(Day_Calciummg_fg)/NumberOfRecalls,
-        Avg_Sodiummg_fg = sum(Day_Sodiummg_fg)/NumberOfRecalls,
-        Avg_Saltg_fg = sum(Day_Saltg_fg)/NumberOfRecalls, 
-        Avg_Magnesiummg_fg = sum(Day_Magnesiummg_fg)/NumberOfRecalls,
-        Avg_Potassiummg_fg = sum(Day_Potassiummg_fg)/NumberOfRecalls,
-        Avg_Iodineug_fg = sum(Day_Iodineug_fg)/NumberOfRecalls,
-        Avg_Seleniumug_fg = sum(Day_Seleniumug_fg)/NumberOfRecalls,
-        Avg_Zincmg_fg = sum(Day_Zincmg_fg)/NumberOfRecalls) %>%
-  ungroup()
-```
-
-
-```{r eval=FALSE}
-# Change NA values to 0 
-df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
-  mutate_all(~ifelse(is.na(.), 0, .))
-
-df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
-  mutate_all(~ifelse(is.infinite(.), 0, .))
-
-# Fill in values across food groups in all recalls
-df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
-  group_by(UserID, MainFoodGroupCode) %>%
-  mutate(across(starts_with("Avg_"), ~max(., na.rm = TRUE))) %>%
-  ungroup()
-
-# Drop day level variables (as participant level dataset)
-df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
-  select(-starts_with("Day_"))
-
-#Keep one line per food group per participant
-df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
-  distinct(UserID, MainFoodGroupCode, .keep_all = TRUE)
-
-```
-
+## Percent energy and nutrients from food groups 
 ```{r}
+# Pull in mean daily intakes of energy and nutrients
+df.day_nutrients <- df.intake24_recall %>% 
+  select(UserID, RecallNo, Day_Energykcal, Day_Carbohydrateg, Day_FreeSugarsg, Day_Fatg, Day_SatFatg, Day_TransFatg, Day_Proteing, 
+         Day_AOACFibreg, Day_VitaminAug, Day_Riboflavinmg, Day_Folateug, Day_VitaminDug, Day_VitaminB12ug, Day_VitaminCmg,
+         Day_Ironmg, Day_Calciummg, Day_Sodiummg, Day_Magnesiummg, Day_Potassiummg, Day_Iodineug, Day_Seleniumug, Day_Zincmg)
+                          
+df.intake24_recall_ndns_fg <- left_join(df.intake24_recall_ndns_fg, df.day_nutrients, by=c("UserID", "RecallNo"))
+
+#Calculate proportion of energy and nutrients from food groups
+df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>%
+  group_by(UserID, RecallNo, MainFoodGroupCode) %>%
+  mutate(
+    Day_Prop_Energykcal_fg=(Day_Energykcal_fg/Day_Energykcal)*100,
+    Day_Prop_Carbohydrateg_fg=(Day_Carbohydrateg_fg/Day_Carbohydrateg)*100,
+    Day_Prop_FreeSugarsg_fg=(Day_FreeSugarsg_fg/Day_FreeSugarsg)*100,
+    Day_Prop_Fatg_fg=(Day_Fatg_fg/Day_Fatg)*100,
+    Day_Prop_SatFatg_fg=(Day_SatFatg_fg/Day_SatFatg)*100,
+    Day_Prop_TransFatg_fg=(Day_TransFatg_fg/Day_TransFatg)*100,
+    Day_Prop_Proteing_fg=(Day_Proteing_fg/Day_Proteing)*100,
+    Day_Prop_AOACFibreg_fg=(Day_AOACFibreg_fg/Day_AOACFibreg)*100,
+    Day_Prop_VitaminAug_fg=(Day_VitaminAug_fg/Day_VitaminAug)*100,
+    Day_Prop_Riboflavinmg_fg=(Day_Riboflavinmg_fg/Day_Riboflavinmg)*100,
+    Day_Prop_Folateug_fg=(Day_Folateug_fg/Day_Folateug)*100,
+    Day_Prop_VitaminDug_fg=(Day_VitaminDug_fg/Day_VitaminDug)*100,
+    Day_Prop_VitaminB12ug_fg=(Day_VitaminB12ug_fg/Day_VitaminB12ug)*100,
+    Day_Prop_VitaminCmg_fg=(Day_VitaminCmg_fg/Day_VitaminCmg)*100,
+    Day_Prop_Ironmg_fg=(Day_Ironmg_fg/Day_Ironmg)*100,
+    Day_Prop_Calciummg_fg=(Day_Calciummg_fg/Day_Calciummg)*100,
+    Day_Prop_Sodiummg_fg=(Day_Sodiummg_fg/Day_Sodiummg)*100,
+    Day_Prop_Magnesiummg_fg=(Day_Magnesiummg_fg/Day_Magnesiummg)*100,
+    Day_Prop_Potassiummg_fg=(Day_Potassiummg_fg/Day_Potassiummg)*100,
+    Day_Prop_Iodineug_fg=(Day_Iodineug_fg/Day_Iodineug)*100,
+    Day_Prop_Seleniumug_fg=(Day_Seleniumug_fg/Day_Seleniumug)*100,
+    Day_Prop_Zincmg_fg=(Day_Zincmg_fg/Day_Zincmg)*100
+    ) %>% 
+  select(UserID, NumberOfRecalls, RecallNo, MainFoodGroupCode, Day_Prop_Energykcal_fg:Day_Prop_Zincmg_fg)  %>%  
+  ungroup() 
+```
+
+## Mean participant energy and nutrients from food groups
+```{r}
+df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>% 
+  group_by(UserID, MainFoodGroupCode) %>%
+  summarise(
+    Avg_Prop_Energykcal_fg = mean(Day_Prop_Energykcal_fg),
+    Avg_Prop_Carbohydrateg_fg = mean(Day_Prop_Carbohydrateg_fg),
+    Avg_Prop_FreeSugarsg_fg=mean(Day_Prop_FreeSugarsg_fg),
+    Avg_Prop_Fatg_fg=mean(Day_Prop_Fatg_fg),
+    Avg_Prop_SatFatg_fg=mean(Day_Prop_SatFatg_fg),
+    Avg_Prop_TransFatg_fg=mean(Day_Prop_TransFatg_fg),
+    Avg_Prop_Proteing_fg=mean(Day_Prop_Proteing_fg),
+    Avg_Prop_AOACFibreg_fg=mean(Day_Prop_AOACFibreg_fg),
+    Avg_Prop_VitaminAug_fg=mean(Day_Prop_VitaminAug_fg),
+    Avg_Prop_Riboflavinmg_fg=mean(Day_Prop_Riboflavinmg_fg),
+    Avg_Prop_Folateug_fg=mean(Day_Prop_Folateug_fg),
+    Avg_Prop_VitaminDug_fg=mean(Day_Prop_VitaminDug_fg),
+    Avg_Prop_VitaminB12ug_fg=mean(Day_Prop_VitaminB12ug_fg),
+    Avg_Prop_VitaminCmg_fg=mean(Day_Prop_VitaminCmg_fg),
+    Avg_Prop_Ironmg_fg=mean(Day_Prop_Ironmg_fg),
+    Avg_Prop_Calciummg_fg=mean(Day_Prop_Calciummg_fg),
+    Avg_Prop_Sodiummg_fg=mean(Day_Prop_Sodiummg_fg),
+    Avg_Prop_Magnesiummg_fg=mean(Day_Prop_Magnesiummg_fg),
+    Avg_Prop_Potassiummg_fg=mean(Day_Prop_Potassiummg_fg),
+    Avg_Prop_Iodineug_fg=mean(Day_Prop_Iodineug_fg),
+    Avg_Prop_Seleniumug_fg=mean(Day_Prop_Seleniumug_fg),
+    Avg_Prop_Zincmg_fg=mean(Day_Prop_Zincmg_fg)
+  ) %>%
+  ungroup()
+
 # Add in Main Food Group description variable
-    df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
+    df.intake24_recall_ndns_fg <- df.intake24_recall_ndns_fg %>%
       mutate(MainFoodGroupDesc = case_when(
         MainFoodGroupCode == 1 ~ "Pasta, rice and other miscellaneous cereals",
         MainFoodGroupCode == 2 ~ "White bread",
@@ -644,30 +601,39 @@ df.intake24_participant_ndns_fg <- df.intake24_participant_ndns_fg %>%
         MainFoodGroupCode == 65 ~ "Yogurt, fromage frais and other dairy desserts DF",
         MainFoodGroupCode == 66 ~ "Ice cream DF",
         TRUE ~ NA)) %>%
-      relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
+  filter(!is.na(MainFoodGroupDesc)) %>%
+  relocate(MainFoodGroupDesc, .after = MainFoodGroupCode)
 ```
 
 
-
-# **CHECK** Contributions of Reporting food groups to nutrient intake
-
-Reporting Food groups - contributions to energy and free sugar intake
 ```{r}
-# Calculate daily intakes of energy and free sugars from food groups
-df.intake24_recall_fg <- df.intake24_item %>%
-  group_by(UserID, RecallNo, ReportingFoodGroupCode) %>% 
+# pivot to wide format
+df.intake24_participant_ndns_fg_wide <- df.intake24_recall_ndns_fg %>% 
+  select(-MainFoodGroupDesc)   
+
+df.intake24_participant_ndns_fg_wide <- df.intake24_participant_ndns_fg_wide %>%
+  pivot_wider(
+    names_from = MainFoodGroupCode,
+    values_from = c(Avg_Prop_Energykcal_fg, Avg_Prop_Carbohydrateg_fg, Avg_Prop_FreeSugarsg_fg, Avg_Prop_Fatg_fg, Avg_Prop_SatFatg_fg, Avg_Prop_TransFatg_fg,
+                    Avg_Prop_Proteing_fg, Avg_Prop_AOACFibreg_fg, Avg_Prop_VitaminAug_fg, Avg_Prop_Riboflavinmg_fg, Avg_Prop_Folateug_fg, Avg_Prop_VitaminDug_fg,
+                    Avg_Prop_VitaminB12ug_fg, Avg_Prop_VitaminCmg_fg, Avg_Prop_Ironmg_fg, Avg_Prop_Calciummg_fg, Avg_Prop_Sodiummg_fg, Avg_Prop_Magnesiummg_fg,
+                    Avg_Prop_Potassiummg_fg, Avg_Prop_Iodineug_fg, Avg_Prop_Seleniumug_fg, Avg_Prop_Zincmg_fg)
+  )
+```
+
+# Contributions of discretionary food groups to energy, fat, saturated fat, free sugars
+## Total daily energy, fat, saturated fat, free sugars from discretionary food groups
+```{r}
+# Calculate daily intakes of energy, fat, saturated fat, free sugars
+df.intake24_recall_discretionary_fg <- df.intake24_item %>%
+  group_by(UserID, RecallNo, DiscretionaryFoodGroupCode) %>% 
   summarise(
     NumberOfRecalls = first(NumberOfRecalls),
-    Day_Energy_fg=sum(Energykcal),
-    Day_FreeSugars_fg=sum(Freesugarsg),
-    Day_Fat_fg = sum(Fatg),
-    Day_SatFat_fg = sum(Saturatedfattyacidsg)) 
+    Day_Energykcal_discr =sum(Energykcal),
+    Day_FreeSugarsg_discr =sum(Freesugarsg),
+    Day_Fatg_discr = sum(Fatg),
+    Day_SatFatg_discr = sum(Saturatedfattyacidsg))
 
-
-```
-
-Create grids
-```{r eval=FALSE}
 # Create a grid with all possible food category and recall number combinations for each participant
 # Need to do this separately for different recall numbers
 
@@ -678,7 +644,7 @@ df.onerecall <- df.intake24_recall %>%
 foodgrid_onerecall <- expand.grid( #create a grid of each combination of the below:
   UserID = unique(df.onerecall$UserID), #take each unique UserID
   RecallNo = unique(df.onerecall$RecallNo), #take each unique RecallNo
-  ReportingFoodGroupCode = factor(1:19)) #create a column of with 1-19 for reporting food groups
+  DiscretionaryFoodGroupCode = factor(1:11)) #create a column of with 1-11 for discretionary food groups
 
 # 2 recalls
 df.tworecalls <- df.intake24_recall %>%
@@ -687,7 +653,7 @@ df.tworecalls <- df.intake24_recall %>%
 foodgrid_tworecalls <- expand.grid(
   UserID = unique(df.tworecalls$UserID),
   RecallNo = unique(df.tworecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:19))
+  DiscretionaryFoodGroupCode = factor(1:11))
 
 # 3 recalls
 df.threerecalls <- df.intake24_recall %>%
@@ -696,7 +662,7 @@ df.threerecalls <- df.intake24_recall %>%
 foodgrid_threerecalls <- expand.grid(
   UserID = unique(df.threerecalls$UserID),
   RecallNo = unique(df.threerecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:19))
+  DiscretionaryFoodGroupCode = factor(1:11))
 
 #4 recalls 
 df.fourrecalls <- df.intake24_recall %>%
@@ -704,120 +670,70 @@ df.fourrecalls <- df.intake24_recall %>%
 
 foodgrid_fourrecalls <- expand.grid(
   UserID = unique(df.fourrecalls$UserID),
-  RecallNo = unique(df.threerecalls$RecallNo),
-  ReportingFoodGroupCode = factor(1:19))
-```
+  RecallNo = unique(df.fourrecalls$RecallNo),
+  DiscretionaryFoodGroupCode = factor(1:11))
 
-Combine grids
-```{r eval=FALSE}
 # Combine expanded grids
-foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls) %>%
+foodgroup_grid <- bind_rows(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgrid_fourrecalls) %>%
   arrange(UserID, RecallNo) %>%
-  mutate(ReportingFoodGroupCode = as.numeric(ReportingFoodGroupCode))
+  mutate(DiscretionaryFoodGroupCode = as.numeric(DiscretionaryFoodGroupCode))
 
 # Join daily intakes with expanded grids
-df.intake24_recall_fg <- left_join(foodgroup_grid, df.intake24_recall_fg, by = c("UserID", "RecallNo", "ReportingFoodGroupCode")) %>%
+df.intake24_recall_discretionary_fg <- left_join(foodgroup_grid, df.intake24_recall_discretionary_fg, by = c("UserID", "RecallNo", "DiscretionaryFoodGroupCode")) %>%
+  select(-NumberOfRecalls)
+
+# Fill in NumberOfRecalls
+df.intake24_recall_discretionary_fg <- left_join(df.intake24_recall_discretionary_fg, df.numberrecalls, by = "UserID") 
+df.intake24_recall_discretionary_fg <- df.intake24_recall_discretionary_fg %>%
   relocate(NumberOfRecalls, .after=UserID)
 
 # Change NA values to 0 
-df.intake24_recall_fg <- df.intake24_recall_fg %>%
+df.intake24_recall_discretionary_fg <- df.intake24_recall_discretionary_fg %>%
   mutate_all(~ifelse(is.na(.), 0, .))
 
 # Remove datasets no longer needed
-rm(foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgroup_grid)
-
+rm(df.onerecall, df.tworecalls, df.threerecalls, df.fourrecalls, foodgrid_onerecall, foodgrid_tworecalls, foodgrid_threerecalls, foodgrid_fourrecalls, foodgroup_grid)
 ```
 
-Calculate mean daily intakes of energy and nutrients from food groups 
-```{r eval=FALSE}
-# Participant level dataset
-df.intake24_participant_fg <- df.intake24_recall_fg %>%
-  group_by(UserID, ReportingFoodGroupCode) %>% 
+## Percent energy, fat, saturated fat, free sugars from discretionary food groups 
+```{r}
+# Pull in mean daily intakes of energy and nutrients
+df.day_nutrients <- df.intake24_recall %>% 
+  select(UserID, RecallNo, Day_Energykcal, Day_FreeSugarsg, Day_Fatg, Day_SatFatg)
+                          
+df.intake24_recall_discretionary_fg <- left_join(df.intake24_recall_discretionary_fg, df.day_nutrients, by=c("UserID", "RecallNo"))
+
+#Calculate proportion of energy and nutrients from food groups
+df.intake24_recall_discretionary_fg <- df.intake24_recall_discretionary_fg %>%
+  group_by(UserID, RecallNo, DiscretionaryFoodGroupCode) %>%
   mutate(
-    Avg_Energy_fg =   sum(Day_Energy_fg)/NumberOfRecalls,
-    Avg_Fat_fg =  sum(Day_Fat_fg)/NumberOfRecalls,
-    Avg_SatFat_fg = sum(Day_SatFat_fg)/NumberOfRecalls,
-    Avg_FreeSugars_fg = sum(Day_FreeSugars_fg)/NumberOfRecalls)%>%
+    Day_Prop_Energykcal_discr=(Day_Energykcal_discr/Day_Energykcal)*100,
+    Day_Prop_FreeSugarsg_discr=(Day_FreeSugarsg_discr/Day_FreeSugarsg)*100,
+    Day_Prop_Fatg_discr=(Day_Fatg_discr/Day_Fatg)*100,
+    Day_Prop_SatFatg_discr=(Day_SatFatg_discr/Day_SatFatg)*100
+    ) %>% 
+  select(UserID, NumberOfRecalls, RecallNo, DiscretionaryFoodGroupCode, Day_Prop_Energykcal_discr:Day_Prop_SatFatg_discr)  %>%  
+  ungroup() 
+```
+
+## Mean participant energy, fat, saturated fat, free sugars from discretionary food groups
+```{r}
+df.intake24_recall_discretionary_fg <- df.intake24_recall_discretionary_fg %>% 
+  group_by(UserID, DiscretionaryFoodGroupCode) %>%
+  summarise(
+    Avg_Prop_Energykcal_discr=mean(Day_Prop_Energykcal_discr),
+    Avg_Prop_FreeSugarsg_discr=mean(Day_Prop_FreeSugarsg_discr),
+    Avg_Prop_Fatg_discr=mean(Day_Prop_Fatg_discr),
+    Avg_Prop_SatFatg_discr=mean(Day_Prop_SatFatg_discr)
+  ) %>%
   ungroup()
 
-# Change NA values to 0 
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  mutate_all(~ifelse(is.na(.), 0, .))
-
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  mutate_all(~ifelse(is.infinite(.), 0, .))
-
-# Fill in values across food groups in all recalls
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  group_by(UserID, ReportingFoodGroupCode) %>%
-  mutate(across(starts_with("Avg_"), ~max(., na.rm = TRUE))) %>%
-  ungroup()
-
-# Drop day level variables (as participant level dataset)
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  select(-starts_with("Day_"))
-
-#Keep one line per food group per participant
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  distinct(UserID, ReportingFoodGroupCode, .keep_all = TRUE)
-
-```
-
-Calculate energy and nutrient contributions from food groups
-```{r eval=FALSE}
-# Pull out mean daily intakes of energy and free sugars
-NutrientIntakes <- subset(df.intake24_participant, select=c(UserID, Avg_Energykcal, Avg_FreeSugarsg, Avg_Fatg, Avg_SatFatg))
-
-# Join with mean daily intakes of energy and free sugars from food groups 
-df.intake24_participant_fg <- left_join(NutrientIntakes, df.intake24_participant_fg, by=c("UserID"))
-
-#Calculate nutritional contributions from food categories
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  group_by(UserID, ReportingFoodGroupCode) %>%
-  mutate(
-    Prop_Energy_fg=(Avg_Energy_fg/Avg_Energykcal)*100,
-    Prop_Fat_fg = (Avg_Fat_fg/Avg_Fatg)*100,
-    Prop_SatFat_fg = (Avg_SatFat_fg/Avg_SatFatg)*100,
-    Prop_FreeSugars_fg=(Avg_FreeSugars_fg/Avg_FreeSugarsg)*100) %>%
-  ungroup() %>%
-  relocate(ReportingFoodGroupCode, .after=UserID) %>% 
-  select(-RecallNo, -NumberOfRecalls, -Avg_Energykcal, -Avg_FreeSugarsg, -Avg_Fatg, -Avg_SatFatg) %>%
-  mutate_at(vars(starts_with("Prop_")), ~round(., 2))
-
-# Change NA values to 0 
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  mutate_all(~ifelse(is.na(.), 0, .))
-
-```
-
-Add in Reporting Food Group descriptions
-```{r eval=FALSE}
-#add in description of reporting food codes
-df.intake24_participant_fg <- df.intake24_participant_fg %>%
-  mutate(ReportingFoodGroupDesc = case_when(
-    ReportingFoodGroupCode == 0 ~ "Other",
-    ReportingFoodGroupCode == 1 ~ "Red meat",
-    ReportingFoodGroupCode == 2 ~ "Red processed meat",
-    ReportingFoodGroupCode == 3 ~ "Oily fish",
-    ReportingFoodGroupCode == 4 ~ "Fruit",
-    ReportingFoodGroupCode == 5 ~ "Vegetables",
-    ReportingFoodGroupCode == 6 ~ "Fruit juice",
-    ReportingFoodGroupCode == 7 ~ "Sugar-sweetened beverages",
-    ReportingFoodGroupCode == 8 ~ "Sugar confectionery",
-    ReportingFoodGroupCode == 9 ~ "Chocolate confectionery",
-    ReportingFoodGroupCode == 10 ~ "Sweet biscuits",
-    ReportingFoodGroupCode == 11 ~ "Savoury biscuits",
-    ReportingFoodGroupCode == 12 ~ "Cakes, pastries and fruit pies",
-    ReportingFoodGroupCode == 13 ~ "Crisps and savoury snacks",
-    ReportingFoodGroupCode == 14 ~ "Pizzas",
-    ReportingFoodGroupCode == 15 ~ "Ready meals",
-    ReportingFoodGroupCode == 16 ~ "Ice cream and lollies",
-    ReportingFoodGroupCode == 17 ~ "Breakfast cereals",
-    ReportingFoodGroupCode == 18 ~ "Chips, fried and roast potatoes and potato products",
-    ReportingFoodGroupCode == 19 ~ "Yoghurts, fromage frais, and dairy desserts",
-       TRUE ~ NA_character_)) %>%
-  relocate(ReportingFoodGroupDesc, .after = ReportingFoodGroupCode)
-
+# pivot to wide format
+df.intake24_recall_discretionary_fg_wide <- df.intake24_recall_discretionary_fg %>%
+  pivot_wider(
+    names_from = DiscretionaryFoodGroupCode,
+    values_from = c(Avg_Prop_Energykcal_discr, Avg_Prop_FreeSugarsg_discr, Avg_Prop_Fatg_discr, Avg_Prop_SatFatg_discr)
+  )
 ```
 
 # Adherence to Scottish Dietary Goals
@@ -1669,24 +1585,32 @@ df.intake24_participant <- df.intake24_participant %>%
 
 # Write files for analysis
 ```{r include=FALSE}
-#write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_060924.csv")
-#write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_060924.csv")
-#write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_060924.csv")
-#write.csv(df.intake24_participant_ndns_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_060924.csv")
-#write.csv(df.intake24_participant_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_reporting_food_groups_060924.csv")
+df.intake24_participant_discretionary_fg_wide <- df.intake24_recall_discretionary_fg_wide
+
+write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_090924.csv")
+write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_090924.csv")
+write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_090924.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_090924.csv")
+
+write.csv(df.intake24_recall_ndns_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_090924.csv")
+
+write.csv(df.intake24_participant_ndns_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_090924.csv")
+
+write.csv(df.intake24_recall_discretionary_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_090924.csv")
+
+write.csv(df.intake24_participant_discretionary_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_090924.csv") 
 
 
-
-write.csv(df.intake24_participant, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv")
-write.csv(df.intake24_recall, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv")
-write.csv(df.intake24_item, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
+#write.csv(df.intake24_participant, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv")
+#write.csv(df.intake24_recall, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_recall_280824.csv")
+#write.csv(df.intake24_item, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
 
 #New food group files
 
 #NDNS food groups
-write.csv(df.intake24_participant_ndns_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_ndns_food_groups_060924.csv")
+#write.csv(df.intake24_participant_ndns_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_ndns_food_groups_060924.csv")
 
 #Reporting/Discretionary food groups
-write.csv(df.intake24_participant_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_reporting_food_groups_060924.csv")
+#write.csv(df.intake24_participant_fg, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_reporting_food_groups_060924.csv")
 
 ```
