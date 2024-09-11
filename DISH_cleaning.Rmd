@@ -50,7 +50,7 @@ df.survey <- clean_names(df.survey_full)
 df.intake24_item <- clean_names(df.intake24_full)
 
 # remove dataframes that are no longer needed
-rm(df.survey_full, df.intake24_full)
+#rm(df.survey_full, df.intake24_full)
 ```
 
 ## Rename variables - survey
@@ -260,7 +260,7 @@ df.survey <- df.survey[which(df.survey$CalcAge>=2 & df.survey$CalcAge<16),]
 
 # remove age-ineligible recalls
 df.intake24_item <- df.intake24_item %>%
-  filter(!UserID %in% c(10007139, 10006439, 10004147))
+  filter(!UserID %in% c(10007139, 10006439, 10004147)) #10006439 in survey but did not go on to complete a recall
 
 # remove participant with incomplete data
 df.intake24_item <- df.intake24_item %>%
@@ -278,6 +278,7 @@ df.survey <- df.survey %>%
   semi_join(participant_ids, by = "UserID")
 
 rm(age_removed, participant_ids)
+
 ```
 
 ## Re-code NA food insecurity responses
@@ -726,7 +727,7 @@ crisps <- df.intake24_item %>%
 #write.xlsx(crisps, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Crisps_280824.xlsx")
 
 crisps_exclude_list <- c("8033","8155","7876")
-crisps_include_list <- c("11499","2269","11607") #popcorns
+#crisps_include_list <- c("11499","2269","11607") #popcorns
 
 
 # confectionery
@@ -737,8 +738,9 @@ confectionery <- df.intake24_item %>%
 
 #write.xlsx(confectionery, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Confectionery_280824.xlsx")
 
-confectionery_exclude_list <- c("7762", "2262","11499","2269","11607")
-lollies_inclued_list <- c("7762", "2262")
+confectionary_include_list <- c("8853") #poptarts
+confectionery_exclude_list <- c("7762", "2262")
+lollies_include_list <- c("7762", "2262")
 
 
 # breakfast cereals
@@ -749,8 +751,8 @@ bfastcereals <- df.intake24_item %>%
 
 #write.xlsx(bfastcereals, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/Breakfast_Cereals_280824.xlsx")
 
-# **TO UPDATE BASED ON RESPONSE FROM FSS**
-#bfastcereals_exclude_list <- c("8853","5331","8756","3797","3925","3210","10284","10338","11125","3421","219")
+
+bfastcereals_exclude_list <- c("8853") #poptarts
 
 
 # roast potatoes, chips and similar roasted potato products
@@ -776,9 +778,11 @@ readymeals <- df.intake24_item %>%
 
 #write.xlsx(readymeals, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/ReadyMeals_280824.xlsx")
 
-readymeal_include_list <- c("8049","9245","3187","1347","9386","9244","8666","4283","6393","5321","7094","9318","9270","1116","5627","8286","9726","5313")
+readymeal_include_list <- c("8049","9245","3187","1347","9386","9244","8666","4283","6393","5321","7094","9318","9270","1116","5627","8286","9726","5313", "41") #41 is code for Pasta in tomato sauce, canned, reduced sugar/salt (e.g. Heinz Hoops No Added Sugar)
+```
 
 
+```{r}
 # Create discretionary food groups 
 df.intake24_item <- df.intake24_item %>% 
  mutate(DiscretionaryFoodGroupCode = case_when (
@@ -787,12 +791,12 @@ df.intake24_item <- df.intake24_item %>%
    # Cakes, sweet pastries & puddings
    MainFoodGroupCode == 8 | MainFoodGroupCode == 9 ~ 2,
    # Crisps and savoury snacks
-   (MainFoodGroupCode == 42 | NutrientTableCode %in% c(crisps_include_list)) & 
+   MainFoodGroupCode == 42  & 
      !NutrientTableCode %in% c(crisps_exclude_list) ~ 3,
    # Confectionery
-   (MainFoodGroupCode == 43 | MainFoodGroupCode == 44) & !NutrientTableCode %in% c(confectionery_exclude_list) ~ 4,
+   (MainFoodGroupCode == 43 | MainFoodGroupCode == 44 | NutrientTableCode %in% c(confectionary_include_list))  & !NutrientTableCode %in% c(confectionery_exclude_list) ~ 4,
    # Ice creams & ice lollies
-   MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies_inclued_list) ~ 5,
+   MainFoodGroupCode == 53 | NutrientTableCode %in% c(lollies_include_list) ~ 5,
    # Sugar-containing soft drinks
    MainFoodGroupCode == 57 ~ 6,
    # Breakfast cereals
@@ -1091,6 +1095,8 @@ df.intake24_item <- df.intake24_item %>%
 
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10000459 & RecallNo == 3))
+
+df.intake24_item %>% filter(UserID == 10000459)
 ```
 
 # Recalls with fewer than 5 items
@@ -1112,6 +1118,7 @@ df.intake24_item <- df.intake24_item %>%
 
 df.intake24_item <- df.intake24_item %>%
   filter(!(UserID == 10012849 & RecallNo == 1)) 
+
 ```
 
 # Create sample characteristics data frame
@@ -1131,7 +1138,7 @@ df.intake24_item <- df.intake24_item %>%
 
 n_distinct(df.intake24_item$UserID)
 
-rm(df.char)
+#rm(df.char)
 
 # Drop variables not needed
 df.intake24_item <- df.intake24_item %>%
@@ -1140,9 +1147,9 @@ df.intake24_item <- df.intake24_item %>%
 
 # Write data frames to CSV files
 ```{r include=FALSE}
-write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_090924.csv")
-write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_090924.csv")
-write.csv(df.char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_090924.csv")
+write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_110924.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_110924.csv")
+write.csv(df.char, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_110924.csv")
 
 #write.csv(df.intake24_item, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
 #write.csv(df.survey, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/survey_clean_280824.csv")
