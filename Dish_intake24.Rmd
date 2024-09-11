@@ -30,9 +30,9 @@ library(openxlsx)
 
 # Import the data
 ```{r include=FALSE}
-df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_090924.csv") 
-df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_090924.csv") 
-df.char <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_090924.csv") 
+df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/intake24_item_110924.csv") 
+df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/survey_clean_110924.csv") 
+df.char <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_110924.csv") 
 
 
 #df.intake24_item <- read.csv( "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_item_280824.csv")
@@ -619,6 +619,7 @@ df.intake24_participant_ndns_fg_wide <- df.intake24_participant_ndns_fg_wide %>%
                     Avg_Prop_VitaminB12ug_fg, Avg_Prop_VitaminCmg_fg, Avg_Prop_Ironmg_fg, Avg_Prop_Calciummg_fg, Avg_Prop_Sodiummg_fg, Avg_Prop_Magnesiummg_fg,
                     Avg_Prop_Potassiummg_fg, Avg_Prop_Iodineug_fg, Avg_Prop_Seleniumug_fg, Avg_Prop_Zincmg_fg)
   )
+
 ```
 
 # Contributions of discretionary food groups to energy, fat, saturated fat, free sugars
@@ -1587,18 +1588,18 @@ df.intake24_participant <- df.intake24_participant %>%
 ```{r include=FALSE}
 df.intake24_participant_discretionary_fg_wide <- df.intake24_recall_discretionary_fg_wide
 
-write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_090924.csv")
-write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_090924.csv")
-write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_090924.csv")
-write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_090924.csv")
+write.csv(df.intake24_participant, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_110924.csv")
+write.csv(df.intake24_recall, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_110924.csv")
+write.csv(df.intake24_item, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_110924.csv")
+write.csv(df.survey, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_110924.csv")
 
-write.csv(df.intake24_recall_ndns_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_090924.csv")
+write.csv(df.intake24_recall_ndns_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_110924.csv")
 
-write.csv(df.intake24_participant_ndns_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_090924.csv")
+write.csv(df.intake24_participant_ndns_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_110924.csv")
 
-write.csv(df.intake24_recall_discretionary_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_090924.csv")
+write.csv(df.intake24_recall_discretionary_fg, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_110924.csv")
 
-write.csv(df.intake24_participant_discretionary_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_090924.csv") 
+write.csv(df.intake24_participant_discretionary_fg_wide, file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_110924.csv") 
 
 
 #write.csv(df.intake24_participant, file = "C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Data/intake24_participant_280824.csv")
