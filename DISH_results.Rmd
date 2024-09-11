@@ -34,19 +34,21 @@ This notebook outputs weighted estimates into tables.
 
 # Import the data
 ```{r include=FALSE}
-  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_090924.csv") 
-  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_090924.csv") 
-  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_090924.csv")
-  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_090924.csv") 
+  df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_110924.csv") 
+  df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_110924.csv") 
+  df.intake24_recall <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_recall_110924.csv")
+  df.survey <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/survey_110924.csv") 
   df.weights_full <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Data/sample_survey_weights_050924.csv") 
  
-  df.intake24_recall_ndns_fg <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_090924.csv")
+  df.intake24_recall_ndns_fg <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_110924.csv")
 
-  df.intake24_participant_ndns_fg_wide <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_090924.csv")
+  df.intake24_participant_ndns_fg_wide <- read.csv(file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_ndns_food_groups_WIDE_110924.csv")
 
-df.intake24_recall_discretionary_fg <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_090924.csv")
+df.intake24_recall_discretionary_fg <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_110924.csv")
 
-df.intake24_participant_discretionary_fg_wide <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_090924.csv") 
+df.intake24_participant_discretionary_fg_wide <- read.csv( file = "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_discretionary_food_groups_WIDE_110924.csv") 
+
+df.char <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output/participant_characteristics_110924.csv") 
 
   #df.intake24_item <- read.csv( "/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_item_28_08_24.csv") 
   #df.intake24_participant <- read.csv("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/intake24_participant_28_08_24.csv") 
@@ -66,7 +68,6 @@ df.intake24_participant_discretionary_fg_wide <- read.csv( file = "/Users/ricki/
 
 # Sample weights
 ```{r include=FALSE}
-
 df.weights <- df.weights_full %>%
   filter(!is.na(sampweight)) %>%
   mutate(sampleweight = sampweight) %>%
@@ -80,6 +81,18 @@ df.intake24_participant <- left_join(df.intake24_participant, df.weights, by = "
 df.intake24_participant <- df.intake24_participant %>%
   relocate(sampleweight, .after=UserID)
 
+df.intake24_participant_ndns_fg_wide <- left_join(df.intake24_participant_ndns_fg_wide, df.weights, by = "UserID") %>%
+  relocate(sampleweight, .after=UserID)
+
+
+df.intake24_participant_ndns_fg_wide <- left_join(df.intake24_participant_ndns_fg_wide, df.char, by = "UserID") %>%
+  relocate(c("HouseholdID", "Age", "age_cat", "Sex", "age_sex_cat", "age_cat_drv", "Ethnicity", "simd_quintile", "Education", "adults_cat", "children_cat", "FoodParcels"), .after=UserID)
+
+df.intake24_participant_discretionary_fg_wide <- left_join(df.intake24_participant_discretionary_fg_wide, df.weights, by = "UserID") %>%
+  relocate(sampleweight, .after=UserID)
+
+df.intake24_participant_disc_fg_wide <- left_join(df.intake24_participant_discretionary_fg_wide, df.char, by = "UserID") %>%
+  relocate(c("HouseholdID", "Age", "age_cat", "Sex", "age_sex_cat", "age_cat_drv", "Ethnicity", "simd_quintile", "Education", "adults_cat", "children_cat", "FoodParcels"), .after=UserID)
 
 #rm(df.weights, df.weights_full)
 
@@ -95,7 +108,10 @@ df.intake24_participant <- df.intake24_participant %>%
             is.na(sampleweight) ~ 1,
             TRUE ~ sampleweight))
 
-
+df.intake24_participant_ndns_fg_wide <- df.intake24_participant_ndns_fg_wide %>%
+  mutate(sampleweight = case_when(
+            is.na(sampleweight) ~ 1,
+            TRUE ~ sampleweight))
 
 # replace 'Prefer not to say" sex to NA
 df.intake24_participant <- df.intake24_participant %>%
@@ -108,9 +124,28 @@ df.intake24_participant$age_cat <- factor(df.intake24_participant$age_cat, level
 df.intake24_participant$age_sex_cat <- factor(df.intake24_participant$age_sex_cat, levels = c("Female, 2-4y", "Female, 5-10y", "Female, 11-15y", "Male, 2-4y", "Male, 5-10y", "Male, 11-15y"))
 
 
+#set factor levels
+df.intake24_participant_ndns_fg_wide$age_sex_cat <- factor(df.intake24_participant_ndns_fg_wide$age_sex_cat, levels = c("Female, 2-4y", "Female, 5-10y", "Female, 11-15y", "Male, 2-4y", "Male, 5-10y", "Male, 11-15y"))
+
+df.intake24_participant_disc_fg_wide$age_sex_cat <- factor(df.intake24_participant_disc_fg_wide$age_sex_cat, levels = c("Female, 2-4y", "Female, 5-10y", "Female, 11-15y", "Male, 2-4y", "Male, 5-10y", "Male, 11-15y"))
+
+
+#set as numeric - doesn't work to fix the issue of categorical outputs in table
+df.intake24_participant_disc_fg_wide <- df.intake24_participant_disc_fg_wide %>%
+  mutate(across(Avg_Prop_Energykcal_discr_1:Avg_Prop_SatFatg_discr_11, as.numeric))
+
+
+```
+
+
+```{r include=FALSE}
+
 # set survey weights and psu
 svy.df.survey <- svydesign(id = ~psu, weights = ~sampleweight, data = df.survey)
 svy.df.intake24_participant <- svydesign(id = ~psu, weights = ~sampleweight, data = df.intake24_participant)
+svy.df.intake24_part_ndns_fg <- svydesign(id = ~psu, weights = ~sampleweight, data =df.intake24_participant_ndns_fg_wide)
+svy.df.intake24_part_disc_fg <- svydesign(id = ~psu, weights = ~sampleweight, data =df.intake24_participant_disc_fg_wide)
+
 
 ```
 
@@ -253,6 +288,40 @@ df.intake24_full_demo %>%
   modify_header(label ~ "**Daily Intakes**") %>%
   bold_labels() %>%  
   as_flex_table() 
+
+
+
+
+table.sdgs.age <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(SDG_Energy ~ "Energy density",
+            SDG_Fat ~ "Fat",
+            SDG_SatFat ~ "Saturated fat",
+            SDG_TransFat ~ "Trans fat",
+            SDG_FreeSugar ~ "Free sugars",
+            SDG_Carbs ~ "Carbohydrates",
+            SDG_Fibre ~ "Fibre",
+            SDG_Salt ~ "Salt",
+            SDG_FV ~ "Vegetables and fruit",
+            SDG_FV_NoJuiceSmoothie ~ "Vegetables and fruit - no juice / smoothie",
+            SDG_RRPM ~ "Red and red processed meat",
+            SDG_oilyfish ~ "Oily fish"),
+  statistic = list(all_continuous() ~ "{median} ({p25}, {p75}),
+                                       {mean} ({SD})
+                                       {min} - {max}", all_categorical() ~ "{p}% ({n_unweighted})"),
+  missing = "ifany",
+  digits = list(all_categorical() ~ c(1,0)),
+  include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
+  add_overall() %>%
+  modify_header(label ~ "**Weighted Daily Intakes**") %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+
+table.sdgs.age
+
+
 ```
 
 ## by Sex
@@ -289,9 +358,9 @@ df.intake24_full_demo %>%
 
 
 
-table.sdgs.age <- tbl_svysummary(
+table.sdgs.sex <- tbl_svysummary(
   svy.df.intake24_participant,
-  by = age_cat,
+  by = Sex,
   label = c(SDG_Energy ~ "Energy density",
             SDG_Fat ~ "Fat",
             SDG_SatFat ~ "Saturated fat",
@@ -311,14 +380,15 @@ table.sdgs.age <- tbl_svysummary(
   digits = list(all_categorical() ~ c(1,0)),
   include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
   add_overall() %>%
+  modify_header(label ~ "**Weighted Daily Intakes**") %>%
   bold_labels() %>% 
   as_flex_table()
 
 
-table.sdgs.age
+table.sdgs.sex
 ```
 
-## **TO UPDATE** by SIMD
+## **TO CHECK** by SIMD
 ```{r echo=FALSE}
 
 df.intake24_full_demo %>% 
@@ -370,6 +440,7 @@ table.sdgs.simd <- tbl_svysummary(
   digits = list(all_categorical() ~ c(1,0)),
   include = c(SDG_Energy, SDG_Fat, SDG_SatFat, SDG_TransFat, SDG_FreeSugar, SDG_Carbs, SDG_Fibre, SDG_Salt, SDG_FV, SDG_FV_NoJuiceSmoothie, SDG_RRPM, SDG_oilyfish)) %>%
   add_overall() %>%
+  modify_header(label ~ "**Weighted Daily Intakes**") %>%
   bold_labels() %>% 
   as_flex_table()
 
@@ -403,6 +474,2293 @@ df.survey %>%
   modify_header(label ~ "**SDG **") %>%
   bold_labels() %>%  
   as_flex_table()
+```
+
+# Food Groups - NDNS
+Create high level food groups and output those as well
+- create in dish cleaning and run through as full analysis
+
+##Energy
+```{r}
+# Mean portions
+table.energy.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Energykcal_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Energykcal_fg_2 ~ "White bread",
+        Avg_Prop_Energykcal_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Energykcal_fg_4 ~ "Other breads",
+        Avg_Prop_Energykcal_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Energykcal_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Energykcal_fg_7 ~ "Biscuits",
+        Avg_Prop_Energykcal_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Energykcal_fg_9 ~ "Puddings",
+        Avg_Prop_Energykcal_fg_10 ~ "Whole milk",
+        Avg_Prop_Energykcal_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Energykcal_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Energykcal_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Energykcal_fg_14 ~ "Cheese",
+        Avg_Prop_Energykcal_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Energykcal_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Energykcal_fg_17 ~ "Butter",
+        Avg_Prop_Energykcal_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Energykcal_fg_19 ~ "Low fat spread",
+        Avg_Prop_Energykcal_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Energykcal_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Energykcal_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Energykcal_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Energykcal_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Energykcal_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Energykcal_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Energykcal_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Energykcal_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Energykcal_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Energykcal_fg_30 ~ "Sausages",
+        Avg_Prop_Energykcal_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Energykcal_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Energykcal_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Energykcal_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Energykcal_fg_35 ~ "Oily fish",
+        Avg_Prop_Energykcal_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Energykcal_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Energykcal_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Energykcal_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Energykcal_fg_40 ~ "Fruit",
+        Avg_Prop_Energykcal_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Energykcal_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Energykcal_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Energykcal_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Energykcal_fg_45 ~ "Fruit juice",
+        Avg_Prop_Energykcal_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Energykcal_fg_48 ~ "Wine",
+        Avg_Prop_Energykcal_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Energykcal_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Energykcal_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Energykcal_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Energykcal_fg_53 ~ "Ice cream",
+        Avg_Prop_Energykcal_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Energykcal_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Energykcal_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Energykcal_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Energykcal_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Energykcal_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Energykcal_fg_60 ~ "1% Milk",
+        Avg_Prop_Energykcal_fg_62 ~ "Sandwiches",
+        Avg_Prop_Energykcal_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Energykcal_fg_64 ~ "Cheese DF",
+        Avg_Prop_Energykcal_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Energykcal_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Energykcal_fg_1:Avg_Prop_Energykcal_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.energy.fg
+
+```
+
+##Carbs
+```{r}
+# Mean portions
+table.carbs.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Carbohydrateg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Carbohydrateg_fg_2 ~ "White bread",
+        Avg_Prop_Carbohydrateg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Carbohydrateg_fg_4 ~ "Other breads",
+        Avg_Prop_Carbohydrateg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Carbohydrateg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Carbohydrateg_fg_7 ~ "Biscuits",
+        Avg_Prop_Carbohydrateg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Carbohydrateg_fg_9 ~ "Puddings",
+        Avg_Prop_Carbohydrateg_fg_10 ~ "Whole milk",
+        Avg_Prop_Carbohydrateg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Carbohydrateg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Carbohydrateg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Carbohydrateg_fg_14 ~ "Cheese",
+        Avg_Prop_Carbohydrateg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Carbohydrateg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Carbohydrateg_fg_17 ~ "Butter",
+        Avg_Prop_Carbohydrateg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Carbohydrateg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Carbohydrateg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Carbohydrateg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Carbohydrateg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Carbohydrateg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Carbohydrateg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Carbohydrateg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Carbohydrateg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Carbohydrateg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Carbohydrateg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Carbohydrateg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Carbohydrateg_fg_30 ~ "Sausages",
+        Avg_Prop_Carbohydrateg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Carbohydrateg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Carbohydrateg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Carbohydrateg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Carbohydrateg_fg_35 ~ "Oily fish",
+        Avg_Prop_Carbohydrateg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Carbohydrateg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Carbohydrateg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Carbohydrateg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Carbohydrateg_fg_40 ~ "Fruit",
+        Avg_Prop_Carbohydrateg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Carbohydrateg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Carbohydrateg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Carbohydrateg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Carbohydrateg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Carbohydrateg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Carbohydrateg_fg_48 ~ "Wine",
+        Avg_Prop_Carbohydrateg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Carbohydrateg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Carbohydrateg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Carbohydrateg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Carbohydrateg_fg_53 ~ "Ice cream",
+        Avg_Prop_Carbohydrateg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Carbohydrateg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Carbohydrateg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Carbohydrateg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Carbohydrateg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Carbohydrateg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Carbohydrateg_fg_60 ~ "1% Milk",
+        Avg_Prop_Carbohydrateg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Carbohydrateg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Carbohydrateg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Carbohydrateg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Carbohydrateg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Carbohydrateg_fg_1:Avg_Prop_Carbohydrateg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.carbs.fg
+
+```
+
+
+##Free Sugars
+```{r}
+# Mean portions
+table.FreeSugars.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_FreeSugarsg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_FreeSugarsg_fg_2 ~ "White bread",
+        Avg_Prop_FreeSugarsg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_FreeSugarsg_fg_4 ~ "Other breads",
+        Avg_Prop_FreeSugarsg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_FreeSugarsg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_FreeSugarsg_fg_7 ~ "Biscuits",
+        Avg_Prop_FreeSugarsg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_FreeSugarsg_fg_9 ~ "Puddings",
+        Avg_Prop_FreeSugarsg_fg_10 ~ "Whole milk",
+        Avg_Prop_FreeSugarsg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_FreeSugarsg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_FreeSugarsg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_FreeSugarsg_fg_14 ~ "Cheese",
+        Avg_Prop_FreeSugarsg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_FreeSugarsg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_FreeSugarsg_fg_17 ~ "Butter",
+        Avg_Prop_FreeSugarsg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_FreeSugarsg_fg_19 ~ "Low fat spread",
+        Avg_Prop_FreeSugarsg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_FreeSugarsg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_FreeSugarsg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_FreeSugarsg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_FreeSugarsg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_FreeSugarsg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_FreeSugarsg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_FreeSugarsg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_FreeSugarsg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_FreeSugarsg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_FreeSugarsg_fg_30 ~ "Sausages",
+        Avg_Prop_FreeSugarsg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_FreeSugarsg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_FreeSugarsg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_FreeSugarsg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_FreeSugarsg_fg_35 ~ "Oily fish",
+        Avg_Prop_FreeSugarsg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_FreeSugarsg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_FreeSugarsg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_FreeSugarsg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_FreeSugarsg_fg_40 ~ "Fruit",
+        Avg_Prop_FreeSugarsg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_FreeSugarsg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_FreeSugarsg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_FreeSugarsg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_FreeSugarsg_fg_45 ~ "Fruit juice",
+        Avg_Prop_FreeSugarsg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_FreeSugarsg_fg_48 ~ "Wine",
+        Avg_Prop_FreeSugarsg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_FreeSugarsg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_FreeSugarsg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_FreeSugarsg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_FreeSugarsg_fg_53 ~ "Ice cream",
+        Avg_Prop_FreeSugarsg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_FreeSugarsg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_FreeSugarsg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_FreeSugarsg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_FreeSugarsg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_FreeSugarsg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_FreeSugarsg_fg_60 ~ "1% Milk",
+        Avg_Prop_FreeSugarsg_fg_62 ~ "Sandwiches",
+        Avg_Prop_FreeSugarsg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_FreeSugarsg_fg_64 ~ "Cheese DF",
+        Avg_Prop_FreeSugarsg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_FreeSugarsg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_FreeSugarsg_fg_1:Avg_Prop_FreeSugarsg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.FreeSugars.fg
+
+```
+
+
+##Fat
+```{r}
+# Mean portions
+table.fat.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Fatg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Fatg_fg_2 ~ "White bread",
+        Avg_Prop_Fatg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Fatg_fg_4 ~ "Other breads",
+        Avg_Prop_Fatg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Fatg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Fatg_fg_7 ~ "Biscuits",
+        Avg_Prop_Fatg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Fatg_fg_9 ~ "Puddings",
+        Avg_Prop_Fatg_fg_10 ~ "Whole milk",
+        Avg_Prop_Fatg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Fatg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Fatg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Fatg_fg_14 ~ "Cheese",
+        Avg_Prop_Fatg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Fatg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Fatg_fg_17 ~ "Butter",
+        Avg_Prop_Fatg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Fatg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Fatg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Fatg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Fatg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Fatg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Fatg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Fatg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Fatg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Fatg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Fatg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Fatg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Fatg_fg_30 ~ "Sausages",
+        Avg_Prop_Fatg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Fatg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Fatg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Fatg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Fatg_fg_35 ~ "Oily fish",
+        Avg_Prop_Fatg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Fatg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Fatg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Fatg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Fatg_fg_40 ~ "Fruit",
+        Avg_Prop_Fatg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Fatg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Fatg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Fatg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Fatg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Fatg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Fatg_fg_48 ~ "Wine",
+        Avg_Prop_Fatg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Fatg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Fatg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Fatg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Fatg_fg_53 ~ "Ice cream",
+        Avg_Prop_Fatg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Fatg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Fatg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Fatg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Fatg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Fatg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Fatg_fg_60 ~ "1% Milk",
+        Avg_Prop_Fatg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Fatg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Fatg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Fatg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Fatg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Fatg_fg_1:Avg_Prop_Fatg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.fat.fg
+
+```
+
+##Sat Fat
+```{r}
+# Mean portions
+table.SatFat.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_SatFatg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_SatFatg_fg_2 ~ "White bread",
+        Avg_Prop_SatFatg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_SatFatg_fg_4 ~ "Other breads",
+        Avg_Prop_SatFatg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_SatFatg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_SatFatg_fg_7 ~ "Biscuits",
+        Avg_Prop_SatFatg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_SatFatg_fg_9 ~ "Puddings",
+        Avg_Prop_SatFatg_fg_10 ~ "Whole milk",
+        Avg_Prop_SatFatg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_SatFatg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_SatFatg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_SatFatg_fg_14 ~ "Cheese",
+        Avg_Prop_SatFatg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_SatFatg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_SatFatg_fg_17 ~ "Butter",
+        Avg_Prop_SatFatg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_SatFatg_fg_19 ~ "Low fat spread",
+        Avg_Prop_SatFatg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_SatFatg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_SatFatg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_SatFatg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_SatFatg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_SatFatg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_SatFatg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_SatFatg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_SatFatg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_SatFatg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_SatFatg_fg_30 ~ "Sausages",
+        Avg_Prop_SatFatg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_SatFatg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_SatFatg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_SatFatg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_SatFatg_fg_35 ~ "Oily fish",
+        Avg_Prop_SatFatg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_SatFatg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_SatFatg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_SatFatg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_SatFatg_fg_40 ~ "Fruit",
+        Avg_Prop_SatFatg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_SatFatg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_SatFatg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_SatFatg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_SatFatg_fg_45 ~ "Fruit juice",
+        Avg_Prop_SatFatg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_SatFatg_fg_48 ~ "Wine",
+        Avg_Prop_SatFatg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_SatFatg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_SatFatg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_SatFatg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_SatFatg_fg_53 ~ "Ice cream",
+        Avg_Prop_SatFatg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_SatFatg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_SatFatg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_SatFatg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_SatFatg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_SatFatg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_SatFatg_fg_60 ~ "1% Milk",
+        Avg_Prop_SatFatg_fg_62 ~ "Sandwiches",
+        Avg_Prop_SatFatg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_SatFatg_fg_64 ~ "Cheese DF",
+        Avg_Prop_SatFatg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_SatFatg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_SatFatg_fg_1:Avg_Prop_SatFatg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.SatFat.fg
+
+```
+
+##Trans Fat
+```{r}
+# Mean portions
+table.TransFat.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_TransFatg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_TransFatg_fg_2 ~ "White bread",
+        Avg_Prop_TransFatg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_TransFatg_fg_4 ~ "Other breads",
+        Avg_Prop_TransFatg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_TransFatg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_TransFatg_fg_7 ~ "Biscuits",
+        Avg_Prop_TransFatg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_TransFatg_fg_9 ~ "Puddings",
+        Avg_Prop_TransFatg_fg_10 ~ "Whole milk",
+        Avg_Prop_TransFatg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_TransFatg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_TransFatg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_TransFatg_fg_14 ~ "Cheese",
+        Avg_Prop_TransFatg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_TransFatg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_TransFatg_fg_17 ~ "Butter",
+        Avg_Prop_TransFatg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_TransFatg_fg_19 ~ "Low fat spread",
+        Avg_Prop_TransFatg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_TransFatg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_TransFatg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_TransFatg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_TransFatg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_TransFatg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_TransFatg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_TransFatg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_TransFatg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_TransFatg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_TransFatg_fg_30 ~ "Sausages",
+        Avg_Prop_TransFatg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_TransFatg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_TransFatg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_TransFatg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_TransFatg_fg_35 ~ "Oily fish",
+        Avg_Prop_TransFatg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_TransFatg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_TransFatg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_TransFatg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_TransFatg_fg_40 ~ "Fruit",
+        Avg_Prop_TransFatg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_TransFatg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_TransFatg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_TransFatg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_TransFatg_fg_45 ~ "Fruit juice",
+        Avg_Prop_TransFatg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_TransFatg_fg_48 ~ "Wine",
+        Avg_Prop_TransFatg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_TransFatg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_TransFatg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_TransFatg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_TransFatg_fg_53 ~ "Ice cream",
+        Avg_Prop_TransFatg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_TransFatg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_TransFatg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_TransFatg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_TransFatg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_TransFatg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_TransFatg_fg_60 ~ "1% Milk",
+        Avg_Prop_TransFatg_fg_62 ~ "Sandwiches",
+        Avg_Prop_TransFatg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_TransFatg_fg_64 ~ "Cheese DF",
+        Avg_Prop_TransFatg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_TransFatg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_TransFatg_fg_1:Avg_Prop_TransFatg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.TransFat.fg
+
+```
+
+##Protein
+```{r}
+# Mean portions
+table.protein.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Proteing_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Proteing_fg_2 ~ "White bread",
+        Avg_Prop_Proteing_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Proteing_fg_4 ~ "Other breads",
+        Avg_Prop_Proteing_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Proteing_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Proteing_fg_7 ~ "Biscuits",
+        Avg_Prop_Proteing_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Proteing_fg_9 ~ "Puddings",
+        Avg_Prop_Proteing_fg_10 ~ "Whole milk",
+        Avg_Prop_Proteing_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Proteing_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Proteing_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Proteing_fg_14 ~ "Cheese",
+        Avg_Prop_Proteing_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Proteing_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Proteing_fg_17 ~ "Butter",
+        Avg_Prop_Proteing_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Proteing_fg_19 ~ "Low fat spread",
+        Avg_Prop_Proteing_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Proteing_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Proteing_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Proteing_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Proteing_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Proteing_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Proteing_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Proteing_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Proteing_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Proteing_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Proteing_fg_30 ~ "Sausages",
+        Avg_Prop_Proteing_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Proteing_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Proteing_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Proteing_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Proteing_fg_35 ~ "Oily fish",
+        Avg_Prop_Proteing_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Proteing_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Proteing_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Proteing_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Proteing_fg_40 ~ "Fruit",
+        Avg_Prop_Proteing_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Proteing_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Proteing_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Proteing_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Proteing_fg_45 ~ "Fruit juice",
+        Avg_Prop_Proteing_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Proteing_fg_48 ~ "Wine",
+        Avg_Prop_Proteing_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Proteing_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Proteing_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Proteing_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Proteing_fg_53 ~ "Ice cream",
+        Avg_Prop_Proteing_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Proteing_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Proteing_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Proteing_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Proteing_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Proteing_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Proteing_fg_60 ~ "1% Milk",
+        Avg_Prop_Proteing_fg_62 ~ "Sandwiches",
+        Avg_Prop_Proteing_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Proteing_fg_64 ~ "Cheese DF",
+        Avg_Prop_Proteing_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Proteing_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Proteing_fg_1:Avg_Prop_Proteing_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.protein.fg
+
+```
+
+##Fibre
+```{r}
+# Mean portions
+table.fibre.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_AOACFibreg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_AOACFibreg_fg_2 ~ "White bread",
+        Avg_Prop_AOACFibreg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_AOACFibreg_fg_4 ~ "Other breads",
+        Avg_Prop_AOACFibreg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_AOACFibreg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_AOACFibreg_fg_7 ~ "Biscuits",
+        Avg_Prop_AOACFibreg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_AOACFibreg_fg_9 ~ "Puddings",
+        Avg_Prop_AOACFibreg_fg_10 ~ "Whole milk",
+        Avg_Prop_AOACFibreg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_AOACFibreg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_AOACFibreg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_AOACFibreg_fg_14 ~ "Cheese",
+        Avg_Prop_AOACFibreg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_AOACFibreg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_AOACFibreg_fg_17 ~ "Butter",
+        Avg_Prop_AOACFibreg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_AOACFibreg_fg_19 ~ "Low fat spread",
+        Avg_Prop_AOACFibreg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_AOACFibreg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_AOACFibreg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_AOACFibreg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_AOACFibreg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_AOACFibreg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_AOACFibreg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_AOACFibreg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_AOACFibreg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_AOACFibreg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_AOACFibreg_fg_30 ~ "Sausages",
+        Avg_Prop_AOACFibreg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_AOACFibreg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_AOACFibreg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_AOACFibreg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_AOACFibreg_fg_35 ~ "Oily fish",
+        Avg_Prop_AOACFibreg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_AOACFibreg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_AOACFibreg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_AOACFibreg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_AOACFibreg_fg_40 ~ "Fruit",
+        Avg_Prop_AOACFibreg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_AOACFibreg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_AOACFibreg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_AOACFibreg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_AOACFibreg_fg_45 ~ "Fruit juice",
+        Avg_Prop_AOACFibreg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_AOACFibreg_fg_48 ~ "Wine",
+        Avg_Prop_AOACFibreg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_AOACFibreg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_AOACFibreg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_AOACFibreg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_AOACFibreg_fg_53 ~ "Ice cream",
+        Avg_Prop_AOACFibreg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_AOACFibreg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_AOACFibreg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_AOACFibreg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_AOACFibreg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_AOACFibreg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_AOACFibreg_fg_60 ~ "1% Milk",
+        Avg_Prop_AOACFibreg_fg_62 ~ "Sandwiches",
+        Avg_Prop_AOACFibreg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_AOACFibreg_fg_64 ~ "Cheese DF",
+        Avg_Prop_AOACFibreg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_AOACFibreg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_AOACFibreg_fg_1:Avg_Prop_AOACFibreg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.fibre.fg
+
+```
+
+##Vitamin A
+```{r}
+# Mean portions
+table.VitA.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_VitaminAug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_VitaminAug_fg_2 ~ "White bread",
+        Avg_Prop_VitaminAug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_VitaminAug_fg_4 ~ "Other breads",
+        Avg_Prop_VitaminAug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_VitaminAug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_VitaminAug_fg_7 ~ "Biscuits",
+        Avg_Prop_VitaminAug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_VitaminAug_fg_9 ~ "Puddings",
+        Avg_Prop_VitaminAug_fg_10 ~ "Whole milk",
+        Avg_Prop_VitaminAug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_VitaminAug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_VitaminAug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_VitaminAug_fg_14 ~ "Cheese",
+        Avg_Prop_VitaminAug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_VitaminAug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_VitaminAug_fg_17 ~ "Butter",
+        Avg_Prop_VitaminAug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_VitaminAug_fg_19 ~ "Low fat spread",
+        Avg_Prop_VitaminAug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_VitaminAug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_VitaminAug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_VitaminAug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_VitaminAug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_VitaminAug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_VitaminAug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_VitaminAug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_VitaminAug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_VitaminAug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_VitaminAug_fg_30 ~ "Sausages",
+        Avg_Prop_VitaminAug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_VitaminAug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_VitaminAug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_VitaminAug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_VitaminAug_fg_35 ~ "Oily fish",
+        Avg_Prop_VitaminAug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_VitaminAug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_VitaminAug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_VitaminAug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_VitaminAug_fg_40 ~ "Fruit",
+        Avg_Prop_VitaminAug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_VitaminAug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_VitaminAug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_VitaminAug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_VitaminAug_fg_45 ~ "Fruit juice",
+        Avg_Prop_VitaminAug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_VitaminAug_fg_48 ~ "Wine",
+        Avg_Prop_VitaminAug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_VitaminAug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_VitaminAug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_VitaminAug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_VitaminAug_fg_53 ~ "Ice cream",
+        Avg_Prop_VitaminAug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_VitaminAug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_VitaminAug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_VitaminAug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_VitaminAug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_VitaminAug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_VitaminAug_fg_60 ~ "1% Milk",
+        Avg_Prop_VitaminAug_fg_62 ~ "Sandwiches",
+        Avg_Prop_VitaminAug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_VitaminAug_fg_64 ~ "Cheese DF",
+        Avg_Prop_VitaminAug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_VitaminAug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_VitaminAug_fg_1:Avg_Prop_VitaminAug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.VitA.fg
+
+```
+
+##Riboflavin
+```{r}
+# Mean portions
+table.riboflavin.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Riboflavinmg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Riboflavinmg_fg_2 ~ "White bread",
+        Avg_Prop_Riboflavinmg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Riboflavinmg_fg_4 ~ "Other breads",
+        Avg_Prop_Riboflavinmg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Riboflavinmg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Riboflavinmg_fg_7 ~ "Biscuits",
+        Avg_Prop_Riboflavinmg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Riboflavinmg_fg_9 ~ "Puddings",
+        Avg_Prop_Riboflavinmg_fg_10 ~ "Whole milk",
+        Avg_Prop_Riboflavinmg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Riboflavinmg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Riboflavinmg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Riboflavinmg_fg_14 ~ "Cheese",
+        Avg_Prop_Riboflavinmg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Riboflavinmg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Riboflavinmg_fg_17 ~ "Butter",
+        Avg_Prop_Riboflavinmg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Riboflavinmg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Riboflavinmg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Riboflavinmg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Riboflavinmg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Riboflavinmg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Riboflavinmg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Riboflavinmg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Riboflavinmg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Riboflavinmg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Riboflavinmg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Riboflavinmg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Riboflavinmg_fg_30 ~ "Sausages",
+        Avg_Prop_Riboflavinmg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Riboflavinmg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Riboflavinmg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Riboflavinmg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Riboflavinmg_fg_35 ~ "Oily fish",
+        Avg_Prop_Riboflavinmg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Riboflavinmg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Riboflavinmg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Riboflavinmg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Riboflavinmg_fg_40 ~ "Fruit",
+        Avg_Prop_Riboflavinmg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Riboflavinmg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Riboflavinmg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Riboflavinmg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Riboflavinmg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Riboflavinmg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Riboflavinmg_fg_48 ~ "Wine",
+        Avg_Prop_Riboflavinmg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Riboflavinmg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Riboflavinmg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Riboflavinmg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Riboflavinmg_fg_53 ~ "Ice cream",
+        Avg_Prop_Riboflavinmg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Riboflavinmg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Riboflavinmg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Riboflavinmg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Riboflavinmg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Riboflavinmg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Riboflavinmg_fg_60 ~ "1% Milk",
+        Avg_Prop_Riboflavinmg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Riboflavinmg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Riboflavinmg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Riboflavinmg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Riboflavinmg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Riboflavinmg_fg_1:Avg_Prop_Riboflavinmg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.riboflavin.fg
+
+```
+
+
+##Folate
+```{r}
+# Mean portions
+table.folate.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Folateug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Folateug_fg_2 ~ "White bread",
+        Avg_Prop_Folateug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Folateug_fg_4 ~ "Other breads",
+        Avg_Prop_Folateug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Folateug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Folateug_fg_7 ~ "Biscuits",
+        Avg_Prop_Folateug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Folateug_fg_9 ~ "Puddings",
+        Avg_Prop_Folateug_fg_10 ~ "Whole milk",
+        Avg_Prop_Folateug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Folateug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Folateug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Folateug_fg_14 ~ "Cheese",
+        Avg_Prop_Folateug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Folateug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Folateug_fg_17 ~ "Butter",
+        Avg_Prop_Folateug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Folateug_fg_19 ~ "Low fat spread",
+        Avg_Prop_Folateug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Folateug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Folateug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Folateug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Folateug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Folateug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Folateug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Folateug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Folateug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Folateug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Folateug_fg_30 ~ "Sausages",
+        Avg_Prop_Folateug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Folateug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Folateug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Folateug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Folateug_fg_35 ~ "Oily fish",
+        Avg_Prop_Folateug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Folateug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Folateug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Folateug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Folateug_fg_40 ~ "Fruit",
+        Avg_Prop_Folateug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Folateug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Folateug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Folateug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Folateug_fg_45 ~ "Fruit juice",
+        Avg_Prop_Folateug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Folateug_fg_48 ~ "Wine",
+        Avg_Prop_Folateug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Folateug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Folateug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Folateug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Folateug_fg_53 ~ "Ice cream",
+        Avg_Prop_Folateug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Folateug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Folateug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Folateug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Folateug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Folateug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Folateug_fg_60 ~ "1% Milk",
+        Avg_Prop_Folateug_fg_62 ~ "Sandwiches",
+        Avg_Prop_Folateug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Folateug_fg_64 ~ "Cheese DF",
+        Avg_Prop_Folateug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Folateug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Folateug_fg_1:Avg_Prop_Folateug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.folate.fg
+
+```
+
+##Vitamin D
+```{r}
+# Mean portions
+table.VitD.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_VitaminDug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_VitaminDug_fg_2 ~ "White bread",
+        Avg_Prop_VitaminDug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_VitaminDug_fg_4 ~ "Other breads",
+        Avg_Prop_VitaminDug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_VitaminDug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_VitaminDug_fg_7 ~ "Biscuits",
+        Avg_Prop_VitaminDug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_VitaminDug_fg_9 ~ "Puddings",
+        Avg_Prop_VitaminDug_fg_10 ~ "Whole milk",
+        Avg_Prop_VitaminDug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_VitaminDug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_VitaminDug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_VitaminDug_fg_14 ~ "Cheese",
+        Avg_Prop_VitaminDug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_VitaminDug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_VitaminDug_fg_17 ~ "Butter",
+        Avg_Prop_VitaminDug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_VitaminDug_fg_19 ~ "Low fat spread",
+        Avg_Prop_VitaminDug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_VitaminDug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_VitaminDug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_VitaminDug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_VitaminDug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_VitaminDug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_VitaminDug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_VitaminDug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_VitaminDug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_VitaminDug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_VitaminDug_fg_30 ~ "Sausages",
+        Avg_Prop_VitaminDug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_VitaminDug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_VitaminDug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_VitaminDug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_VitaminDug_fg_35 ~ "Oily fish",
+        Avg_Prop_VitaminDug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_VitaminDug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_VitaminDug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_VitaminDug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_VitaminDug_fg_40 ~ "Fruit",
+        Avg_Prop_VitaminDug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_VitaminDug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_VitaminDug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_VitaminDug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_VitaminDug_fg_45 ~ "Fruit juice",
+        Avg_Prop_VitaminDug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_VitaminDug_fg_48 ~ "Wine",
+        Avg_Prop_VitaminDug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_VitaminDug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_VitaminDug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_VitaminDug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_VitaminDug_fg_53 ~ "Ice cream",
+        Avg_Prop_VitaminDug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_VitaminDug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_VitaminDug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_VitaminDug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_VitaminDug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_VitaminDug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_VitaminDug_fg_60 ~ "1% Milk",
+        Avg_Prop_VitaminDug_fg_62 ~ "Sandwiches",
+        Avg_Prop_VitaminDug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_VitaminDug_fg_64 ~ "Cheese DF",
+        Avg_Prop_VitaminDug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_VitaminDug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_VitaminDug_fg_1:Avg_Prop_VitaminDug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.VitD.fg
+
+```
+
+
+##Vitamin B12
+```{r}
+# Mean portions
+table.VitB12.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_VitaminB12ug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_VitaminB12ug_fg_2 ~ "White bread",
+        Avg_Prop_VitaminB12ug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_VitaminB12ug_fg_4 ~ "Other breads",
+        Avg_Prop_VitaminB12ug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_VitaminB12ug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_VitaminB12ug_fg_7 ~ "Biscuits",
+        Avg_Prop_VitaminB12ug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_VitaminB12ug_fg_9 ~ "Puddings",
+        Avg_Prop_VitaminB12ug_fg_10 ~ "Whole milk",
+        Avg_Prop_VitaminB12ug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_VitaminB12ug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_VitaminB12ug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_VitaminB12ug_fg_14 ~ "Cheese",
+        Avg_Prop_VitaminB12ug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_VitaminB12ug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_VitaminB12ug_fg_17 ~ "Butter",
+        Avg_Prop_VitaminB12ug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_VitaminB12ug_fg_19 ~ "Low fat spread",
+        Avg_Prop_VitaminB12ug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_VitaminB12ug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_VitaminB12ug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_VitaminB12ug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_VitaminB12ug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_VitaminB12ug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_VitaminB12ug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_VitaminB12ug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_VitaminB12ug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_VitaminB12ug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_VitaminB12ug_fg_30 ~ "Sausages",
+        Avg_Prop_VitaminB12ug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_VitaminB12ug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_VitaminB12ug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_VitaminB12ug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_VitaminB12ug_fg_35 ~ "Oily fish",
+        Avg_Prop_VitaminB12ug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_VitaminB12ug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_VitaminB12ug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_VitaminB12ug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_VitaminB12ug_fg_40 ~ "Fruit",
+        Avg_Prop_VitaminB12ug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_VitaminB12ug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_VitaminB12ug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_VitaminB12ug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_VitaminB12ug_fg_45 ~ "Fruit juice",
+        Avg_Prop_VitaminB12ug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_VitaminB12ug_fg_48 ~ "Wine",
+        Avg_Prop_VitaminB12ug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_VitaminB12ug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_VitaminB12ug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_VitaminB12ug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_VitaminB12ug_fg_53 ~ "Ice cream",
+        Avg_Prop_VitaminB12ug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_VitaminB12ug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_VitaminB12ug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_VitaminB12ug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_VitaminB12ug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_VitaminB12ug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_VitaminB12ug_fg_60 ~ "1% Milk",
+        Avg_Prop_VitaminB12ug_fg_62 ~ "Sandwiches",
+        Avg_Prop_VitaminB12ug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_VitaminB12ug_fg_64 ~ "Cheese DF",
+        Avg_Prop_VitaminB12ug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_VitaminB12ug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_VitaminB12ug_fg_1:Avg_Prop_VitaminB12ug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.VitB12.fg
+
+```
+
+
+##Vitamin C
+```{r}
+# Mean portions
+table.VitC.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_VitaminCmg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_VitaminCmg_fg_2 ~ "White bread",
+        Avg_Prop_VitaminCmg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_VitaminCmg_fg_4 ~ "Other breads",
+        Avg_Prop_VitaminCmg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_VitaminCmg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_VitaminCmg_fg_7 ~ "Biscuits",
+        Avg_Prop_VitaminCmg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_VitaminCmg_fg_9 ~ "Puddings",
+        Avg_Prop_VitaminCmg_fg_10 ~ "Whole milk",
+        Avg_Prop_VitaminCmg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_VitaminCmg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_VitaminCmg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_VitaminCmg_fg_14 ~ "Cheese",
+        Avg_Prop_VitaminCmg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_VitaminCmg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_VitaminCmg_fg_17 ~ "Butter",
+        Avg_Prop_VitaminCmg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_VitaminCmg_fg_19 ~ "Low fat spread",
+        Avg_Prop_VitaminCmg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_VitaminCmg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_VitaminCmg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_VitaminCmg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_VitaminCmg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_VitaminCmg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_VitaminCmg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_VitaminCmg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_VitaminCmg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_VitaminCmg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_VitaminCmg_fg_30 ~ "Sausages",
+        Avg_Prop_VitaminCmg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_VitaminCmg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_VitaminCmg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_VitaminCmg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_VitaminCmg_fg_35 ~ "Oily fish",
+        Avg_Prop_VitaminCmg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_VitaminCmg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_VitaminCmg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_VitaminCmg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_VitaminCmg_fg_40 ~ "Fruit",
+        Avg_Prop_VitaminCmg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_VitaminCmg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_VitaminCmg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_VitaminCmg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_VitaminCmg_fg_45 ~ "Fruit juice",
+        Avg_Prop_VitaminCmg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_VitaminCmg_fg_48 ~ "Wine",
+        Avg_Prop_VitaminCmg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_VitaminCmg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_VitaminCmg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_VitaminCmg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_VitaminCmg_fg_53 ~ "Ice cream",
+        Avg_Prop_VitaminCmg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_VitaminCmg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_VitaminCmg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_VitaminCmg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_VitaminCmg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_VitaminCmg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_VitaminCmg_fg_60 ~ "1% Milk",
+        Avg_Prop_VitaminCmg_fg_62 ~ "Sandwiches",
+        Avg_Prop_VitaminCmg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_VitaminCmg_fg_64 ~ "Cheese DF",
+        Avg_Prop_VitaminCmg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_VitaminCmg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_VitaminCmg_fg_1:Avg_Prop_VitaminCmg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.VitC.fg
+
+```
+
+
+
+##Iron
+```{r}
+# Mean portions
+table.iron.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Ironmg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Ironmg_fg_2 ~ "White bread",
+        Avg_Prop_Ironmg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Ironmg_fg_4 ~ "Other breads",
+        Avg_Prop_Ironmg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Ironmg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Ironmg_fg_7 ~ "Biscuits",
+        Avg_Prop_Ironmg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Ironmg_fg_9 ~ "Puddings",
+        Avg_Prop_Ironmg_fg_10 ~ "Whole milk",
+        Avg_Prop_Ironmg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Ironmg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Ironmg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Ironmg_fg_14 ~ "Cheese",
+        Avg_Prop_Ironmg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Ironmg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Ironmg_fg_17 ~ "Butter",
+        Avg_Prop_Ironmg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Ironmg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Ironmg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Ironmg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Ironmg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Ironmg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Ironmg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Ironmg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Ironmg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Ironmg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Ironmg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Ironmg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Ironmg_fg_30 ~ "Sausages",
+        Avg_Prop_Ironmg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Ironmg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Ironmg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Ironmg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Ironmg_fg_35 ~ "Oily fish",
+        Avg_Prop_Ironmg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Ironmg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Ironmg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Ironmg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Ironmg_fg_40 ~ "Fruit",
+        Avg_Prop_Ironmg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Ironmg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Ironmg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Ironmg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Ironmg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Ironmg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Ironmg_fg_48 ~ "Wine",
+        Avg_Prop_Ironmg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Ironmg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Ironmg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Ironmg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Ironmg_fg_53 ~ "Ice cream",
+        Avg_Prop_Ironmg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Ironmg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Ironmg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Ironmg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Ironmg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Ironmg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Ironmg_fg_60 ~ "1% Milk",
+        Avg_Prop_Ironmg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Ironmg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Ironmg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Ironmg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Ironmg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Ironmg_fg_1:Avg_Prop_Ironmg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.iron.fg
+
+```
+
+##Calcium
+```{r}
+# Mean portions
+table.calcium.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Calciummg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Calciummg_fg_2 ~ "White bread",
+        Avg_Prop_Calciummg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Calciummg_fg_4 ~ "Other breads",
+        Avg_Prop_Calciummg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Calciummg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Calciummg_fg_7 ~ "Biscuits",
+        Avg_Prop_Calciummg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Calciummg_fg_9 ~ "Puddings",
+        Avg_Prop_Calciummg_fg_10 ~ "Whole milk",
+        Avg_Prop_Calciummg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Calciummg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Calciummg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Calciummg_fg_14 ~ "Cheese",
+        Avg_Prop_Calciummg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Calciummg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Calciummg_fg_17 ~ "Butter",
+        Avg_Prop_Calciummg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Calciummg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Calciummg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Calciummg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Calciummg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Calciummg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Calciummg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Calciummg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Calciummg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Calciummg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Calciummg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Calciummg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Calciummg_fg_30 ~ "Sausages",
+        Avg_Prop_Calciummg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Calciummg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Calciummg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Calciummg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Calciummg_fg_35 ~ "Oily fish",
+        Avg_Prop_Calciummg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Calciummg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Calciummg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Calciummg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Calciummg_fg_40 ~ "Fruit",
+        Avg_Prop_Calciummg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Calciummg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Calciummg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Calciummg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Calciummg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Calciummg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Calciummg_fg_48 ~ "Wine",
+        Avg_Prop_Calciummg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Calciummg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Calciummg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Calciummg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Calciummg_fg_53 ~ "Ice cream",
+        Avg_Prop_Calciummg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Calciummg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Calciummg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Calciummg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Calciummg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Calciummg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Calciummg_fg_60 ~ "1% Milk",
+        Avg_Prop_Calciummg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Calciummg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Calciummg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Calciummg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Calciummg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Calciummg_fg_1:Avg_Prop_Calciummg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.calcium.fg
+
+```
+
+
+##Sodium
+```{r}
+# Mean portions
+table.sodium.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Sodiummg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Sodiummg_fg_2 ~ "White bread",
+        Avg_Prop_Sodiummg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Sodiummg_fg_4 ~ "Other breads",
+        Avg_Prop_Sodiummg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Sodiummg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Sodiummg_fg_7 ~ "Biscuits",
+        Avg_Prop_Sodiummg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Sodiummg_fg_9 ~ "Puddings",
+        Avg_Prop_Sodiummg_fg_10 ~ "Whole milk",
+        Avg_Prop_Sodiummg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Sodiummg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Sodiummg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Sodiummg_fg_14 ~ "Cheese",
+        Avg_Prop_Sodiummg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Sodiummg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Sodiummg_fg_17 ~ "Butter",
+        Avg_Prop_Sodiummg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Sodiummg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Sodiummg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Sodiummg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Sodiummg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Sodiummg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Sodiummg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Sodiummg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Sodiummg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Sodiummg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Sodiummg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Sodiummg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Sodiummg_fg_30 ~ "Sausages",
+        Avg_Prop_Sodiummg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Sodiummg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Sodiummg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Sodiummg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Sodiummg_fg_35 ~ "Oily fish",
+        Avg_Prop_Sodiummg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Sodiummg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Sodiummg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Sodiummg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Sodiummg_fg_40 ~ "Fruit",
+        Avg_Prop_Sodiummg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Sodiummg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Sodiummg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Sodiummg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Sodiummg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Sodiummg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Sodiummg_fg_48 ~ "Wine",
+        Avg_Prop_Sodiummg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Sodiummg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Sodiummg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Sodiummg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Sodiummg_fg_53 ~ "Ice cream",
+        Avg_Prop_Sodiummg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Sodiummg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Sodiummg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Sodiummg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Sodiummg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Sodiummg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Sodiummg_fg_60 ~ "1% Milk",
+        Avg_Prop_Sodiummg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Sodiummg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Sodiummg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Sodiummg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Sodiummg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Sodiummg_fg_1:Avg_Prop_Sodiummg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.sodium.fg
+
+```
+
+
+##Magnesium
+```{r}
+# Mean portions
+table.magnesium.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Magnesiummg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Magnesiummg_fg_2 ~ "White bread",
+        Avg_Prop_Magnesiummg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Magnesiummg_fg_4 ~ "Other breads",
+        Avg_Prop_Magnesiummg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Magnesiummg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Magnesiummg_fg_7 ~ "Biscuits",
+        Avg_Prop_Magnesiummg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Magnesiummg_fg_9 ~ "Puddings",
+        Avg_Prop_Magnesiummg_fg_10 ~ "Whole milk",
+        Avg_Prop_Magnesiummg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Magnesiummg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Magnesiummg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Magnesiummg_fg_14 ~ "Cheese",
+        Avg_Prop_Magnesiummg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Magnesiummg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Magnesiummg_fg_17 ~ "Butter",
+        Avg_Prop_Magnesiummg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Magnesiummg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Magnesiummg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Magnesiummg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Magnesiummg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Magnesiummg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Magnesiummg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Magnesiummg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Magnesiummg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Magnesiummg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Magnesiummg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Magnesiummg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Magnesiummg_fg_30 ~ "Sausages",
+        Avg_Prop_Magnesiummg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Magnesiummg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Magnesiummg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Magnesiummg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Magnesiummg_fg_35 ~ "Oily fish",
+        Avg_Prop_Magnesiummg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Magnesiummg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Magnesiummg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Magnesiummg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Magnesiummg_fg_40 ~ "Fruit",
+        Avg_Prop_Magnesiummg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Magnesiummg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Magnesiummg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Magnesiummg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Magnesiummg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Magnesiummg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Magnesiummg_fg_48 ~ "Wine",
+        Avg_Prop_Magnesiummg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Magnesiummg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Magnesiummg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Magnesiummg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Magnesiummg_fg_53 ~ "Ice cream",
+        Avg_Prop_Magnesiummg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Magnesiummg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Magnesiummg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Magnesiummg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Magnesiummg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Magnesiummg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Magnesiummg_fg_60 ~ "1% Milk",
+        Avg_Prop_Magnesiummg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Magnesiummg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Magnesiummg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Magnesiummg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Magnesiummg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Magnesiummg_fg_1:Avg_Prop_Magnesiummg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.magnesium.fg
+
+```
+
+
+##Potassium
+```{r}
+# Mean portions
+table.potassium.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Potassiummg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Potassiummg_fg_2 ~ "White bread",
+        Avg_Prop_Potassiummg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Potassiummg_fg_4 ~ "Other breads",
+        Avg_Prop_Potassiummg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Potassiummg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Potassiummg_fg_7 ~ "Biscuits",
+        Avg_Prop_Potassiummg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Potassiummg_fg_9 ~ "Puddings",
+        Avg_Prop_Potassiummg_fg_10 ~ "Whole milk",
+        Avg_Prop_Potassiummg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Potassiummg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Potassiummg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Potassiummg_fg_14 ~ "Cheese",
+        Avg_Prop_Potassiummg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Potassiummg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Potassiummg_fg_17 ~ "Butter",
+        Avg_Prop_Potassiummg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Potassiummg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Potassiummg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Potassiummg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Potassiummg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Potassiummg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Potassiummg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Potassiummg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Potassiummg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Potassiummg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Potassiummg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Potassiummg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Potassiummg_fg_30 ~ "Sausages",
+        Avg_Prop_Potassiummg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Potassiummg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Potassiummg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Potassiummg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Potassiummg_fg_35 ~ "Oily fish",
+        Avg_Prop_Potassiummg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Potassiummg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Potassiummg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Potassiummg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Potassiummg_fg_40 ~ "Fruit",
+        Avg_Prop_Potassiummg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Potassiummg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Potassiummg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Potassiummg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Potassiummg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Potassiummg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Potassiummg_fg_48 ~ "Wine",
+        Avg_Prop_Potassiummg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Potassiummg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Potassiummg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Potassiummg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Potassiummg_fg_53 ~ "Ice cream",
+        Avg_Prop_Potassiummg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Potassiummg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Potassiummg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Potassiummg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Potassiummg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Potassiummg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Potassiummg_fg_60 ~ "1% Milk",
+        Avg_Prop_Potassiummg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Potassiummg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Potassiummg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Potassiummg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Potassiummg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Potassiummg_fg_1:Avg_Prop_Potassiummg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.potassium.fg
+
+```
+
+
+##Iodine
+```{r}
+# Mean portions
+table.iodine.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Iodineug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Iodineug_fg_2 ~ "White bread",
+        Avg_Prop_Iodineug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Iodineug_fg_4 ~ "Other breads",
+        Avg_Prop_Iodineug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Iodineug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Iodineug_fg_7 ~ "Biscuits",
+        Avg_Prop_Iodineug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Iodineug_fg_9 ~ "Puddings",
+        Avg_Prop_Iodineug_fg_10 ~ "Whole milk",
+        Avg_Prop_Iodineug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Iodineug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Iodineug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Iodineug_fg_14 ~ "Cheese",
+        Avg_Prop_Iodineug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Iodineug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Iodineug_fg_17 ~ "Butter",
+        Avg_Prop_Iodineug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Iodineug_fg_19 ~ "Low fat spread",
+        Avg_Prop_Iodineug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Iodineug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Iodineug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Iodineug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Iodineug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Iodineug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Iodineug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Iodineug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Iodineug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Iodineug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Iodineug_fg_30 ~ "Sausages",
+        Avg_Prop_Iodineug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Iodineug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Iodineug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Iodineug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Iodineug_fg_35 ~ "Oily fish",
+        Avg_Prop_Iodineug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Iodineug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Iodineug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Iodineug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Iodineug_fg_40 ~ "Fruit",
+        Avg_Prop_Iodineug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Iodineug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Iodineug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Iodineug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Iodineug_fg_45 ~ "Fruit juice",
+        Avg_Prop_Iodineug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Iodineug_fg_48 ~ "Wine",
+        Avg_Prop_Iodineug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Iodineug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Iodineug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Iodineug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Iodineug_fg_53 ~ "Ice cream",
+        Avg_Prop_Iodineug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Iodineug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Iodineug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Iodineug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Iodineug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Iodineug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Iodineug_fg_60 ~ "1% Milk",
+        Avg_Prop_Iodineug_fg_62 ~ "Sandwiches",
+        Avg_Prop_Iodineug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Iodineug_fg_64 ~ "Cheese DF",
+        Avg_Prop_Iodineug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Iodineug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Iodineug_fg_1:Avg_Prop_Iodineug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.iodine.fg
+
+```
+
+
+##Selenium
+```{r}
+# Mean portions
+table.selenium.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Seleniumug_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Seleniumug_fg_2 ~ "White bread",
+        Avg_Prop_Seleniumug_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Seleniumug_fg_4 ~ "Other breads",
+        Avg_Prop_Seleniumug_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Seleniumug_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Seleniumug_fg_7 ~ "Biscuits",
+        Avg_Prop_Seleniumug_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Seleniumug_fg_9 ~ "Puddings",
+        Avg_Prop_Seleniumug_fg_10 ~ "Whole milk",
+        Avg_Prop_Seleniumug_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Seleniumug_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Seleniumug_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Seleniumug_fg_14 ~ "Cheese",
+        Avg_Prop_Seleniumug_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Seleniumug_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Seleniumug_fg_17 ~ "Butter",
+        Avg_Prop_Seleniumug_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Seleniumug_fg_19 ~ "Low fat spread",
+        Avg_Prop_Seleniumug_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Seleniumug_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Seleniumug_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Seleniumug_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Seleniumug_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Seleniumug_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Seleniumug_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Seleniumug_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Seleniumug_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Seleniumug_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Seleniumug_fg_30 ~ "Sausages",
+        Avg_Prop_Seleniumug_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Seleniumug_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Seleniumug_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Seleniumug_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Seleniumug_fg_35 ~ "Oily fish",
+        Avg_Prop_Seleniumug_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Seleniumug_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Seleniumug_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Seleniumug_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Seleniumug_fg_40 ~ "Fruit",
+        Avg_Prop_Seleniumug_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Seleniumug_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Seleniumug_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Seleniumug_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Seleniumug_fg_45 ~ "Fruit juice",
+        Avg_Prop_Seleniumug_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Seleniumug_fg_48 ~ "Wine",
+        Avg_Prop_Seleniumug_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Seleniumug_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Seleniumug_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Seleniumug_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Seleniumug_fg_53 ~ "Ice cream",
+        Avg_Prop_Seleniumug_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Seleniumug_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Seleniumug_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Seleniumug_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Seleniumug_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Seleniumug_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Seleniumug_fg_60 ~ "1% Milk",
+        Avg_Prop_Seleniumug_fg_62 ~ "Sandwiches",
+        Avg_Prop_Seleniumug_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Seleniumug_fg_64 ~ "Cheese DF",
+        Avg_Prop_Seleniumug_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Seleniumug_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Seleniumug_fg_1:Avg_Prop_Seleniumug_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.selenium.fg
+
+```
+
+
+##Zinc
+```{r}
+# Mean portions
+table.zinc.fg <- tbl_svysummary(
+  svy.df.intake24_part_ndns_fg,
+  by = age_sex_cat,
+  label = c(Avg_Prop_Zincmg_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
+        Avg_Prop_Zincmg_fg_2 ~ "White bread",
+        Avg_Prop_Zincmg_fg_3 ~ "Wholemeal bread",
+        Avg_Prop_Zincmg_fg_4 ~ "Other breads",
+        Avg_Prop_Zincmg_fg_5 ~ "High fibre breakfast cereals",
+        Avg_Prop_Zincmg_fg_6 ~ "Other breakfast cereals",
+        Avg_Prop_Zincmg_fg_7 ~ "Biscuits",
+        Avg_Prop_Zincmg_fg_8 ~ "Buns, cakes, pastries and fruit pies",
+        Avg_Prop_Zincmg_fg_9 ~ "Puddings",
+        Avg_Prop_Zincmg_fg_10 ~ "Whole milk",
+        Avg_Prop_Zincmg_fg_11 ~ "Semi-skimmed milk",
+        Avg_Prop_Zincmg_fg_12 ~ "Skimmed milk",
+        Avg_Prop_Zincmg_fg_13 ~ "Other milk and cream",
+        Avg_Prop_Zincmg_fg_14 ~ "Cheese",
+        Avg_Prop_Zincmg_fg_15 ~ "Yogurt, fromage frais and other dairy desserts",
+        Avg_Prop_Zincmg_fg_16 ~ "Eggs and egg dishes",
+        Avg_Prop_Zincmg_fg_17 ~ "Butter",
+        Avg_Prop_Zincmg_fg_18 ~ "Polyunsaturated margarine and oils",
+        Avg_Prop_Zincmg_fg_19 ~ "Low fat spread",
+        Avg_Prop_Zincmg_fg_20 ~ "Margarine and other cooking fats and oils NOT polyunsaturated",
+        Avg_Prop_Zincmg_fg_21 ~ "Reduced fat spread",
+        Avg_Prop_Zincmg_fg_22 ~ "Bacon and ham",
+        Avg_Prop_Zincmg_fg_23 ~ "Beef, veal and dishes",
+        Avg_Prop_Zincmg_fg_24 ~ "Lamb and dishes",
+        Avg_Prop_Zincmg_fg_25 ~ "Pork and dishes",
+        Avg_Prop_Zincmg_fg_26 ~ "Coated chicken and turkey manufactured",
+        Avg_Prop_Zincmg_fg_27 ~ "Chicken and turkey dishes",
+        Avg_Prop_Zincmg_fg_28 ~ "Liver, products and dishes",
+        Avg_Prop_Zincmg_fg_29 ~ "Burgers and kebabs",
+        Avg_Prop_Zincmg_fg_30 ~ "Sausages",
+        Avg_Prop_Zincmg_fg_31 ~ "Meat pies and pastries",
+        Avg_Prop_Zincmg_fg_32 ~ "Other meat and meat products",
+        Avg_Prop_Zincmg_fg_33 ~ "White fish coated or fried",
+        Avg_Prop_Zincmg_fg_34 ~ "Other white fish, shellfish and fish dishes",
+        Avg_Prop_Zincmg_fg_35 ~ "Oily fish",
+        Avg_Prop_Zincmg_fg_36 ~ "Salad and other raw vegetables",
+        Avg_Prop_Zincmg_fg_37 ~ "Vegetables (not raw)",
+        Avg_Prop_Zincmg_fg_38 ~ "Chips, fried and roast potatoes and potato products",
+        Avg_Prop_Zincmg_fg_39 ~ "Other potatoes, potato salads and dishes",
+        Avg_Prop_Zincmg_fg_40 ~ "Fruit",
+        Avg_Prop_Zincmg_fg_41 ~ "Sugars, preserves and sweet spreads",
+        Avg_Prop_Zincmg_fg_42 ~ "Crisps and savoury snacks",
+        Avg_Prop_Zincmg_fg_43 ~ "Sugar confectionery",
+        Avg_Prop_Zincmg_fg_44 ~ "Chocolate confectionery",
+        Avg_Prop_Zincmg_fg_45 ~ "Fruit juice",
+        Avg_Prop_Zincmg_fg_47 ~ "Spirits and liqueurs",
+        Avg_Prop_Zincmg_fg_48 ~ "Wine",
+        Avg_Prop_Zincmg_fg_49 ~ "Beer lager cider and perry",
+        Avg_Prop_Zincmg_fg_50 ~ "Miscellaneous",
+        Avg_Prop_Zincmg_fg_51 ~ "Tea, coffee and water",
+        Avg_Prop_Zincmg_fg_52 ~ "Commercial toddlers foods and drinks",
+        Avg_Prop_Zincmg_fg_53 ~ "Ice cream",
+        Avg_Prop_Zincmg_fg_54 ~ "Dietary supplements",
+        Avg_Prop_Zincmg_fg_55 ~ "Artificial sweeteners",
+        Avg_Prop_Zincmg_fg_56 ~ "Nuts and seeds",
+        Avg_Prop_Zincmg_fg_57 ~ "Soft drinks, not diet",
+        Avg_Prop_Zincmg_fg_58 ~ "Soft drinks, diet",
+        Avg_Prop_Zincmg_fg_59 ~ "Brown, granary and wheatgerm bread",
+        Avg_Prop_Zincmg_fg_60 ~ "1% Milk",
+        Avg_Prop_Zincmg_fg_62 ~ "Sandwiches",
+        Avg_Prop_Zincmg_fg_63 ~ "Other milk and cream DF",                         
+        Avg_Prop_Zincmg_fg_64 ~ "Cheese DF",
+        Avg_Prop_Zincmg_fg_65 ~ "Yogurt, fromage frais and other dairy desserts DF",
+        Avg_Prop_Zincmg_fg_66 ~ "Ice cream DF"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Zincmg_fg_1:Avg_Prop_Zincmg_fg_66)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.zinc.fg
+
+```
+
+##Output to excel
+```{r eval=FALSE, include=FALSE}
+# Convert flextables to data frames
+df.table.energy <- table.energy.fg$body$dataset %>%
+  rename(Energy_Density = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.carbs <- table.carbs.fg$body$dataset %>%
+  rename(Carbohydrates = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+
+df.table.FreeSugars <- table.FreeSugars.fg$body$dataset %>%
+  rename(Free_Sugars = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.fat <- table.fat.fg$body$dataset %>%
+  rename(Fat = label,
+        Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.SatFat <- table.SatFat.fg$body$dataset %>%
+  rename(Sat_Fat = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.TransFat <- table.TransFat.fg$body$dataset %>%
+  rename(Trans_Fat = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.protein <- table.protein.fg$body$dataset %>%
+  rename(Protein = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+
+df.table.fibre <- table.fibre.fg$body$dataset %>%
+  rename(Fibre = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.VitA <- table.VitA.fg$body$dataset %>%
+  rename(Vitamin_A = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.riboflavin <- table.riboflavin.fg$body$dataset %>%
+  rename(Riboflavin = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.folate <- table.folate.fg$body$dataset %>%
+  rename(Folate = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.VitD <- table.VitD.fg$body$dataset %>%
+  rename(Vitamin_D = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.VitB12 <- table.VitB12.fg$body$dataset %>%
+  rename(Vitamin_B12 = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.VitC <- table.VitC.fg$body$dataset %>%
+  rename(Vitamin_C = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.iron <- table.iron.fg$body$dataset %>%
+  rename(Iron = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.calcium <- table.calcium.fg$body$dataset %>%
+  rename(Calcium = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.sodium <- table.sodium.fg$body$dataset %>%
+  rename(Sodium = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.magnesium <- table.magnesium.fg$body$dataset %>%
+  rename(Magnesium = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.potassium <- table.potassium.fg$body$dataset %>%
+  rename(Potassium = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.iodine <- table.iodine.fg$body$dataset %>%
+  rename(Iodine = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.selenium <- table.selenium.fg$body$dataset %>%
+  rename(Selenium = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.zinc <- table.zinc.fg$body$dataset %>%
+  rename(Zinc = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+
+
+write_xlsx(
+  list(
+    "Energy" = df.table.energy,
+    "Carbs" = df.table.carbs,
+    "Free_Sugars" = df.table.FreeSugars,
+    "Fat" = df.table.fat,
+    "Sat_Fat" = df.table.SatFat,
+    "Trans_Fat" = df.table.TransFat,
+    "Protein" = df.table.protein,
+    "Fibre" = df.table.fibre,
+    "Vit_A" = df.table.VitA,
+    "Riboflavin" = df.table.riboflavin,
+    "Folate" = df.table.folate,
+    "Vit_D" = df.table.VitD,
+    "Vit_B12" = df.table.VitB12,
+    "Vit_C" = df.table.VitC,
+    "Iron" = df.table.iron,
+    "Calcium" = df.table.calcium,
+    "Sodium" = df.table.sodium,
+    "Magnesium" = df.table.magnesium,
+    "Potassium" = df.table.potassium,
+    "Iodine" = df.table.iodine,
+    "Selenium" = df.table.selenium,
+    "Zinc" = df.table.zinc
+  ),
+  path = paste0("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/Table_NDNS_fg_", format(Sys.time(), "%d%m%Y"), ".xlsx")
+)
+```
+
+#Food Groups - Discretionary
+
+## Energy
+```{r}
+# Mean portions
+table.energy.disc.fg <- tbl_svysummary(
+  svy.df.intake24_part_disc_fg,
+  by = age_sex_cat,
+  label = c(
+    Avg_Prop_Energykcal_discr_1 ~ "Sweet biscuits",
+    Avg_Prop_Energykcal_discr_2 ~ "Cakes, sweet pastries & puddings",
+    Avg_Prop_Energykcal_discr_3 ~ "Crisps and savoury snacks",
+    Avg_Prop_Energykcal_discr_4 ~ "Confectionery",
+    Avg_Prop_Energykcal_discr_5 ~ "Ice creams & ice lollies",
+    Avg_Prop_Energykcal_discr_6 ~ "Sugar-containing soft drinks",
+    Avg_Prop_Energykcal_discr_7 ~ "Breakfast cereals",
+    Avg_Prop_Energykcal_discr_8 ~ "Roast potatoes, chips and similar roasted potato products",
+    Avg_Prop_Energykcal_discr_9 ~ "Pizza",
+    Avg_Prop_Energykcal_discr_10 ~ "Yoghurts, fromage frais and dairy desserts",
+    Avg_Prop_Energykcal_discr_11 ~ "Ready meals"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Energykcal_discr_1:Avg_Prop_Energykcal_discr_11)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.energy.disc.fg
+```
+
+
+## Free Sugars
+```{r}
+# Mean portions
+table.FreeSugars.disc.fg <- tbl_svysummary(
+  svy.df.intake24_part_disc_fg,
+  by = age_sex_cat,
+  label = c(
+    Avg_Prop_FreeSugarsg_discr_1 ~ "Sweet biscuits",
+    Avg_Prop_FreeSugarsg_discr_2 ~ "Cakes, sweet pastries & puddings",
+    Avg_Prop_FreeSugarsg_discr_3 ~ "Crisps and savoury snacks",
+    Avg_Prop_FreeSugarsg_discr_4 ~ "Confectionery",
+    Avg_Prop_FreeSugarsg_discr_5 ~ "Ice creams & ice lollies",
+    Avg_Prop_FreeSugarsg_discr_6 ~ "Sugar-containing soft drinks",
+    Avg_Prop_FreeSugarsg_discr_7 ~ "Breakfast cereals",
+    Avg_Prop_FreeSugarsg_discr_8 ~ "Roast potatoes, chips and similar roasted potato products",
+    Avg_Prop_FreeSugarsg_discr_9 ~ "Pizza",
+    Avg_Prop_FreeSugarsg_discr_10 ~ "Yoghurts, fromage frais and dairy desserts",
+    Avg_Prop_FreeSugarsg_discr_11 ~ "Ready meals"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_FreeSugarsg_discr_1:Avg_Prop_FreeSugarsg_discr_11)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.FreeSugars.disc.fg
+```
+
+
+## Fat
+```{r}
+#doesn't fix issue in tables
+svy.df.intake24_part_disc_fg <- update(
+  svy.df.intake24_part_disc_fg,
+  as.numeric(Avg_Prop_Fatg_discr_6)
+)
+
+# Mean portions
+table.fat.disc.fg <- tbl_svysummary(
+  svy.df.intake24_part_disc_fg,
+  by = age_sex_cat,
+  label = c(
+    Avg_Prop_Fatg_discr_1 ~ "Sweet biscuits",
+    Avg_Prop_Fatg_discr_2 ~ "Cakes, sweet pastries & puddings",
+    Avg_Prop_Fatg_discr_3 ~ "Crisps and savoury snacks",
+    Avg_Prop_Fatg_discr_4 ~ "Confectionery",
+    Avg_Prop_Fatg_discr_5 ~ "Ice creams & ice lollies",
+    Avg_Prop_Fatg_discr_6 ~ "Sugar-containing soft drinks",
+    Avg_Prop_Fatg_discr_7 ~ "Breakfast cereals",
+    Avg_Prop_Fatg_discr_8 ~ "Roast potatoes, chips and similar roasted potato products",
+    Avg_Prop_Fatg_discr_9 ~ "Pizza",
+    Avg_Prop_Fatg_discr_10 ~ "Yoghurts, fromage frais and dairy desserts",
+    Avg_Prop_Fatg_discr_11 ~ "Ready meals"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_Fatg_discr_1:Avg_Prop_Fatg_discr_11)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.fat.disc.fg
+```
+
+
+## Sat Fat
+```{r}
+# Mean portions
+table.SatFat.disc.fg <- tbl_svysummary(
+  svy.df.intake24_part_disc_fg,
+  by = age_sex_cat,
+  label = c(
+    Avg_Prop_SatFatg_discr_1 ~ "Sweet biscuits",
+    Avg_Prop_SatFatg_discr_2 ~ "Cakes, sweet pastries & puddings",
+    Avg_Prop_SatFatg_discr_3 ~ "Crisps and savoury snacks",
+    Avg_Prop_SatFatg_discr_4 ~ "Confectionery",
+    Avg_Prop_SatFatg_discr_5 ~ "Ice creams & ice lollies",
+    Avg_Prop_SatFatg_discr_6 ~ "Sugar-containing soft drinks",
+    Avg_Prop_SatFatg_discr_7 ~ "Breakfast cereals",
+    Avg_Prop_SatFatg_discr_8 ~ "Roast potatoes, chips and similar roasted potato products",
+    Avg_Prop_SatFatg_discr_9 ~ "Pizza",
+    Avg_Prop_SatFatg_discr_10 ~ "Yoghurts, fromage frais and dairy desserts",
+    Avg_Prop_SatFatg_discr_11 ~ "Ready meals"),
+  statistic = list(all_continuous() ~ 
+                                       "{mean}"),
+  missing = "no",
+  digits = list(all_continuous() ~ c(1,0)),
+  include = c(Avg_Prop_SatFatg_discr_1:Avg_Prop_SatFatg_discr_11)) %>%
+  add_overall() %>%
+  bold_labels() %>% 
+  as_flex_table()
+
+table.SatFat.disc.fg
+```
+
+
+## Output to Excel
+```{r eval=FALSE, include=FALSE}
+# Convert flextables to data frames
+df.table.energy.disc <- table.energy.disc.fg$body$dataset %>%
+  rename(Energy_Density = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+
+df.table.FreeSugars.disc <- table.FreeSugars.disc.fg$body$dataset %>%
+  rename(Free_Sugars = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.fat.disc <- table.fat.disc.fg$body$dataset %>%
+  rename(Fat = label,
+        Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+df.table.SatFat.disc <- table.SatFat.disc.fg$body$dataset %>%
+  rename(Sat_Fat = label,
+         Overall = stat_0,
+         "Female, 2-4y" = stat_1,
+         "Female, 5-10y" = stat_2,
+         "Female, 11-15y" = stat_3,
+         "Male, 2-4y" = stat_4,
+         "Male, 5-10y" = stat_5,
+         "Male, 11-15y" = stat_6)
+
+
+
+write_xlsx(
+  list(
+    "Energy" = df.table.energy.disc,
+    "Free_Sugars" = df.table.FreeSugars.disc,
+    "Fat" = df.table.fat.disc,
+    "Sat_Fat" = df.table.SatFat.disc),
+  path = paste0("/Users/ricki/Desktop/DISH_data_cleaning/Output_data_analysis/Table_Disc_fg_", format(Sys.time(), "%d%m%Y"), ".xlsx")
+)
 ```
 
 
@@ -496,8 +2854,11 @@ table.forfigure.sdgs.age <- tbl_svysummary(
   add_overall() %>%
   bold_labels() %>% 
   as_flex_table()
-save_as_docx("SDG by Age Table for Figure"=table.forfigure.sdgs.age,
-             path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Age_",format(Sys.time(),"%d%m%Y"),".docx"))
+#Lindsay updating means tables and inputting into github code - for figure
+
+table.forfigure.sdgs.age
+
+#save_as_docx("SDG by Age Table for Figure"=table.forfigure.sdgs.age,path = paste0("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/Output/","FigureTables_SDG_Age_",format(Sys.time(),"%d%m%Y"),".docx"))
 
 fig.df.sdg.age <- data.frame(Age=as.factor(c("2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y","2-4y",
                                             "5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y","5-10y",
@@ -727,6 +3088,9 @@ table.sdgs.vegfruit <- tbl_svysummary(
 
 table.sdgs.vegfruit
 ```
+
+
+
 
 ### Output Excel Sheet
 ```{r eval=FALSE, warning=FALSE, include=FALSE}
