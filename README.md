@@ -61,11 +61,9 @@ This script creates report tables for:
 # Data Files
 ## Raw
 
-survey_26.08.24.xlsx
-  - raw survey data
+- survey_26.08.24.xlsx : raw survey data
     
-intake24_26.08.24.xlsx 
-  - raw Intake24 24-hour dietary recall data
+- intake24_26.08.24.xlsx : raw Intake24 24-hour dietary recall data
     
 
 ## Clean
