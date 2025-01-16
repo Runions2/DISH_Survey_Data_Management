@@ -47,7 +47,7 @@ This R script calculates:
 
 ## DISH_results
 
-This script creates report tables for:
+This script exports the following data into Excel tables overall and for population subgroups (age, gender, Scottish Index of Multiple Deprivation):
 - participant characteristics
 - Scottish Dietary Goals
 - nutrient intakes
