@@ -4,7 +4,7 @@ Dietary Intake in Scotland’s CHildren (DISH) is a cross-sectional representati
 
 These R scripts process and analyse data from DISH. 
 
-In some instances, code has been removed to prevent identifiability, for example, in re-coding text responses for 'Other' ethnicity. 
+In some instances, code has been removed to prevent identifiability, for example, in re-coding text responses for 'Other' ethnicity. Code that requires manual updates by users starts with @update. This includes the location of the working directory and the Multiple Source Method functions which we are not able to make publicly available. Users must contact Sven Knuppel, Sven.Knueppel@bfr.bund.de, for access to these files.
 
 Clean anonymised data files are available for download at https://www.data-archive.ac.uk/
 
