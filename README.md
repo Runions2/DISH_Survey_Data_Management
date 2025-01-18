@@ -86,4 +86,4 @@ Raw data files are not available for download as some variables together could p
 - intake24_recall.csv : Recall (daily) level data
 - intake24_item.csv : Item level data
 
-Clean data files are available for download at https://www.data-archive.ac.uk/
+Clean anonymised data files are available for download at https://www.data-archive.ac.uk/
