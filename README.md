@@ -1,20 +1,12 @@
 # Dietary Intake in Scotland’s CHildren (DISH)
 
-These R scripts process and analyse data from a cross-sectional representative survey of children and young people aged 2 to 15 years living in Scotland collected in 2024. 
+Dietary Intake in Scotland’s CHildren (DISH) is a cross-sectional representative survey conducted in 2024. Commissioned by Food Standards Scotland and led by the University of Edinburgh, the survey provides information on aspects of dietary intake in children and young people aged 2 to 15 years living in Scotland. Diet data were collected using an online platform called Intake24. Up to four 24-hour dietary recalls were collected from each child. Diets were reported by parents/guardians for children in pre-school or primary school. Children in secondary school had the opportunity to report their own diets, and answer additional questions on purchasing food and drink off school grounds during their lunch break, using food delivery apps and consumption of energy drinks. Parents/guardians also answered questions on food insecurity. The final sample was 1,700 children and young people.
+
+These R scripts process and analyse data from DISH. 
 
 In some instances, code has been removed to prevent identifiability, for example, in re-coding text responses for 'Other' ethnicity. 
 
-The final processed data files and meta data are available for download at https://www.data-archive.ac.uk/. 
-
-The main outcomes of the survey were:
-1. Achievement of the Scottish Dietary Goals
-2. Nutrient intake including adherence to the Reference Nutrient Intakes (RNIs) and Lower Reference Nutrient Intakes (LRNIs)
-3. Food group intake and contribution to energy and nutrient intake
-4. Consumption of food beyond the school gates in secondary school pupils
-5. Consumption of energy drinks in secondary school pupils
-6. Food insecurity 
-
-Data were collected using an online survey and up to four 24-hour dietary recalls (herein 'intake24').
+Clean anonymised data files are available for download at https://www.data-archive.ac.uk/
 
 More information about the survey is available at www.edin.ac/intake24. 
 
