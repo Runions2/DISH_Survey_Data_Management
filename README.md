@@ -8,7 +8,7 @@ In some instances, code has been removed to prevent identifiability, for example
 
 Clean anonymised data files are available for download at https://www.data-archive.ac.uk/
 
-More information about the survey is available at www.edin.ac/intake24. 
+More information about the survey is available at www.edin.ac/intake24
 
 # Data Management Files
 ## DISH_cleaning
