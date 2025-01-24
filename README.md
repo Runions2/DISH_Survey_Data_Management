@@ -66,7 +66,7 @@ This R script exports the following survey-weighted outputs into Excel tables ov
 - survey_26.08.24.xlsx : raw survey data
 - intake24_26.08.24.xlsx : raw Intake24 24-hour dietary recall data
 - full_sample_health_boards.xlsx : raw health boards
-- UK_NDB_1.2 2023.09 : Nutrient Databank used for Intake24 data
+- UK_NDB_1.2 2024.12.16 : Nutrient Databank used for Intake24 data
 - sample_survey_weights_081024 : sample survey weights
 
 Raw data files are not available for download as some variables together could potentially be used to identify an individual respondent. 
