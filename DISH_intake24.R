@@ -29,7 +29,7 @@ library(e1071)
 
 
 #set working directory
-#setwd("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/")
+#setwd("[@update directory path here]")
 
 
 
@@ -962,8 +962,8 @@ df.intake24_discretionary_fg <- df.intake24_discretionary_fg %>%
 
 
 # Multiple Source Method (MSM) ####
-# Author: Sven Knuppel, Sven.Knueppel@bfr.bund.de
-# Date: 2022-07-08
+# Code not publicly available. Users may contact Sven Knüppel, Sven.Knueppel@bfr.bund.de for more information. 
+# Usual dietary intake can be estimated via the web platform at: https://msm.dife.de/
 
 # Create reporting groups 
 df.intake24_recall$Reportinggroup[df.intake24_recall$age_sex_cat == "Female, 2-4y"] = 1 
@@ -1002,69 +1002,7 @@ df.msm <- as.data.frame(df.msm)
 
 ## Run MSM functions on nutrients and food groups ####
 
-# read in MSM functions 
-
-source("Code/Original MSM files/msm_boxcox_macro.R")
-source("Code/Original MSM files/msm_call.R")
-source("Code/Original MSM files/msm_helper.R") #temp directory in this script should be updated
-source("Code/Original MSM files/msm_module_1.R")
-source("Code/Original MSM files/msm_module_2.R")
-source("Code/Original MSM files/msm_module_3.R")
-source("Code/Original MSM files/msm_msm.R")
-
-# only include food groups reported by >15%
-list.variables = list("Day_Energykcal", "Day_Carbohydrateg", "Day_FreeSugarsg", "Day_Fatg", "Day_SatFatg", 
-                      "Day_TransFatg", "Day_Proteing", "Day_AOACFibreg", "Day_VitaminAug", "Day_Riboflavinmg", 
-                      "Day_Folateug", "Day_VitaminDug", "Day_VitaminB12ug", "Day_VitaminCmg", "Day_Ironmg", 
-                      "Day_Calciummg","Day_Sodiummg", "Day_Magnesiummg", "Day_Potassiummg", "Day_Iodineug", 
-                      "Day_Seleniumug", "Day_Zincmg","Day_RRPMg", "Day_FV_Beansg", "Day_FV_FruitJuiceg", 
-                      "Day_FV_Smoothieg", "Day_FV_DriedFruitg", "Day_FV_FreshFruitg", "Day_FV_Vegg","Day_ndnsg_1",
-                      "Day_ndnsg_2","Day_ndnsg_3","Day_ndnsg_5","Day_ndnsg_6","Day_ndnsg_7","Day_ndnsg_8",
-                      "Day_ndnsg_9","Day_ndnsg_10","Day_ndnsg_11","Day_ndnsg_13","Day_ndnsg_14","Day_ndnsg_15",
-                      "Day_ndnsg_16","Day_ndnsg_17","Day_ndnsg_21","Day_ndnsg_23","Day_ndnsg_26","Day_ndnsg_27",
-                      "Day_ndnsg_30","Day_ndnsg_31","Day_ndnsg_33","Day_ndnsg_36","Day_ndnsg_37","Day_ndnsg_38",
-                      "Day_ndnsg_39","Day_ndnsg_40","Day_ndnsg_41","Day_ndnsg_42","Day_ndnsg_43","Day_ndnsg_44",
-                      "Day_ndnsg_45","Day_ndnsg_50","Day_ndnsg_53","Day_ndnsg_57","Day_ndnsg_58","Day_ndnsg_62",
-                      "Day_sweetbiscuitsg","Day_cakespastriespuddingsg","Day_crispsg","Day_confectioneryg","Day_icecreamg",
-                      "Day_sugarydrinksg","Day_bfastcerealsg","Day_potatoesg","Day_pizzag","Day_dairydessertsg","Day_readymealsg")
-
-for( i in list.variables){
-  print(i)
-  
-  ##  run models for each nutrient/food group
-  MSM_call_by_group(
-    data_set = df.msm, 
-    bygroup = "Reportinggroup",
-    output = "MSM",
-    id = "UserID",
-    intake = i, 
-    model = 1,  # no covariates
-    P_cons = 1,  # assuming all individuals are habitual consumers
-  )
-  
-  MSM_output = rbind(MSM_Reportinggroup_1_MSM_,
-                     MSM_Reportinggroup_2_MSM_,
-                     MSM_Reportinggroup_3_MSM_,
-                     MSM_Reportinggroup_4_MSM_,
-                     MSM_Reportinggroup_5_MSM_,
-                     MSM_Reportinggroup_6_MSM_)
-  
-  # keep UserID and estimated usual intake
-  MSM_output_1 = cbind(MSM_output[,1],MSM_output[,15])
-  
-  # re-name variables
-  colnames(MSM_output_1) = c("UserID",paste0("UI_",i))
-  
-  # with each nutrient loop, merge usual intake variables
-  if(i=="Day_Energykcal")   # FIRST NAMED VARIABLE IN THE LIST
-  {
-    MSM_TABLEnut = MSM_output_1
-  }
-  else
-  {
-    MSM_TABLEnut = merge(MSM_TABLEnut,MSM_output_1,by="UserID")
-  }
-} 
+# *code not publicly available
 
 ## tidy the variable names
 df.intake24_ui = as.data.frame(MSM_TABLEnut)
@@ -1150,9 +1088,6 @@ df.intake24_participant <- df.intake24_participant %>%
   relocate(UI_TransFatKcal, UI_TransFat_PropFoodEnergy, .after = UI_TransFatg) %>%
   relocate(UI_Proteinkcal, UI_Protein_PropFoodEnergy, .after = UI_Proteing) %>%
   relocate(UI_Saltg, .after = UI_Sodiummg)
-
-#remove dataframes no longer needed
-rm(df.msm, list.variables, MSM_output, MSM_output_1, MSM_Reportinggroup_1_MSM_, MSM_Reportinggroup_2_MSM_, MSM_Reportinggroup_3_MSM_, MSM_Reportinggroup_4_MSM_, MSM_Reportinggroup_5_MSM_, MSM_Reportinggroup_6_MSM_, MSM_TABLEnut)
 
 
 

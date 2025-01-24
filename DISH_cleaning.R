@@ -49,7 +49,7 @@ rm(df.survey_full, df.intake24_full)
 
 ## Rename variables - survey ####
 
-#rename simd column to match previous data update files - needed for data update on 14.03.24
+#rename simd column to match previous data update files
 df.survey <- df.survey %>%
   rename(simd_quintile = simd)
 
@@ -62,10 +62,10 @@ df.survey <- df.survey %>%
 
 #rename variable columns
 df.survey <- df.survey %>%
-  rename(HouseholdID = household_id, # new name first then old name that we are changing
+  rename(HouseholdID = household_id, 
          simd_quintile = simd_quintile,  
          psu = la_code,
-         SurveyID = id_case ,
+         SurveyID = id_case,
          UserID = id_name, 
          StartDate = id_date, 
          StartTime = id_start, 
@@ -143,11 +143,11 @@ df.intake24_item <- df.intake24_item %>%
          -fs_stewed_fruit, -fs_vegetable_puree, -cis_mon_fa, -cis_n3_fa, -cis_n6_fa, -cholesterol, -retinol, 
          -total_carotene, -alpha_carotene, -beta_carotene, -beta_cryptoxanthin, -tryptophan_60, -niacin_equivalent, 
          -copper, -chloride, -manganese, -thiamin, -vitamin_e, -niacin, -vitamin_b6, -pantothenic_acid, -biotin, 
-         -phosphorus) #add back all nutrients before data archival
+         -phosphorus) 
 
 #rename variable columns
 df.intake24_item <- df.intake24_item %>%
-  rename(SurveyID = survey_id , # new name first then old name that we are changing
+  rename(SurveyID = survey_id, 
          UserID = user_id, 
          Device = device_information_user_agent,
          StartTime = start_time, 
@@ -322,14 +322,7 @@ df.survey <- df.survey %>%
 subset_Ethnicity_Other <- df.survey %>% 
   filter(!is.na(EthnicityOther))
 
-df.survey <- df.survey %>%
-  mutate(Ethnicity = case_when(
-    EthnicityOther=="Polish and Spanish" ~ "Mixed or multiple ethnic groups",
-    EthnicityOther=="Chinese" ~ "Asian or Asian British",
-    EthnicityOther=="White scottish" ~ "White",
-    EthnicityOther=="Half Scottish half Tenerifian" ~ "Mixed or multiple ethnic groups",
-    TRUE ~ Ethnicity
-  ))
+#code not included to prevent identifiability
 
 # remove dataframes that are no longer needed
 rm(subset_Ethnicity_Other)
@@ -511,7 +504,7 @@ df.intake24_item <- df.intake24_item %>%
 # re-categorise meals into meal categories. If mealname is not one of Breakfast, Lunch, Dinner, or Snack, rename based on meal time 
 df.intake24_item <- df.intake24_item %>%
   mutate(NewMealName = case_when(
-    grepl("snack", MealName, ignore.case = TRUE) ~ 'Snack', #first categorise any inputs with 'snack' in name to snack
+    grepl("snack", MealName, ignore.case = TRUE) ~ 'Snack', 
     grepl("evening meal", MealName, ignore.case = TRUE) ~ 'Dinner', 
     grepl("dietary supplements", MealName, ignore.case = TRUE) ~ 'Other',
     MealName %in% c('Breakfast', 'Lunch', 'Dinner', 'Snack') ~ MealName, #keep these categories the same

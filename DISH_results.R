@@ -1,6 +1,6 @@
 
 # DISH Results Tables
-# Date: 2024-10-11
+# Date created: 2024-10-11
 
 
 # Prepare R Environment ####
@@ -11,11 +11,6 @@ rm(list = ls())
 # Load required packages
 library(dplyr)
 library(tidyr)
-library(rio)
-library(ggplot2)
-library(ggthemes)
-library(grafify)
-library(lubridate)
 library(stringr)
 library(readxl)
 library(flextable)
@@ -24,9 +19,6 @@ library(writexl)
 library(forcats)
 library(purrr)
 library(survey)
-library(reshape2)
-library(RColorBrewer)
-library(pals)
 library(flexlsx)
 library(openxlsx2)
 library(janitor)
@@ -34,7 +26,7 @@ library(tibble)
 library(openxlsx)
 
 #set working directory
-#setwd("C:/Users/ljaacks/OneDrive - University of Edinburgh/Scottish Diets/_National Monitoring of Diet Scotland/3_DISH/Analysis/")
+#setwd("[@update directory path here]")
 
 
 
@@ -97,8 +89,22 @@ df.intake24_participant$AFreqOilyFish <- factor(df.intake24_participant$AFreqOil
 df.intake24_participant$AFreqToddlerMilk <- factor(df.intake24_participant$AFreqToddlerMilk, levels = c("Every day", "4-6 times a week", "2-3 times a week", "Once a week", "Less than once a week", "Never", "Not sure"))
 df.intake24_participant$SDG_cat_oilyfish <- factor(df.intake24_participant$SDG_cat_oilyfish, levels = c("More than once per week", "Once a week", "Less than once a week", "Never"))
 
+#recode simd output
+df.intake24_participant <- df.intake24_participant %>%
+  mutate(simd_quintile = case_when(
+    simd_quintile == 1 ~ "1st (Most Deprived)",
+    simd_quintile == 2 ~ "2nd",
+    simd_quintile == 3 ~ "3rd",
+    simd_quintile == 4 ~ "4th",
+    simd_quintile == 5 ~ "5th (Least Deprived)",
+    TRUE ~ as.character(simd_quintile)
+  ))
+
+
 df.intake24_item$age_cat <- factor(df.intake24_item$age_cat, levels = c("2-4y", "5-10y", "11-15y"))
 df.intake24_item$age_sex_cat <- factor(df.intake24_item$age_sex_cat, levels = c("Female, 2-4y", "Female, 5-10y", "Female, 11-15y", "Male, 2-4y", "Male, 5-10y", "Male, 11-15y"))
+
+
 
 df.intake24_recall$Month <- factor(df.intake24_recall$Month, levels = c("January", "February", "March", "April", "May", "June", "July", "August"))
 
@@ -125,7 +131,7 @@ svy.df.intake24_participant_fm <- svydesign(id = ~psu, weights = ~sampleweight_f
 
 # Siblings
 df.survey %>%
-  filter(grepl("^3", UserID)) %>% #filter UserIDs starting with 3, ^ indicates 'starts with'
+  filter(grepl("^3", UserID)) %>% 
   summarise(count = n_distinct(UserID)) 
 
 # SIMD
@@ -186,7 +192,7 @@ save_as_docx("Demographics" = table.demo, "By Sex" = table.sex, path="Output/Tab
 
 
 
-# Scottish Dietary Goals - Chpt 4 ####
+# Scottish Dietary Goals ####
 
 ## Means ####
 
@@ -194,7 +200,7 @@ save_as_docx("Demographics" = table.demo, "By Sex" = table.sex, path="Output/Tab
 table.sdg.mean_annex <- tbl_svysummary(
   svy.df.intake24_participant, 
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
     UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
     UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
@@ -209,20 +215,11 @@ table.sdg.mean_annex <- tbl_svysummary(
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}", 
                    all_categorical() ~ "{p}%"),
-  digits = list(UI_Energykcal ~ c(0,0), 
-                UI_Fat_PropFoodEnergy ~ c(0,0),
-                UI_SatFat_PropFoodEnergy ~ c(0,0),
-                UI_TransFat_PropFoodEnergy ~ c(0,0),
-                UI_FreeSugars_PropFoodEnergy ~ c(0,0),
-                UI_Carbs_PropFoodEnergy ~ c(0,0),
-                UI_AOACFibreg ~ c(1,0),
-                UI_Saltg ~ c(1,0),
-                UI_FV_Portions_Total ~ c(1,0),
-                UI_FV_g_Total ~ c(0,0),
-                UI_RRPMg ~ c(0,0),
+  digits = list(
+                all_continuous() ~ c(1,1),
                 all_categorical() ~ c(0,0)),
   missing = "no",
-  include = c(UI_Energykcal, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
+  include = c(Avg_EnergyDensity, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
               UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>%
   as_flex_table()
@@ -239,56 +236,7 @@ table.sdg.mean.sex_annex <- tbl_svysummary(
   svy.df.intake24_participant_fm, 
   by = Sex,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
-    UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
-    UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
-    UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
-    UI_FreeSugars_PropFoodEnergy ~ "Free sugars, % of energy excluding alcohol",
-    UI_Carbs_PropFoodEnergy ~ "Carbohydrates, % of energy excluding alcohol",
-    UI_AOACFibreg ~ "Fibre, g/d",
-    UI_Saltg ~ "Salt, g/d",
-    UI_FV_Portions_Total ~ "Fruit and vegetables, portions/d",
-    UI_FV_g_Total ~ "Fruit and vegetables, g/d",
-    UI_RRPMg ~ "Red and red processed meat, g/d",
-    SDG_oilyfish ~ "Oily fish"),
-  type = all_continuous() ~ "continuous2",
-  statistic = list(all_continuous() ~ "{mean}
-                                       {median}
-                   {sd}
-                                       {p25}
-                                       {p75}", 
-                   all_categorical() ~ "{p}% ({n_unweighted})"),
-  digits = list(UI_Energykcal ~ c(0,0), 
-                UI_Fat_PropFoodEnergy ~ c(0,0),
-                UI_SatFat_PropFoodEnergy ~ c(0,0),
-                UI_TransFat_PropFoodEnergy ~ c(0,0),
-                UI_FreeSugars_PropFoodEnergy ~ c(0,0),
-                UI_Carbs_PropFoodEnergy ~ c(0,0),
-                UI_AOACFibreg ~ c(1,0),
-                UI_Saltg ~ c(1,0),
-                UI_FV_Portions_Total ~ c(1,0),
-                UI_FV_g_Total ~ c(0,0),
-                UI_RRPMg ~ c(0,0),
-                all_categorical() ~ c(0,0)),
-  missing = "no",
-  include = c(Sex, UI_Energykcal, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
-              UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
-  bold_labels() %>%
-  add_p(test = list(all_continuous() ~ "svy.wilcox.test",
-                    all_categorical() ~ "svy.chisq.test")) %>%
-  add_significance_stars()%>%
-  add_overall()%>%
-  as_flex_table()
-
-table.sdg.mean.sex_annex
-
-
-#by age
-table.sdg.mean.age_annex <- tbl_svysummary(
-  svy.df.intake24_participant,
-  by = age_cat,
-  label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
     UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
     UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
@@ -304,23 +252,56 @@ table.sdg.mean.age_annex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}% ({n_unweighted})"),
-  digits = list(UI_Energykcal ~ c(0,0), 
-                UI_Fat_PropFoodEnergy ~ c(0,0),
-                UI_SatFat_PropFoodEnergy ~ c(0,0),
-                UI_TransFat_PropFoodEnergy ~ c(0,0),
-                UI_FreeSugars_PropFoodEnergy ~ c(0,0),
-                UI_Carbs_PropFoodEnergy ~ c(0,0),
-                UI_AOACFibreg ~ c(1,0),
-                UI_Saltg ~ c(1,0),
-                UI_FV_Portions_Total ~ c(1,0),
-                UI_FV_g_Total ~ c(0,0),
-                UI_RRPMg ~ c(0,0),
-                all_categorical() ~ c(0,0)),
+                   all_categorical() ~ "{p}% ({n_unweighted})
+                                        {p.std.error}"),
+  digits = list(
+                all_continuous() ~ c(1,1)),
   missing = "no",
-  include = c(age_cat, UI_Energykcal, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
+  include = c(Sex, Avg_EnergyDensity, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
+              UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
+  bold_labels() %>%
+  add_p(test = list(all_continuous() ~ "svy.wilcox.test",
+                    all_categorical() ~ "svy.chisq.test")) %>%
+  add_significance_stars()%>%
+  add_overall()%>%
+  as_flex_table()
+
+
+
+
+#by age
+table.sdg.mean.age_annex <- tbl_svysummary(
+  svy.df.intake24_participant,
+  by = age_cat,
+  label = c(             
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
+    UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
+    UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
+    UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
+    UI_FreeSugars_PropFoodEnergy ~ "Free sugars, % of energy excluding alcohol",
+    UI_Carbs_PropFoodEnergy ~ "Carbohydrates, % of energy excluding alcohol",
+    UI_AOACFibreg ~ "Fibre, g/d",
+    UI_Saltg ~ "Salt, g/d",
+    UI_FV_Portions_Total ~ "Fruit and vegetables, portions/d",
+    UI_FV_g_Total ~ "Fruit and vegetables, g/d",
+    UI_RRPMg ~ "Red and red processed meat, g/d",
+    SDG_oilyfish ~ "Oily fish"),
+  type = all_continuous() ~ "continuous2",
+  statistic = list(all_continuous() ~ "{mean}
+                                       {median}
+                                       {sd}
+                                       {mean.std.error}
+                                       {p25}
+                                       {p75}", 
+                   all_categorical() ~ "{p}% ({n_unweighted})
+                                        {p.std.error}"),
+  digits = list(
+    all_continuous() ~ c(1,1)),
+  missing = "no",
+  include = c(age_cat, Avg_EnergyDensity, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
               UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
   add_p(test = list(all_continuous() ~ "svy.wilcox.test",
@@ -334,7 +315,7 @@ table.sdg.mean.age.sex_annex <- tbl_svysummary(
   svy.df.intake24_participant_fm, 
   by = age_sex_cat,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
     UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
     UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
@@ -350,23 +331,15 @@ table.sdg.mean.age.sex_annex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}% ({n_unweighted})"),
-  digits = list(UI_Energykcal ~ c(0,0), 
-                UI_Fat_PropFoodEnergy ~ c(0,0),
-                UI_SatFat_PropFoodEnergy ~ c(0,0),
-                UI_TransFat_PropFoodEnergy ~ c(0,0),
-                UI_FreeSugars_PropFoodEnergy ~ c(0,0),
-                UI_Carbs_PropFoodEnergy ~ c(0,0),
-                UI_AOACFibreg ~ c(1,0),
-                UI_Saltg ~ c(1,0),
-                UI_FV_Portions_Total ~ c(1,0),
-                UI_FV_g_Total ~ c(0,0),
-                UI_RRPMg ~ c(0,0),
-                all_categorical() ~ c(0,0)),
+                   all_categorical() ~ "{p}% ({n_unweighted})
+                                        {p.std.error}"),
+  digits = list(
+    all_continuous() ~ c(1,1)),
   missing = "no",
-  include = c(age_sex_cat, UI_Energykcal, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
+  include = c(age_sex_cat, Avg_EnergyDensity, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
               UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -379,7 +352,7 @@ table.sdg.mean.simd_annex <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
     UI_SatFat_PropFoodEnergy ~ "Saturated fat, % of energy excluding alcohol",
     UI_TransFat_PropFoodEnergy ~ "Trans fat, % of energy excluding alcohol",
@@ -395,23 +368,15 @@ table.sdg.mean.simd_annex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}% ({n_unweighted})"),
-  digits = list(UI_Energykcal ~ c(0,0), 
-                UI_Fat_PropFoodEnergy ~ c(0,0),
-                UI_SatFat_PropFoodEnergy ~ c(0,0),
-                UI_TransFat_PropFoodEnergy ~ c(0,0),
-                UI_FreeSugars_PropFoodEnergy ~ c(0,0),
-                UI_Carbs_PropFoodEnergy ~ c(0,0),
-                UI_AOACFibreg ~ c(1,0),
-                UI_Saltg ~ c(1,0),
-                UI_FV_Portions_Total ~ c(1,0),
-                UI_FV_g_Total ~ c(0,0),
-                UI_RRPMg ~ c(0,0),
-                all_categorical() ~ c(0,0)),
+                   all_categorical() ~ "{p}% ({n_unweighted})
+                                        {p.std.error}"),
+  digits = list(
+    all_continuous() ~ c(1,1)),
   missing = "no",
-  include = c(simd_quintile, UI_Energykcal, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
+  include = c(simd_quintile, Avg_EnergyDensity, UI_Fat_PropFoodEnergy, UI_SatFat_PropFoodEnergy, UI_TransFat_PropFoodEnergy, UI_FreeSugars_PropFoodEnergy, UI_Carbs_PropFoodEnergy, 
               UI_AOACFibreg, UI_Saltg, UI_FV_Portions_Total, UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
   add_p(test = list(all_continuous() ~ "svy.wilcox.test",
@@ -452,10 +417,10 @@ wb_save(wb, file = paste0("Output/Annexe_Tables_SDGs_", format(Sys.time(), "%d%m
 
 ## Tables - Main Text ####
 table.sdg.mean.sex <- tbl_svysummary(
-  svy.df.intake24_participant_fm, #updated with age_sex weights
+  svy.df.intake24_participant_fm, 
   by = Sex,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     SDG_Energy ~ "Energy density, % meeting goal",
     UI_Fatg ~ "Fat, g/day",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
@@ -480,7 +445,7 @@ table.sdg.mean.sex <- tbl_svysummary(
     UI_FV_g_Total ~ "Fruit and vegetables, g/day",
     UI_RRPMg ~ "Red and red processed meat, g/day",
     SDG_oilyfish ~ "Oily fish"),
-  statistic = list(UI_Energykcal ~ "{mean}", 
+  statistic = list(Avg_EnergyDensity ~ "{mean}", 
                    UI_Fatg ~ "{mean}", 
                    UI_Fat_PropFoodEnergy ~ "{mean}%",
                    UI_SatFatg ~ "{mean}", 
@@ -497,7 +462,7 @@ table.sdg.mean.sex <- tbl_svysummary(
                    UI_FV_g_Total ~ "{mean}",
                    UI_RRPMg ~ "{mean}",
                    all_categorical() ~ "{p}%"),
-  digits = list(UI_Energykcal ~ c(0,0), 
+  digits = list(Avg_EnergyDensity ~ c(0,0), 
                 UI_Fatg ~ c(0,0),
                 UI_Fat_PropFoodEnergy ~ c(0,0),
                 UI_SatFatg ~ c(0,0),
@@ -515,7 +480,7 @@ table.sdg.mean.sex <- tbl_svysummary(
                 UI_RRPMg ~ c(0,0),
                 all_categorical() ~ c(0,0)),
   missing = "no",
-  include = c(Sex, UI_Energykcal, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
+  include = c(Sex, Avg_EnergyDensity, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
               UI_FreeSugarsg, UI_FreeSugars_PropFoodEnergy, UI_SDG_FreeSugar, UI_Carbohydrateg, UI_Carbs_PropFoodEnergy, UI_SDG_Carbs, UI_AOACFibreg, UI_SDG_Fibre, UI_Saltg, UI_SDG_Salt, UI_FV_Portions_Total, 
               UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
@@ -527,7 +492,7 @@ table.sdg.mean.age <- tbl_svysummary(
   svy.df.intake24_participant, 
   by = age_cat,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     SDG_Energy ~ "Energy density, % meeting goal",
     UI_Fatg ~ "Fat, g/day",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
@@ -552,7 +517,7 @@ table.sdg.mean.age <- tbl_svysummary(
     UI_FV_g_Total ~ "Fruit and vegetables, g/day",
     UI_RRPMg ~ "Red and red processed meat, g/day",
     SDG_oilyfish ~ "Oily fish"),
-  statistic = list(UI_Energykcal ~ "{mean}", 
+  statistic = list(Avg_EnergyDensity ~ "{mean}", 
                    UI_Fatg ~ "{mean}", 
                    UI_Fat_PropFoodEnergy ~ "{mean}%",
                    UI_SatFatg ~ "{mean}", 
@@ -569,7 +534,7 @@ table.sdg.mean.age <- tbl_svysummary(
                    UI_FV_g_Total ~ "{mean}",
                    UI_RRPMg ~ "{mean}",
                    all_categorical() ~ "{p}%"),
-  digits = list(UI_Energykcal ~ c(0,0), 
+  digits = list(Avg_EnergyDensity ~ c(0,0), 
                 UI_Fatg ~ c(0,0),
                 UI_Fat_PropFoodEnergy ~ c(0,0),
                 UI_SatFatg ~ c(0,0),
@@ -587,7 +552,7 @@ table.sdg.mean.age <- tbl_svysummary(
                 UI_RRPMg ~ c(0,0),
                 all_categorical() ~ c(0,0)),
   missing = "no",
-  include = c(age_cat, UI_Energykcal, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
+  include = c(age_cat, Avg_EnergyDensity, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
               UI_FreeSugarsg, UI_FreeSugars_PropFoodEnergy, UI_SDG_FreeSugar, UI_Carbohydrateg, UI_Carbs_PropFoodEnergy, UI_SDG_Carbs, UI_AOACFibreg, UI_SDG_Fibre, UI_Saltg, UI_SDG_Salt, UI_FV_Portions_Total, 
               UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
@@ -598,7 +563,7 @@ table.sdg.mean.age.sex <- tbl_svysummary(
   svy.df.intake24_participant_fm, 
   by = age_sex_cat,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     SDG_Energy ~ "Energy density, % meeting goal",
     UI_Fatg ~ "Fat, g/day",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
@@ -623,7 +588,7 @@ table.sdg.mean.age.sex <- tbl_svysummary(
     UI_FV_g_Total ~ "Fruit and vegetables, g/day",
     UI_RRPMg ~ "Red and red processed meat, g/day",
     SDG_oilyfish ~ "Oily fish"),
-  statistic = list(UI_Energykcal ~ "{mean}", 
+  statistic = list(Avg_EnergyDensity ~ "{mean}", 
                    UI_Fatg ~ "{mean}", 
                    UI_Fat_PropFoodEnergy ~ "{mean}%",
                    UI_SatFatg ~ "{mean}", 
@@ -640,7 +605,7 @@ table.sdg.mean.age.sex <- tbl_svysummary(
                    UI_FV_g_Total ~ "{mean}",
                    UI_RRPMg ~ "{mean}",
                    all_categorical() ~ "{p}%"),
-  digits = list(UI_Energykcal ~ c(0,0), 
+  digits = list(Avg_EnergyDensity ~ c(0,0), 
                 UI_Fatg ~ c(0,0),
                 UI_Fat_PropFoodEnergy ~ c(0,0),
                 UI_SatFatg ~ c(0,0),
@@ -658,7 +623,7 @@ table.sdg.mean.age.sex <- tbl_svysummary(
                 UI_RRPMg ~ c(0,0),
                 all_categorical() ~ c(0,0)),
   missing = "no",
-  include = c(age_sex_cat, UI_Energykcal, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
+  include = c(age_sex_cat, Avg_EnergyDensity, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
               UI_FreeSugarsg, UI_FreeSugars_PropFoodEnergy, UI_SDG_FreeSugar, UI_Carbohydrateg, UI_Carbs_PropFoodEnergy, UI_SDG_Carbs, UI_AOACFibreg, UI_SDG_Fibre, UI_Saltg, UI_SDG_Salt, UI_FV_Portions_Total, 
               UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
@@ -669,7 +634,7 @@ table.sdg.mean.simd <- tbl_svysummary(
   svy.df.intake24_participant, 
   by = simd_quintile,
   label = c(             
-    UI_Energykcal ~ "Energy density, kcal/100g",
+    Avg_EnergyDensity ~ "Energy density, kcal/100g",
     SDG_Energy ~ "Energy density, % meeting goal",
     UI_Fatg ~ "Fat, g/day",
     UI_Fat_PropFoodEnergy ~ "Fat, % of energy excluding alcohol",
@@ -694,7 +659,7 @@ table.sdg.mean.simd <- tbl_svysummary(
     UI_FV_g_Total ~ "Fruit and vegetables, g/day",
     UI_RRPMg ~ "Red and red processed meat, g/day",
     SDG_oilyfish ~ "Oily fish"),
-  statistic = list(UI_Energykcal ~ "{mean}", 
+  statistic = list(Avg_EnergyDensity ~ "{mean}", 
                    UI_Fatg ~ "{mean}", 
                    UI_Fat_PropFoodEnergy ~ "{mean}%",
                    UI_SatFatg ~ "{mean}", 
@@ -711,7 +676,7 @@ table.sdg.mean.simd <- tbl_svysummary(
                    UI_FV_g_Total ~ "{mean}",
                    UI_RRPMg ~ "{mean}",
                    all_categorical() ~ "{p}%"),
-  digits = list(UI_Energykcal ~ c(0,0), 
+  digits = list(Avg_EnergyDensity ~ c(0,0), 
                 UI_Fatg ~ c(0,0),
                 UI_Fat_PropFoodEnergy ~ c(0,0),
                 UI_SatFatg ~ c(0,0),
@@ -729,7 +694,7 @@ table.sdg.mean.simd <- tbl_svysummary(
                 UI_RRPMg ~ c(0,0),
                 all_categorical() ~ c(0,0)),
   missing = "no",
-  include = c(simd_quintile, UI_Energykcal, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
+  include = c(simd_quintile, Avg_EnergyDensity, SDG_Energy, UI_Fatg, UI_Fat_PropFoodEnergy, UI_SDG_Fat, UI_SatFatg, UI_SatFat_PropFoodEnergy, UI_SDG_SatFat, UI_TransFatg, UI_TransFat_PropFoodEnergy, UI_SDG_TransFat, 
               UI_FreeSugarsg, UI_FreeSugars_PropFoodEnergy, UI_SDG_FreeSugar, UI_Carbohydrateg, UI_Carbs_PropFoodEnergy, UI_SDG_Carbs, UI_AOACFibreg, UI_SDG_Fibre, UI_Saltg, UI_SDG_Salt, UI_FV_Portions_Total, 
               UI_FV_g_Total, UI_RRPMg, SDG_oilyfish)) %>%
   bold_labels() %>% 
@@ -1249,7 +1214,8 @@ table.veg_sex <- Veg_combo %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = Sex,
               label = Veg_description ~ ""
   ) %>%
@@ -1264,7 +1230,8 @@ table.veg_age <- Veg_combo %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = age_cat,
               label = Veg_description ~ ""
   ) %>%
@@ -1279,7 +1246,8 @@ table.veg_age_sex <- Veg_combo %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = age_sex_cat,
               label = Veg_description ~ ""
   ) %>%
@@ -1294,7 +1262,8 @@ table.veg_simd <- Veg_combo %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = simd_quintile,
               label = Veg_description ~ ""
   ) %>%
@@ -1309,7 +1278,7 @@ tables <- list(
   veg.age.sex = table.veg_age_sex,
   veg.simd = table.veg_simd
 )
-
+table.veg_simd
 
 # Process each table - not running full function as don't need to select prefixes here
 processed_tables <- lapply(tables, function(table) {
@@ -1381,7 +1350,8 @@ table.fruit_sex <- Fruit_sub %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = Sex,
               label = Fruit_description ~ ""
   ) %>%
@@ -1397,7 +1367,8 @@ table.fruit_age <- Fruit_sub %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = age_cat,
               label = Fruit_description ~ ""
   ) %>%
@@ -1411,7 +1382,8 @@ table.fruit_age_sex <- Fruit_sub %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = age_sex_cat,
               label = Fruit_description ~ ""
   ) %>%
@@ -1425,7 +1397,8 @@ table.fruit_simd <- Fruit_sub %>%
               digits = list(all_categorical() ~ c(1,0)),
               type = list(all_continuous() ~ "continuous2"),
               statistic = list(all_continuous() ~ c("{mean} ({sd})",
-                                                    "{min}, {max}")),
+                                                    "{min}, {max}"),
+                               all_categorical() ~ "{p}% ({n})"),
               by = simd_quintile,
               label = Fruit_description ~ ""
   ) %>%
@@ -1473,7 +1446,7 @@ write_xlsx(Fruit_main_text_export, file = paste0("Output/Table_Fruit_Freq_", for
 
 
 
-# Energy and Nutrient Intake -Chpt 5 ####
+# Energy and Nutrient Intake ####
 
 ## Tables - Annexe ####
 
@@ -1482,16 +1455,17 @@ write_xlsx(Fruit_main_text_export, file = paste0("Output/Table_Fruit_Freq_", for
 age.energy <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
-  label = UI_Energykcal ~ "Total energy (kcal/day)",
+  label = UI_Energykcal ~ "Total energy, kcal/day",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_Energykcal ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_Energykcal) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1502,16 +1476,17 @@ age.energy <- tbl_svysummary(
 sex.energy <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
-  label = UI_Energykcal ~ "Total energy (kcal/day)",
+  label = UI_Energykcal ~ "Total energy, kcal/day",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_Energykcal ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),  all_categorical() ~ c(0,0)),
   include = UI_Energykcal) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -1523,16 +1498,17 @@ sex.energy <- tbl_svysummary(
 age.sex.energy <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
-  label = UI_Energykcal ~ "Total energy (kcal/day)",
+  label = UI_Energykcal ~ "Total energy, kcal/day",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_Energykcal ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_Energykcal) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1543,16 +1519,17 @@ age.sex.energy <- tbl_svysummary(
 simd.energy <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
-  label = UI_Energykcal ~ "Total energy (kcal/day)",
+  label = UI_Energykcal ~ "Total energy, kcal/day",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_Energykcal ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_Energykcal) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1564,16 +1541,17 @@ simd.energy <- tbl_svysummary(
 age.energy.ear <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
-  label = UI_EAR_prct_Energy ~ "Energy (kcal) as % of EAR",
+  label = UI_EAR_prct_Energy ~ "Energy, as % of EAR",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_EAR_prct_Energy ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_EAR_prct_Energy) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1584,16 +1562,17 @@ age.energy.ear <- tbl_svysummary(
 sex.energy.ear <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
-  label = UI_EAR_prct_Energy ~ "Energy (kcal) as % of EAR",
+  label = UI_EAR_prct_Energy ~ "Energy, as % of EAR",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_EAR_prct_Energy ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_EAR_prct_Energy) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -1605,16 +1584,17 @@ sex.energy.ear <- tbl_svysummary(
 age.sex.energy.ear <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
-  label = UI_EAR_prct_Energy ~ "Energy (kcal) as % of EAR",
+  label = UI_EAR_prct_Energy ~ "Energy, as % of EAR",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_EAR_prct_Energy ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_EAR_prct_Energy) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1625,16 +1605,17 @@ age.sex.energy.ear <- tbl_svysummary(
 simd.energy.ear <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
-  label = UI_EAR_prct_Energy ~ "Energy (kcal) as % of EAR",
+  label = UI_EAR_prct_Energy ~ "Energy, as % of EAR",
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
                    all_categorical() ~ "{p}%"),
   missing = "no",
-  digits = list(UI_EAR_prct_Energy ~ c(0,0), all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = UI_EAR_prct_Energy) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1650,21 +1631,20 @@ age.protein <-tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Proteing ~ "Protein (g/day)",
-    UI_RNI_prct_Protein ~ "Protein, mean as % RNI",
-    UI_RNI_Protein ~ "Protein, % below RNI"),
+    UI_Proteing ~ "Protein, g/day",
+    UI_RNI_prct_Protein ~ "Protein, as % RNI",
+    UI_RNI_Protein ~ "Protein, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Proteing ~ c(0,0),
-    UI_RNI_prct_Protein ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(1,3)),
   include = c(UI_Proteing, UI_RNI_prct_Protein, UI_RNI_Protein)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1676,21 +1656,20 @@ sex.protein <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Proteing ~ "Protein (g/day)",
-    UI_RNI_prct_Protein ~ "Protein, mean as % RNI",
-    UI_RNI_Protein ~ "Protein, % below RNI"),
+    UI_Proteing ~ "Protein, g/day",
+    UI_RNI_prct_Protein ~ "Protein, as % RNI",
+    UI_RNI_Protein ~ "Protein, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Proteing ~ c(0,0),
-    UI_RNI_prct_Protein ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(1,3)),
   include = c(UI_Proteing, UI_RNI_prct_Protein, UI_RNI_Protein)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -1703,21 +1682,20 @@ age.sex.protein <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Proteing ~ "Protein (g/day)",
-    UI_RNI_prct_Protein ~ "Protein, mean as % RNI",
-    UI_RNI_Protein ~ "Protein, % below RNI"),
+    UI_Proteing ~ "Protein, g/day",
+    UI_RNI_prct_Protein ~ "Protein, as % RNI",
+    UI_RNI_Protein ~ "Protein, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Proteing ~ c(0,0),
-    UI_RNI_prct_Protein ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(1,3)),
   include = c(UI_Proteing, UI_RNI_prct_Protein, UI_RNI_Protein)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1729,22 +1707,20 @@ simd.protein <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Proteing ~ "Protein (g/day)",
-    UI_RNI_prct_Protein ~ "Protein, mean as % RNI",
-    UI_RNI_Protein ~ "Protein, % below RNI"),
+    UI_Proteing ~ "Protein, g/day",
+    UI_RNI_prct_Protein ~ "Protein, as % RNI",
+    UI_RNI_Protein ~ "Protein, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Proteing ~ c(0,0),
-    UI_RNI_prct_Protein ~ c(0,0),
-    
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(1,3)),
   include = c(UI_Proteing, UI_RNI_prct_Protein, UI_RNI_Protein)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1758,22 +1734,21 @@ age.VitA <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_VitaminAug ~ "Vitamin A (µg/day)",
-    UI_RNI_prct_VitaminA ~ "Vitamin A, mean as % RNI",
-    UI_RNI_VitaminA ~ "Vitamin A, % below RNI",
-    UI_LRNI_VitaminA ~ "Vitamin A, % below LRNI"),
+    UI_VitaminAug ~ "Vitamin A, µg/day",
+    UI_RNI_prct_VitaminA ~ "Vitamin A, as % RNI",
+    UI_RNI_VitaminA ~ "Vitamin A, % above/below RNI",
+    UI_LRNI_VitaminA ~ "Vitamin A, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminAug ~ c(0,0),
-    UI_RNI_prct_VitaminA ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(1,3)),
   include = c(UI_VitaminAug,UI_RNI_prct_VitaminA, UI_RNI_VitaminA, UI_LRNI_VitaminA)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1785,22 +1760,22 @@ sex.VitA <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_VitaminAug ~ "Vitamin A (µg/day)",
-    UI_RNI_prct_VitaminA ~ "Vitamin A, mean as % RNI",
-    UI_RNI_VitaminA ~ "Vitamin A, % below RNI",
-    UI_LRNI_VitaminA ~ "Vitamin A, % below LRNI"),
+    UI_VitaminAug ~ "Vitamin A, µg/day",
+    UI_RNI_prct_VitaminA ~ "Vitamin A, as % RNI",
+    UI_RNI_VitaminA ~ "Vitamin A, % above/below RNI",
+    UI_LRNI_VitaminA ~ "Vitamin A, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminAug ~ c(0,0),
-    UI_RNI_prct_VitaminA ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminAug,UI_RNI_prct_VitaminA, UI_RNI_VitaminA, UI_LRNI_VitaminA)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -1814,22 +1789,22 @@ age.sex.VitA <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_VitaminAug ~ "Vitamin A (µg/day)",
-    UI_RNI_prct_VitaminA ~ "Vitamin A, mean as % RNI",
-    UI_RNI_VitaminA ~ "Vitamin A, % below RNI",
-    UI_LRNI_VitaminA ~ "Vitamin A, % below LRNI"),
+    UI_VitaminAug ~ "Vitamin A, µg/day",
+    UI_RNI_prct_VitaminA ~ "Vitamin A, as % RNI",
+    UI_RNI_VitaminA ~ "Vitamin A, % above/below RNI",
+    UI_LRNI_VitaminA ~ "Vitamin A, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminAug ~ c(0,0),
-    UI_RNI_prct_VitaminA ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminAug,UI_RNI_prct_VitaminA, UI_RNI_VitaminA, UI_LRNI_VitaminA)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1842,22 +1817,22 @@ simd.VitA <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_VitaminAug ~ "Vitamin A (µg/day)",
-    UI_RNI_prct_VitaminA ~ "Vitamin A, mean as % RNI",
-    UI_RNI_VitaminA ~ "Vitamin A, % below RNI",
-    UI_LRNI_VitaminA ~ "Vitamin A, % below LRNI"),
+    UI_VitaminAug ~ "Vitamin A, µg/day",
+    UI_RNI_prct_VitaminA ~ "Vitamin A, as % RNI",
+    UI_RNI_VitaminA ~ "Vitamin A, % above/below RNI",
+    UI_LRNI_VitaminA ~ "Vitamin A, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminAug ~ c(0,0),
-    UI_RNI_prct_VitaminA ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminAug,UI_RNI_prct_VitaminA, UI_RNI_VitaminA, UI_LRNI_VitaminA)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1871,22 +1846,22 @@ age.riboflavin <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Riboflavinmg ~ "Riboflavin (mg/day)",
-    UI_RNI_prct_Riboflavin ~ "Riboflavin, mean as % RNI",
-    UI_RNI_Riboflavin ~ "Riboflavin, % below RNI",
-    UI_LRNI_Riboflavin ~ "Riboflavin, % below LRNI"),
+    UI_Riboflavinmg ~ "Riboflavin, mg/day",
+    UI_RNI_prct_Riboflavin ~ "Riboflavin, as % RNI",
+    UI_RNI_Riboflavin ~ "Riboflavin, % above/below RNI",
+    UI_LRNI_Riboflavin ~ "Riboflavin, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Riboflavinmg ~ c(1,0),
-    UI_RNI_prct_Riboflavin ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Riboflavinmg,UI_RNI_prct_Riboflavin, UI_RNI_Riboflavin, UI_LRNI_Riboflavin)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1898,22 +1873,22 @@ sex.riboflavin <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Riboflavinmg ~ "Riboflavin (mg/day)",
-    UI_RNI_prct_Riboflavin ~ "Riboflavin, mean as % RNI",
-    UI_RNI_Riboflavin ~ "Riboflavin, % below RNI",
-    UI_LRNI_Riboflavin ~ "Riboflavin, % below LRNI"),
+    UI_Riboflavinmg ~ "Riboflavin, mg/day",
+    UI_RNI_prct_Riboflavin ~ "Riboflavin, as % RNI",
+    UI_RNI_Riboflavin ~ "Riboflavin, % above/below RNI",
+    UI_LRNI_Riboflavin ~ "Riboflavin, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Riboflavinmg ~ c(1,0),
-    UI_RNI_prct_Riboflavin ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Riboflavinmg,UI_RNI_prct_Riboflavin, UI_RNI_Riboflavin, UI_LRNI_Riboflavin)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -1926,22 +1901,22 @@ age.sex.riboflavin <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Riboflavinmg ~ "Riboflavin (mg/day)",
-    UI_RNI_prct_Riboflavin ~ "Riboflavin, mean as % RNI",
-    UI_RNI_Riboflavin ~ "Riboflavin, % below RNI",
-    UI_LRNI_Riboflavin ~ "Riboflavin, % below LRNI"),
+    UI_Riboflavinmg ~ "Riboflavin, mg/day",
+    UI_RNI_prct_Riboflavin ~ "Riboflavin, as % RNI",
+    UI_RNI_Riboflavin ~ "Riboflavin, % above/below RNI",
+    UI_LRNI_Riboflavin ~ "Riboflavin, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Riboflavinmg ~ c(1,0),
-    UI_RNI_prct_Riboflavin ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Riboflavinmg,UI_RNI_prct_Riboflavin, UI_RNI_Riboflavin, UI_LRNI_Riboflavin)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1953,22 +1928,22 @@ simd.riboflavin <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Riboflavinmg ~ "Riboflavin (mg/day)",
-    UI_RNI_prct_Riboflavin ~ "Riboflavin, mean as % RNI",
-    UI_RNI_Riboflavin ~ "Riboflavin, % below RNI",
-    UI_LRNI_Riboflavin ~ "Riboflavin, % below LRNI"),
+    UI_Riboflavinmg ~ "Riboflavin, mg/day",
+    UI_RNI_prct_Riboflavin ~ "Riboflavin, as % RNI",
+    UI_RNI_Riboflavin ~ "Riboflavin, % above/below RNI",
+    UI_LRNI_Riboflavin ~ "Riboflavin, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Riboflavinmg ~ c(1,0),
-    UI_RNI_prct_Riboflavin ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Riboflavinmg,UI_RNI_prct_Riboflavin, UI_RNI_Riboflavin, UI_LRNI_Riboflavin)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -1981,22 +1956,22 @@ age.folate <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Folateug ~ "Folate (µg/day)",
-    UI_RNI_prct_Folate ~ "Folate, mean as % RNI",
-    UI_RNI_Folate ~ "Folate, % below RNI",
-    UI_LRNI_Folate ~ "Folate, % below LRNI"),
+    UI_Folateug ~ "Folate, µg/day",
+    UI_RNI_prct_Folate ~ "Folate, as % RNI",
+    UI_RNI_Folate ~ "Folate, % above/below RNI",
+    UI_LRNI_Folate ~ "Folate, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Folateug ~ c(0,0),
-    UI_RNI_prct_Folate ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Folateug, UI_RNI_prct_Folate, UI_RNI_Folate, UI_LRNI_Folate)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2008,22 +1983,22 @@ sex.folate <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Folateug ~ "Folate (µg/day)",
-    UI_RNI_prct_Folate ~ "Folate, mean as % RNI",
-    UI_RNI_Folate ~ "Folate, % below RNI",
-    UI_LRNI_Folate ~ "Folate, % below LRNI"),
+    UI_Folateug ~ "Folate, µg/day",
+    UI_RNI_prct_Folate ~ "Folate, as % RNI",
+    UI_RNI_Folate ~ "Folate, % above/below RNI",
+    UI_LRNI_Folate ~ "Folate, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Folateug ~ c(0,0),
-    UI_RNI_prct_Folate ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Folateug, UI_RNI_prct_Folate, UI_RNI_Folate, UI_LRNI_Folate)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2036,22 +2011,22 @@ age.sex.folate <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Folateug ~ "Folate (µg/day)",
-    UI_RNI_prct_Folate ~ "Folate, mean as % RNI",
-    UI_RNI_Folate ~ "Folate, % below RNI",
-    UI_LRNI_Folate ~ "Folate, % below LRNI"),
+    UI_Folateug ~ "Folate, µg/day",
+    UI_RNI_prct_Folate ~ "Folate, as % RNI",
+    UI_RNI_Folate ~ "Folate, % above/below RNI",
+    UI_LRNI_Folate ~ "Folate, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Folateug ~ c(0,0),
-    UI_RNI_prct_Folate ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Folateug, UI_RNI_prct_Folate, UI_RNI_Folate, UI_LRNI_Folate)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2063,22 +2038,22 @@ simd.folate <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Folateug ~ "Folate (µg/day)",
-    UI_RNI_prct_Folate ~ "Folate, mean as % RNI",
-    UI_RNI_Folate ~ "Folate, % below RNI",
-    UI_LRNI_Folate ~ "Folate, % below LRNI"),
+    UI_Folateug ~ "Folate, µg/day",
+    UI_RNI_prct_Folate ~ "Folate, as % RNI",
+    UI_RNI_Folate ~ "Folate, % above/below RNI",
+    UI_LRNI_Folate ~ "Folate, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Folateug ~ c(0,0),
-    UI_RNI_prct_Folate ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Folateug, UI_RNI_prct_Folate, UI_RNI_Folate, UI_LRNI_Folate)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2092,21 +2067,21 @@ age.VitD <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_VitaminDug ~ "Vitamin D (µg/day)",
-    UI_RNI_prct_VitaminD ~ "Vitamin D, mean as % RNI",
-    UI_RNI_VitaminD ~ "Vitamin D, % below RNI"),
+    UI_VitaminDug ~ "Vitamin D, µg/day",
+    UI_RNI_prct_VitaminD ~ "Vitamin D, as % RNI",
+    UI_RNI_VitaminD ~ "Vitamin D, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminDug ~ c(0,0),
-    UI_RNI_prct_VitaminD ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminDug, UI_RNI_prct_VitaminD,UI_RNI_VitaminD)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2118,21 +2093,21 @@ sex.VitD <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_VitaminDug ~ "Vitamin D (µg/day)",
-    UI_RNI_prct_VitaminD ~ "Vitamin D, mean as % RNI",
-    UI_RNI_VitaminD ~ "Vitamin D, % below RNI"),
+    UI_VitaminDug ~ "Vitamin D, µg/day",
+    UI_RNI_prct_VitaminD ~ "Vitamin D, as % RNI",
+    UI_RNI_VitaminD ~ "Vitamin D, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminDug ~ c(0,0),
-    UI_RNI_prct_VitaminD ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminDug, UI_RNI_prct_VitaminD,UI_RNI_VitaminD)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2145,21 +2120,21 @@ age.sex.VitD <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_VitaminDug ~ "Vitamin D (µg/day)",
-    UI_RNI_prct_VitaminD ~ "Vitamin D, mean as % RNI",
-    UI_RNI_VitaminD ~ "Vitamin D, % below RNI"),
+    UI_VitaminDug ~ "Vitamin D, µg/day",
+    UI_RNI_prct_VitaminD ~ "Vitamin D, as % RNI",
+    UI_RNI_VitaminD ~ "Vitamin D, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminDug ~ c(0,0),
-    UI_RNI_prct_VitaminD ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminDug, UI_RNI_prct_VitaminD,UI_RNI_VitaminD)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2171,21 +2146,21 @@ simd.VitD <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_VitaminDug ~ "Vitamin D (µg/day)",
-    UI_RNI_prct_VitaminD ~ "Vitamin D, mean as % RNI",
-    UI_RNI_VitaminD ~ "Vitamin D, % below RNI"),
+    UI_VitaminDug ~ "Vitamin D, µg/day",
+    UI_RNI_prct_VitaminD ~ "Vitamin D, as % RNI",
+    UI_RNI_VitaminD ~ "Vitamin D, % above/below RNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminDug ~ c(0,0),
-    UI_RNI_prct_VitaminD ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminDug, UI_RNI_prct_VitaminD,UI_RNI_VitaminD)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2199,22 +2174,22 @@ age.VitB12 <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_VitaminB12ug ~ "Vitamin B12 (µg/day)",
-    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, mean as % RNI",
-    UI_RNI_VitaminB12 ~ "Vitamin B12, % below RNI",
-    UI_LRNI_VitaminB12 ~ "Vitamin B12, % below LRNI"),
+    UI_VitaminB12ug ~ "Vitamin B12, µg/day",
+    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, as % RNI",
+    UI_RNI_VitaminB12 ~ "Vitamin B12, % above/below RNI",
+    UI_LRNI_VitaminB12 ~ "Vitamin B12, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminB12ug ~ c(1,0),
-    UI_RNI_prct_VitaminB12 ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminB12ug, UI_RNI_prct_VitaminB12, UI_RNI_VitaminB12, UI_LRNI_VitaminB12)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2226,22 +2201,22 @@ sex.VitB12 <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_VitaminB12ug ~ "Vitamin B12 (µg/day)",
-    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, mean as % RNI",
-    UI_RNI_VitaminB12 ~ "Vitamin B12, % below RNI",
-    UI_LRNI_VitaminB12 ~ "Vitamin B12, % below LRNI"),
+    UI_VitaminB12ug ~ "Vitamin B12, µg/day",
+    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, as % RNI",
+    UI_RNI_VitaminB12 ~ "Vitamin B12, % above/below RNI",
+    UI_LRNI_VitaminB12 ~ "Vitamin B12, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminB12ug ~ c(1,0),
-    UI_RNI_prct_VitaminB12 ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminB12ug, UI_RNI_prct_VitaminB12, UI_RNI_VitaminB12, UI_LRNI_VitaminB12)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2254,22 +2229,22 @@ age.sex.VitB12 <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_VitaminB12ug ~ "Vitamin B12 (µg/day)",
-    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, mean as % RNI",
-    UI_RNI_VitaminB12 ~ "Vitamin B12, % below RNI",
-    UI_LRNI_VitaminB12 ~ "Vitamin B12, % below LRNI"),
+    UI_VitaminB12ug ~ "Vitamin B12, µg/day",
+    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, as % RNI",
+    UI_RNI_VitaminB12 ~ "Vitamin B12, % above/below RNI",
+    UI_LRNI_VitaminB12 ~ "Vitamin B12, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminB12ug ~ c(1,0),
-    UI_RNI_prct_VitaminB12 ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminB12ug, UI_RNI_prct_VitaminB12, UI_RNI_VitaminB12, UI_LRNI_VitaminB12)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2281,22 +2256,22 @@ simd.VitB12 <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_VitaminB12ug ~ "Vitamin B12 (µg/day)",
-    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, mean as % RNI",
-    UI_RNI_VitaminB12 ~ "Vitamin B12, % below RNI",
-    UI_LRNI_VitaminB12 ~ "Vitamin B12, % below LRNI"),
+    UI_VitaminB12ug ~ "Vitamin B12, µg/day",
+    UI_RNI_prct_VitaminB12 ~ "Vitamin B12, as % RNI",
+    UI_RNI_VitaminB12 ~ "Vitamin B12, % above/below RNI",
+    UI_LRNI_VitaminB12 ~ "Vitamin B12, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminB12ug ~ c(1,0),
-    UI_RNI_prct_VitaminB12 ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminB12ug, UI_RNI_prct_VitaminB12, UI_RNI_VitaminB12, UI_LRNI_VitaminB12)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2310,22 +2285,22 @@ age.VitC <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_VitaminCmg ~ "Vitamin C (mg/day)",
-    UI_RNI_prct_VitaminC ~ "Vitamin C, mean as % RNI",
-    UI_RNI_VitaminC ~ "Vitamin C, % below RNI",
-    UI_LRNI_VitaminC ~ "Vitamin C, % below LRNI"),
+    UI_VitaminCmg ~ "Vitamin C, mg/day",
+    UI_RNI_prct_VitaminC ~ "Vitamin C, as % RNI",
+    UI_RNI_VitaminC ~ "Vitamin C, % above/below RNI",
+    UI_LRNI_VitaminC ~ "Vitamin C, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminCmg ~ c(0,0),
-    UI_RNI_prct_VitaminC ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminCmg, UI_RNI_prct_VitaminC, UI_RNI_VitaminC, UI_LRNI_VitaminC)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2337,22 +2312,22 @@ sex.VitC <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_VitaminCmg ~ "Vitamin C (mg/day)",
-    UI_RNI_prct_VitaminC ~ "Vitamin C, mean as % RNI",
-    UI_RNI_VitaminC ~ "Vitamin C, % below RNI",
-    UI_LRNI_VitaminC ~ "Vitamin C, % below LRNI"),
+    UI_VitaminCmg ~ "Vitamin C, mg/day",
+    UI_RNI_prct_VitaminC ~ "Vitamin C, as % RNI",
+    UI_RNI_VitaminC ~ "Vitamin C, % above/below RNI",
+    UI_LRNI_VitaminC ~ "Vitamin C, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminCmg ~ c(0,0),
-    UI_RNI_prct_VitaminC ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminCmg, UI_RNI_prct_VitaminC, UI_RNI_VitaminC, UI_LRNI_VitaminC)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2365,22 +2340,22 @@ age.sex.VitC <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_VitaminCmg ~ "Vitamin C (mg/day)",
-    UI_RNI_prct_VitaminC ~ "Vitamin C, mean as % RNI",
-    UI_RNI_VitaminC ~ "Vitamin C, % below RNI",
-    UI_LRNI_VitaminC ~ "Vitamin C, % below LRNI"),
+    UI_VitaminCmg ~ "Vitamin C, mg/day",
+    UI_RNI_prct_VitaminC ~ "Vitamin C, as % RNI",
+    UI_RNI_VitaminC ~ "Vitamin C, % above/below RNI",
+    UI_LRNI_VitaminC ~ "Vitamin C, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminCmg ~ c(0,0),
-    UI_RNI_prct_VitaminC ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminCmg, UI_RNI_prct_VitaminC, UI_RNI_VitaminC, UI_LRNI_VitaminC)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2392,22 +2367,22 @@ simd.VitC <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_VitaminCmg ~ "Vitamin C (mg/day)",
-    UI_RNI_prct_VitaminC ~ "Vitamin C, mean as % RNI",
-    UI_RNI_VitaminC ~ "Vitamin C, % below RNI",
-    UI_LRNI_VitaminC ~ "Vitamin C, % below LRNI"),
+    UI_VitaminCmg ~ "Vitamin C, mg/day",
+    UI_RNI_prct_VitaminC ~ "Vitamin C, as % RNI",
+    UI_RNI_VitaminC ~ "Vitamin C, % above/below RNI",
+    UI_LRNI_VitaminC ~ "Vitamin C, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_VitaminCmg ~ c(0,0),
-    UI_RNI_prct_VitaminC ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_VitaminCmg, UI_RNI_prct_VitaminC, UI_RNI_VitaminC, UI_LRNI_VitaminC)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2421,22 +2396,22 @@ age.iron <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Ironmg ~ "Iron (mg/day)",
-    UI_RNI_prct_Iron ~ "Iron, mean as % RNI",
-    UI_RNI_Iron ~ "Iron, % below RNI",
-    UI_LRNI_Iron ~ "Iron, % below LRNI"),
+    UI_Ironmg ~ "Iron, mg/day",
+    UI_RNI_prct_Iron ~ "Iron, as % RNI",
+    UI_RNI_Iron ~ "Iron, % above/below RNI",
+    UI_LRNI_Iron ~ "Iron, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Ironmg ~ c(1,0),
-    UI_RNI_prct_Iron ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Ironmg, UI_RNI_prct_Iron, UI_RNI_Iron, UI_LRNI_Iron)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2448,22 +2423,22 @@ sex.iron <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Ironmg ~ "Iron (mg/day)",
-    UI_RNI_prct_Iron ~ "Iron, mean as % RNI",
-    UI_RNI_Iron ~ "Iron, % below RNI",
-    UI_LRNI_Iron ~ "Iron, % below LRNI"),
+    UI_Ironmg ~ "Iron, mg/day",
+    UI_RNI_prct_Iron ~ "Iron, as % RNI",
+    UI_RNI_Iron ~ "Iron, % above/below RNI",
+    UI_LRNI_Iron ~ "Iron, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Ironmg ~ c(1,0),
-    UI_RNI_prct_Iron ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Ironmg, UI_RNI_prct_Iron, UI_RNI_Iron, UI_LRNI_Iron)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2476,22 +2451,22 @@ age.sex.iron <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Ironmg ~ "Iron (mg/day)",
-    UI_RNI_prct_Iron ~ "Iron, mean as % RNI",
-    UI_RNI_Iron ~ "Iron, % below RNI",
-    UI_LRNI_Iron ~ "Iron, % below LRNI"),
+    UI_Ironmg ~ "Iron, mg/day",
+    UI_RNI_prct_Iron ~ "Iron, as % RNI",
+    UI_RNI_Iron ~ "Iron, % above/below RNI",
+    UI_LRNI_Iron ~ "Iron, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Ironmg ~ c(1,0),
-    UI_RNI_prct_Iron ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Ironmg, UI_RNI_prct_Iron, UI_RNI_Iron, UI_LRNI_Iron)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2503,22 +2478,22 @@ simd.iron <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Ironmg ~ "Iron (mg/day)",
-    UI_RNI_prct_Iron ~ "Iron, mean as % RNI",
-    UI_RNI_Iron ~ "Iron, % below RNI",
-    UI_LRNI_Iron ~ "Iron, % below LRNI"),
+    UI_Ironmg ~ "Iron, mg/day",
+    UI_RNI_prct_Iron ~ "Iron, as % RNI",
+    UI_RNI_Iron ~ "Iron, % above/below RNI",
+    UI_LRNI_Iron ~ "Iron, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Ironmg ~ c(1,0),
-    UI_RNI_prct_Iron ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Ironmg, UI_RNI_prct_Iron, UI_RNI_Iron, UI_LRNI_Iron)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2532,22 +2507,22 @@ age.calcium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Calciummg ~ "Calcium (mg/day)",
-    UI_RNI_prct_Calcium ~ "Calcium, mean as % RNI",
-    UI_RNI_Calcium ~ "Calcium, % below RNI",
-    UI_LRNI_Calcium ~ "Calcium, % below LRNI"),
+    UI_Calciummg ~ "Calcium, mg/day",
+    UI_RNI_prct_Calcium ~ "Calcium, as % RNI",
+    UI_RNI_Calcium ~ "Calcium, % above/below RNI",
+    UI_LRNI_Calcium ~ "Calcium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Calciummg ~ c(0,0),
-    UI_RNI_prct_Calcium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c( UI_Calciummg, UI_RNI_prct_Calcium, UI_RNI_Calcium, UI_LRNI_Calcium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2559,22 +2534,22 @@ sex.calcium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Calciummg ~ "Calcium (mg/day)",
-    UI_RNI_prct_Calcium ~ "Calcium, mean as % RNI",
-    UI_RNI_Calcium ~ "Calcium, % below RNI",
-    UI_LRNI_Calcium ~ "Calcium, % below LRNI"),
+    UI_Calciummg ~ "Calcium, mg/day",
+    UI_RNI_prct_Calcium ~ "Calcium, as % RNI",
+    UI_RNI_Calcium ~ "Calcium, % above/below RNI",
+    UI_LRNI_Calcium ~ "Calcium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Calciummg ~ c(0,0),
-    UI_RNI_prct_Calcium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c( UI_Calciummg, UI_RNI_prct_Calcium, UI_RNI_Calcium, UI_LRNI_Calcium)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2587,22 +2562,22 @@ age.sex.calcium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Calciummg ~ "Calcium (mg/day)",
-    UI_RNI_prct_Calcium ~ "Calcium, mean as % RNI",
-    UI_RNI_Calcium ~ "Calcium, % below RNI",
-    UI_LRNI_Calcium ~ "Calcium, % below LRNI"),
+    UI_Calciummg ~ "Calcium, mg/day",
+    UI_RNI_prct_Calcium ~ "Calcium, as % RNI",
+    UI_RNI_Calcium ~ "Calcium, % above/below RNI",
+    UI_LRNI_Calcium ~ "Calcium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Calciummg ~ c(0,0),
-    UI_RNI_prct_Calcium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c( UI_Calciummg, UI_RNI_prct_Calcium, UI_RNI_Calcium, UI_LRNI_Calcium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2614,22 +2589,22 @@ simd.calcium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Calciummg ~ "Calcium (mg/day)",
-    UI_RNI_prct_Calcium ~ "Calcium, mean as % RNI",
-    UI_RNI_Calcium ~ "Calcium, % below RNI",
-    UI_LRNI_Calcium ~ "Calcium, % below LRNI"),
+    UI_Calciummg ~ "Calcium, mg/day",
+    UI_RNI_prct_Calcium ~ "Calcium, as % RNI",
+    UI_RNI_Calcium ~ "Calcium, % above/below RNI",
+    UI_LRNI_Calcium ~ "Calcium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Calciummg ~ c(0,0),
-    UI_RNI_prct_Calcium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c( UI_Calciummg, UI_RNI_prct_Calcium, UI_RNI_Calcium, UI_LRNI_Calcium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2644,22 +2619,22 @@ age.magnesium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Magnesiummg ~ "Magnesium (mg/day)",
-    UI_RNI_prct_Magnesium ~ "Magnesium, mean as % RNI",
-    UI_RNI_Magnesium ~ "Magnesium, % below RNI",
-    UI_LRNI_Magnesium ~ "Magnesium, % below LRNI"),
+    UI_Magnesiummg ~ "Magnesium, mg/day",
+    UI_RNI_prct_Magnesium ~ "Magnesium, as % RNI",
+    UI_RNI_Magnesium ~ "Magnesium, % above/below RNI",
+    UI_LRNI_Magnesium ~ "Magnesium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Magnesiummg ~ c(0,0),
-    UI_RNI_prct_Magnesium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Magnesiummg, UI_RNI_prct_Magnesium, UI_RNI_Magnesium, UI_LRNI_Magnesium)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2672,22 +2647,22 @@ sex.magnesium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Magnesiummg ~ "Magnesium (mg/day)",
-    UI_RNI_prct_Magnesium ~ "Magnesium, mean as % RNI",
-    UI_RNI_Magnesium ~ "Magnesium, % below RNI",
-    UI_LRNI_Magnesium ~ "Magnesium, % below LRNI"),
+    UI_Magnesiummg ~ "Magnesium, mg/day",
+    UI_RNI_prct_Magnesium ~ "Magnesium, as % RNI",
+    UI_RNI_Magnesium ~ "Magnesium, % above/below RNI",
+    UI_LRNI_Magnesium ~ "Magnesium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Magnesiummg ~ c(0,0),
-    UI_RNI_prct_Magnesium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Magnesiummg, UI_RNI_prct_Magnesium, UI_RNI_Magnesium, UI_LRNI_Magnesium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2699,22 +2674,22 @@ age.sex.magnesium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Magnesiummg ~ "Magnesium (mg/day)",
-    UI_RNI_prct_Magnesium ~ "Magnesium, mean as % RNI",
-    UI_RNI_Magnesium ~ "Magnesium, % below RNI",
-    UI_LRNI_Magnesium ~ "Magnesium, % below LRNI"),
+    UI_Magnesiummg ~ "Magnesium, mg/day",
+    UI_RNI_prct_Magnesium ~ "Magnesium, as % RNI",
+    UI_RNI_Magnesium ~ "Magnesium, % above/below RNI",
+    UI_LRNI_Magnesium ~ "Magnesium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Magnesiummg ~ c(0,0),
-    UI_RNI_prct_Magnesium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Magnesiummg, UI_RNI_prct_Magnesium, UI_RNI_Magnesium, UI_LRNI_Magnesium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2726,22 +2701,22 @@ simd.magnesium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Magnesiummg ~ "Magnesium (mg/day)",
-    UI_RNI_prct_Magnesium ~ "Magnesium, mean as % RNI",
-    UI_RNI_Magnesium ~ "Magnesium, % below RNI",
-    UI_LRNI_Magnesium ~ "Magnesium, % below LRNI"),
+    UI_Magnesiummg ~ "Magnesium, mg/day",
+    UI_RNI_prct_Magnesium ~ "Magnesium, as % RNI",
+    UI_RNI_Magnesium ~ "Magnesium, % above/below RNI",
+    UI_LRNI_Magnesium ~ "Magnesium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Magnesiummg ~ c(0,0),
-    UI_RNI_prct_Magnesium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Magnesiummg, UI_RNI_prct_Magnesium, UI_RNI_Magnesium, UI_LRNI_Magnesium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2755,22 +2730,22 @@ age.potassium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Potassiummg ~ "Potassium (mg/day)",
-    UI_RNI_prct_Potassium ~ "Potassium, mean as % RNI",
-    UI_RNI_Potassium ~ "Potassium, % below RNI",
-    UI_LRNI_Potassium ~ "Potassium, % below LRNI"),
+    UI_Potassiummg ~ "Potassium, mg/day",
+    UI_RNI_prct_Potassium ~ "Potassium, as % RNI",
+    UI_RNI_Potassium ~ "Potassium, % above/below RNI",
+    UI_LRNI_Potassium ~ "Potassium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Potassiummg ~ c(0,0),
-    UI_RNI_prct_Potassium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Potassiummg,UI_RNI_prct_Potassium, UI_RNI_Potassium, UI_LRNI_Potassium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2782,22 +2757,22 @@ sex.potassium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Potassiummg ~ "Potassium (mg/day)",
-    UI_RNI_prct_Potassium ~ "Potassium, mean as % RNI",
-    UI_RNI_Potassium ~ "Potassium, % below RNI",
-    UI_LRNI_Potassium ~ "Potassium, % below LRNI"),
+    UI_Potassiummg ~ "Potassium, mg/day",
+    UI_RNI_prct_Potassium ~ "Potassium, as % RNI",
+    UI_RNI_Potassium ~ "Potassium, % above/below RNI",
+    UI_LRNI_Potassium ~ "Potassium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Potassiummg ~ c(0,0),
-    UI_RNI_prct_Potassium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Potassiummg,UI_RNI_prct_Potassium, UI_RNI_Potassium, UI_LRNI_Potassium)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2810,22 +2785,22 @@ age.sex.potassium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Potassiummg ~ "Potassium (mg/day)",
-    UI_RNI_prct_Potassium ~ "Potassium, mean as % RNI",
-    UI_RNI_Potassium ~ "Potassium, % below RNI",
-    UI_LRNI_Potassium ~ "Potassium, % below LRNI"),
+    UI_Potassiummg ~ "Potassium, mg/day",
+    UI_RNI_prct_Potassium ~ "Potassium, as % RNI",
+    UI_RNI_Potassium ~ "Potassium, % above/below RNI",
+    UI_LRNI_Potassium ~ "Potassium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Potassiummg ~ c(0,0),
-    UI_RNI_prct_Potassium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Potassiummg,UI_RNI_prct_Potassium, UI_RNI_Potassium, UI_LRNI_Potassium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2837,22 +2812,22 @@ simd.potassium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Potassiummg ~ "Potassium (mg/day)",
-    UI_RNI_prct_Potassium ~ "Potassium, mean as % RNI",
-    UI_RNI_Potassium ~ "Potassium, % below RNI",
-    UI_LRNI_Potassium ~ "Potassium, % below LRNI"),
+    UI_Potassiummg ~ "Potassium, mg/day",
+    UI_RNI_prct_Potassium ~ "Potassium, as % RNI",
+    UI_RNI_Potassium ~ "Potassium, % above/below RNI",
+    UI_LRNI_Potassium ~ "Potassium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Potassiummg ~ c(0,0),
-    UI_RNI_prct_Potassium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Potassiummg,UI_RNI_prct_Potassium, UI_RNI_Potassium, UI_LRNI_Potassium)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2866,22 +2841,22 @@ age.iodine <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Iodineug ~ "Iodine (µg/day)",
-    UI_RNI_prct_Iodine ~ "Iodine, mean as % RNI",
-    UI_RNI_Iodine ~ "Iodine, % below RNI",
-    UI_LRNI_Iodine ~ "Iodine, % below LRNI"),
+    UI_Iodineug ~ "Iodine, µg/day",
+    UI_RNI_prct_Iodine ~ "Iodine, as % RNI",
+    UI_RNI_Iodine ~ "Iodine, % above/below RNI",
+    UI_LRNI_Iodine ~ "Iodine, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Iodineug ~ c(0,0),
-    UI_RNI_prct_Iodine ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Iodineug, UI_RNI_prct_Iodine, UI_RNI_Iodine, UI_LRNI_Iodine)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2893,22 +2868,22 @@ sex.iodine <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Iodineug ~ "Iodine (µg/day)",
-    UI_RNI_prct_Iodine ~ "Iodine, mean as % RNI",
-    UI_RNI_Iodine ~ "Iodine, % below RNI",
-    UI_LRNI_Iodine ~ "Iodine, % below LRNI"),
+    UI_Iodineug ~ "Iodine, µg/day",
+    UI_RNI_prct_Iodine ~ "Iodine, as % RNI",
+    UI_RNI_Iodine ~ "Iodine, % above/below RNI",
+    UI_LRNI_Iodine ~ "Iodine, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Iodineug ~ c(0,0),
-    UI_RNI_prct_Iodine ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Iodineug, UI_RNI_prct_Iodine, UI_RNI_Iodine, UI_LRNI_Iodine)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -2921,22 +2896,22 @@ age.sex.iodine <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Iodineug ~ "Iodine (µg/day)",
-    UI_RNI_prct_Iodine ~ "Iodine, mean as % RNI",
-    UI_RNI_Iodine ~ "Iodine, % below RNI",
-    UI_LRNI_Iodine ~ "Iodine, % below LRNI"),
+    UI_Iodineug ~ "Iodine, µg/day",
+    UI_RNI_prct_Iodine ~ "Iodine, as % RNI",
+    UI_RNI_Iodine ~ "Iodine, % above/below RNI",
+    UI_LRNI_Iodine ~ "Iodine, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Iodineug ~ c(0,0),
-    UI_RNI_prct_Iodine ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Iodineug, UI_RNI_prct_Iodine, UI_RNI_Iodine, UI_LRNI_Iodine)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2948,22 +2923,22 @@ simd.iodine <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Iodineug ~ "Iodine (µg/day)",
-    UI_RNI_prct_Iodine ~ "Iodine, mean as % RNI",
-    UI_RNI_Iodine ~ "Iodine, % below RNI",
-    UI_LRNI_Iodine ~ "Iodine, % below LRNI"),
+    UI_Iodineug ~ "Iodine, µg/day",
+    UI_RNI_prct_Iodine ~ "Iodine, as % RNI",
+    UI_RNI_Iodine ~ "Iodine, % above/below RNI",
+    UI_LRNI_Iodine ~ "Iodine, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Iodineug ~ c(0,0),
-    UI_RNI_prct_Iodine ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Iodineug, UI_RNI_prct_Iodine, UI_RNI_Iodine, UI_LRNI_Iodine)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -2976,22 +2951,22 @@ age.selenium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Seleniumug ~ "Selenium (µg/day)",
-    UI_RNI_prct_Selenium ~ "Selenium, mean as % RNI",
-    UI_RNI_Selenium ~ "Selenium, % below RNI",
-    UI_LRNI_Selenium ~ "Selenium, % below LRNI"),
+    UI_Seleniumug ~ "Selenium, µg/day",
+    UI_RNI_prct_Selenium ~ "Selenium, as % RNI",
+    UI_RNI_Selenium ~ "Selenium, % above/below RNI",
+    UI_LRNI_Selenium ~ "Selenium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Seleniumug ~ c(0,0),
-    UI_RNI_prct_Selenium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Seleniumug, UI_RNI_prct_Selenium, UI_RNI_Selenium, 
               UI_LRNI_Selenium)) %>%
   bold_labels() %>% 
@@ -3004,22 +2979,22 @@ sex.selenium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Seleniumug ~ "Selenium (µg/day)",
-    UI_RNI_prct_Selenium ~ "Selenium, mean as % RNI",
-    UI_RNI_Selenium ~ "Selenium, % below RNI",
-    UI_LRNI_Selenium ~ "Selenium, % below LRNI"),
+    UI_Seleniumug ~ "Selenium, µg/day",
+    UI_RNI_prct_Selenium ~ "Selenium, as % RNI",
+    UI_RNI_Selenium ~ "Selenium, % above/below RNI",
+    UI_LRNI_Selenium ~ "Selenium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Seleniumug ~ c(0,0),
-    UI_RNI_prct_Selenium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Seleniumug, UI_RNI_prct_Selenium, UI_RNI_Selenium, 
               UI_LRNI_Selenium)) %>%
   bold_labels() %>% 
@@ -3034,22 +3009,22 @@ age.sex.selenium <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Seleniumug ~ "Selenium (µg/day)",
-    UI_RNI_prct_Selenium ~ "Selenium, mean as % RNI",
-    UI_RNI_Selenium ~ "Selenium, % below RNI",
-    UI_LRNI_Selenium ~ "Selenium, % below LRNI"),
+    UI_Seleniumug ~ "Selenium, µg/day",
+    UI_RNI_prct_Selenium ~ "Selenium, as % RNI",
+    UI_RNI_Selenium ~ "Selenium, % above/below RNI",
+    UI_LRNI_Selenium ~ "Selenium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Seleniumug ~ c(0,0),
-    UI_RNI_prct_Selenium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Seleniumug, UI_RNI_prct_Selenium, UI_RNI_Selenium, 
               UI_LRNI_Selenium)) %>%
   bold_labels() %>% 
@@ -3062,22 +3037,22 @@ simd.selenium <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Seleniumug ~ "Selenium (µg/day)",
-    UI_RNI_prct_Selenium ~ "Selenium, mean as % RNI",
-    UI_RNI_Selenium ~ "Selenium, % below RNI",
-    UI_LRNI_Selenium ~ "Selenium, % below LRNI"),
+    UI_Seleniumug ~ "Selenium, µg/day",
+    UI_RNI_prct_Selenium ~ "Selenium, as % RNI",
+    UI_RNI_Selenium ~ "Selenium, % above/below RNI",
+    UI_LRNI_Selenium ~ "Selenium, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Seleniumug ~ c(0,0),
-    UI_RNI_prct_Selenium ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Seleniumug, UI_RNI_prct_Selenium, UI_RNI_Selenium, 
               UI_LRNI_Selenium)) %>%
   bold_labels() %>% 
@@ -3093,22 +3068,22 @@ age.zinc <- tbl_svysummary(
   svy.df.intake24_participant,
   by = age_cat,
   label = c(
-    UI_Zincmg ~ "Zinc (mg/day)",
-    UI_RNI_prct_Zinc ~ "Zinc, mean as % RNI",
-    UI_RNI_Zinc ~ "Zinc, % below RNI",
-    UI_LRNI_Zinc ~ "Zinc, % below LRNI"),
+    UI_Zincmg ~ "Zinc, mg/day",
+    UI_RNI_prct_Zinc ~ "Zinc, as % RNI",
+    UI_RNI_Zinc ~ "Zinc, % above/below RNI",
+    UI_LRNI_Zinc ~ "Zinc, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Zincmg ~ c(1,0),
-    UI_RNI_prct_Zinc ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Zincmg, UI_RNI_prct_Zinc, UI_RNI_Zinc, UI_LRNI_Zinc)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -3120,22 +3095,22 @@ sex.zinc <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = Sex,
   label = c(
-    UI_Zincmg ~ "Zinc (mg/day)",
-    UI_RNI_prct_Zinc ~ "Zinc, mean as % RNI",
-    UI_RNI_Zinc ~ "Zinc, % below RNI",
-    UI_LRNI_Zinc ~ "Zinc, % below LRNI"),
+    UI_Zincmg ~ "Zinc, mg/day",
+    UI_RNI_prct_Zinc ~ "Zinc, as % RNI",
+    UI_RNI_Zinc ~ "Zinc, % above/below RNI",
+    UI_LRNI_Zinc ~ "Zinc, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Zincmg ~ c(1,0),
-    UI_RNI_prct_Zinc ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Zincmg, UI_RNI_prct_Zinc, UI_RNI_Zinc, UI_LRNI_Zinc)) %>%
   bold_labels() %>% 
   add_overall() %>%
@@ -3148,22 +3123,22 @@ age.sex.zinc <- tbl_svysummary(
   svy.df.intake24_participant_fm,
   by = age_sex_cat,
   label = c(
-    UI_Zincmg ~ "Zinc (mg/day)",
-    UI_RNI_prct_Zinc ~ "Zinc, mean as % RNI",
-    UI_RNI_Zinc ~ "Zinc, % below RNI",
-    UI_LRNI_Zinc ~ "Zinc, % below LRNI"),
+    UI_Zincmg ~ "Zinc, mg/day",
+    UI_RNI_prct_Zinc ~ "Zinc, as % RNI",
+    UI_RNI_Zinc ~ "Zinc, % above/below RNI",
+    UI_LRNI_Zinc ~ "Zinc, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Zincmg ~ c(1,0),
-    UI_RNI_prct_Zinc ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Zincmg, UI_RNI_prct_Zinc, UI_RNI_Zinc, UI_LRNI_Zinc)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -3176,22 +3151,22 @@ simd.zinc <- tbl_svysummary(
   svy.df.intake24_participant,
   by = simd_quintile,
   label = c(
-    UI_Zincmg ~ "Zinc (mg/day)",
-    UI_RNI_prct_Zinc ~ "Zinc, mean as % RNI",
-    UI_RNI_Zinc ~ "Zinc, % below RNI",
-    UI_LRNI_Zinc ~ "Zinc, % below LRNI"),
+    UI_Zincmg ~ "Zinc, mg/day",
+    UI_RNI_prct_Zinc ~ "Zinc, as % RNI",
+    UI_RNI_Zinc ~ "Zinc, % above/below RNI",
+    UI_LRNI_Zinc ~ "Zinc, % above/below LRNI"),
   type = all_continuous() ~ "continuous2",
   statistic = list(all_continuous() ~ "{mean}
-                                       {median} 
+                                       {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}", 
-                   all_categorical() ~ "{p}%"),
+                   all_categorical() ~ "{p}%
+                                        {p.std.error}"),
   missing = "no",
-  digits = list(
-    UI_Zincmg ~ c(1,0),
-    UI_RNI_prct_Zinc ~ c(0,0),
-    all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1),
+    all_categorical() ~ c(1,3)),
   include = c(UI_Zincmg, UI_RNI_prct_Zinc, UI_RNI_Zinc, UI_LRNI_Zinc)) %>%
   bold_labels() %>% 
   add_p()%>%
@@ -3211,22 +3186,22 @@ nutrient_sheet_names <- c("energy", "energy as % EAR", "protein", "Vitamin A", "
 
 # list of flextables
 nutrient_flextables <- list(
-  energy = list(age = age.energy, sex = sex.energy, age_sex = age.sex.energy, simd = simd.energy),
-  `energy as % EAR` = list(age = age.energy.ear, sex = sex.energy.ear, age_sex = age.sex.energy.ear, simd = simd.energy.ear),
-  protein = list(age = age.protein, sex = sex.protein, age_sex = age.sex.protein, simd = simd.protein),
+  Energy = list(age = age.energy, sex = sex.energy, age_sex = age.sex.energy, simd = simd.energy),
+  `Energy as % EAR` = list(age = age.energy.ear, sex = sex.energy.ear, age_sex = age.sex.energy.ear, simd = simd.energy.ear),
+  Protein = list(age = age.protein, sex = sex.protein, age_sex = age.sex.protein, simd = simd.protein),
   `Vitamin A` = list(age = age.VitA, sex = sex.VitA, age_sex = age.sex.VitA, simd = simd.VitA),
-  riboflavin = list(age = age.riboflavin, sex = sex.riboflavin, age_sex = age.sex.riboflavin, simd = simd.riboflavin),
-  folate = list(age = age.folate, sex = sex.folate, age_sex = age.sex.folate, simd = simd.folate),
+  Riboflavin = list(age = age.riboflavin, sex = sex.riboflavin, age_sex = age.sex.riboflavin, simd = simd.riboflavin),
+  Folate = list(age = age.folate, sex = sex.folate, age_sex = age.sex.folate, simd = simd.folate),
   `Vitamin D` = list(age = age.VitD, sex = sex.VitD, age_sex = age.sex.VitD, simd = simd.VitD),
   `Vitamin B12` = list(age = age.VitB12, sex = sex.VitB12, age_sex = age.sex.VitB12, simd = simd.VitB12),
   `Vitamin C` = list(age = age.VitC, sex = sex.VitC, age_sex = age.sex.VitC, simd = simd.VitC),
-  iron = list(age = age.iron, sex = sex.iron, age_sex = age.sex.iron, simd = simd.iron),
-  calcium = list(age = age.calcium, sex = sex.calcium, age_sex = age.sex.calcium, simd = simd.calcium),
-  magnesium = list(age = age.magnesium, sex = sex.magnesium, age_sex = age.sex.magnesium, simd = simd.magnesium),
-  potassium = list(age = age.potassium, sex = sex.potassium, age_sex = age.sex.potassium, simd = simd.potassium),
-  iodine = list(age = age.iodine, sex = sex.iodine, age_sex = age.sex.iodine, simd = simd.iodine),
-  selenium = list(age = age.selenium, sex = sex.selenium, age_sex = age.sex.selenium, simd = simd.selenium),
-  zinc = list(age = age.zinc, sex = sex.zinc, age_sex = age.sex.zinc, simd = simd.zinc)
+  Iron = list(age = age.iron, sex = sex.iron, age_sex = age.sex.iron, simd = simd.iron),
+  Calcium = list(age = age.calcium, sex = sex.calcium, age_sex = age.sex.calcium, simd = simd.calcium),
+  Magnesium = list(age = age.magnesium, sex = sex.magnesium, age_sex = age.sex.magnesium, simd = simd.magnesium),
+  Potassium = list(age = age.potassium, sex = sex.potassium, age_sex = age.sex.potassium, simd = simd.potassium),
+  Iodine = list(age = age.iodine, sex = sex.iodine, age_sex = age.sex.iodine, simd = simd.iodine),
+  Selenium = list(age = age.selenium, sex = sex.selenium, age_sex = age.sex.selenium, simd = simd.selenium),
+  Zinc = list(age = age.zinc, sex = sex.zinc, age_sex = age.sex.zinc, simd = simd.zinc)
 )
 
 # list with location for excel sheet
@@ -3822,7 +3797,7 @@ saveWorkbook(wb, paste0("Output/Table_FoodCategory_Consumers_", format(Sys.time(
 
 ##Energy
 table.energy.fg <- tbl_svysummary(
-  svy.df.intake24_participant_fm, #updated with age_sex weights
+  svy.df.intake24_participant_fm, 
   by = age_sex_cat,
   label = c(
     Avg_Prop_Energykcal_foodcat_1 ~ "Cereals and Cereal Products",
@@ -4758,7 +4733,7 @@ write_xlsx(
 )
 
 
-# Food Groups - NDNS - Chpt 6 ####
+# Food Groups ####
 
 ##Consumers ####
 table.ndns.consumers <- tbl_svysummary(
@@ -5069,10 +5044,11 @@ table.ndns_grams_sex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_ndnsg_1:UI_ndnsg_3,UI_ndnsg_5:UI_ndnsg_11, UI_ndnsg_13:UI_ndnsg_17, UI_ndnsg_21, UI_ndnsg_23,UI_ndnsg_26, 
               UI_ndnsg_27, UI_ndnsg_30, UI_ndnsg_31, UI_ndnsg_33, UI_ndnsg_36:UI_ndnsg_45, UI_ndnsg_50, UI_ndnsg_53, UI_ndnsg_57, 
               UI_ndnsg_58, UI_ndnsg_62)) %>%
@@ -5156,10 +5132,11 @@ table.ndns_grams_age <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_ndnsg_1:UI_ndnsg_3,UI_ndnsg_5:UI_ndnsg_11, UI_ndnsg_13:UI_ndnsg_17, UI_ndnsg_21, UI_ndnsg_23,UI_ndnsg_26, 
               UI_ndnsg_27, UI_ndnsg_30, UI_ndnsg_31, UI_ndnsg_33, UI_ndnsg_36:UI_ndnsg_45, UI_ndnsg_50, UI_ndnsg_53, UI_ndnsg_57, 
               UI_ndnsg_58, UI_ndnsg_62)) %>%
@@ -5244,10 +5221,11 @@ table.ndns_grams_age_sex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_ndnsg_1:UI_ndnsg_3,UI_ndnsg_5:UI_ndnsg_11, UI_ndnsg_13:UI_ndnsg_17, UI_ndnsg_21, UI_ndnsg_23,UI_ndnsg_26, 
               UI_ndnsg_27, UI_ndnsg_30, UI_ndnsg_31, UI_ndnsg_33, UI_ndnsg_36:UI_ndnsg_45, UI_ndnsg_50, UI_ndnsg_53, UI_ndnsg_57, 
               UI_ndnsg_58, UI_ndnsg_62)) %>%
@@ -5330,10 +5308,11 @@ table.ndns_grams_simd <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_ndnsg_1:UI_ndnsg_3,UI_ndnsg_5:UI_ndnsg_11, UI_ndnsg_13:UI_ndnsg_17, UI_ndnsg_21, UI_ndnsg_23,UI_ndnsg_26, 
               UI_ndnsg_27, UI_ndnsg_30, UI_ndnsg_31, UI_ndnsg_33, UI_ndnsg_36:UI_ndnsg_45, UI_ndnsg_50, UI_ndnsg_53, UI_ndnsg_57, 
               UI_ndnsg_58, UI_ndnsg_62)) %>%
@@ -5480,7 +5459,7 @@ table.energy.fg <- tbl_svysummary(
 
 #SIMD
 table.energy.fg.simd <- tbl_svysummary(
-  svy.df.intake24_participant_fm, #updated with age_sex weights
+  svy.df.intake24_participant_fm, 
   by = simd_quintile,
   label = c(Avg_Prop_Energykcal_fg_1 ~ "Pasta, rice and other miscellaneous cereals",
             Avg_Prop_Energykcal_fg_2 ~ "White bread",
@@ -9529,7 +9508,7 @@ table.alcohol
 
 
 
-#Food Groups - Discretionary - Chpt 7 ####
+#Food Groups - Discretionary ####
 ##Consumers ####
 
 table.consumers <- tbl_svysummary(
@@ -9606,10 +9585,11 @@ table.disc_grams_sex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_sweetbiscuitsg, UI_cakespastriespuddingsg, UI_crispsg, UI_confectioneryg , UI_icecreamg, UI_sugarydrinksg,
               UI_bfastcerealsg, UI_potatoesg, UI_pizzag, UI_dairydessertsg, UI_readymealsg
   )) %>%
@@ -9640,10 +9620,11 @@ table.disc_grams_age <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_sweetbiscuitsg, UI_cakespastriespuddingsg, UI_crispsg, UI_confectioneryg , UI_icecreamg, UI_sugarydrinksg,
               UI_bfastcerealsg, UI_potatoesg, UI_pizzag, UI_dairydessertsg, UI_readymealsg
   )) %>%
@@ -9675,10 +9656,11 @@ table.disc_grams_age_sex <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_sweetbiscuitsg, UI_cakespastriespuddingsg, UI_crispsg, UI_confectioneryg , UI_icecreamg, UI_sugarydrinksg,
               UI_bfastcerealsg, UI_potatoesg, UI_pizzag, UI_dairydessertsg, UI_readymealsg
   )) %>%
@@ -9710,10 +9692,11 @@ table.disc_grams_simd <- tbl_svysummary(
   statistic = list(all_continuous() ~ "{mean}
                                        {median}
                                        {sd}
+                                       {mean.std.error}
                                        {p25}
                                        {p75}"),
   missing = "no",
-  digits = list(all_categorical() ~ c(0,0)),
+  digits = list(all_continuous() ~ c(1,1), all_categorical() ~ c(0,0)),
   include = c(UI_sweetbiscuitsg, UI_cakespastriespuddingsg, UI_crispsg, UI_confectioneryg , UI_icecreamg, UI_sugarydrinksg,
               UI_bfastcerealsg, UI_potatoesg, UI_pizzag, UI_dairydessertsg, UI_readymealsg
   )) %>%
@@ -10088,7 +10071,7 @@ table.energy <- tbl_svysummary(
 save_as_docx(table.energy, path="Output/Table_Energy_Drinks.docx")
 
 
-# Food insecurity - Chpt 9 ####
+# Food insecurity ####
 table.foodinsec <- tbl_svysummary(
   svy.df.survey,
   label = c(HHFOOD1 ~ "Worried about running out of food",
